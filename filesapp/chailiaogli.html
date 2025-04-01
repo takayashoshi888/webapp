@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY员工材料管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1f2937;
+        }
+        .employee-name {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .table-fixed {
+            table-layout: fixed;
+        }
+        .w-name { width: 20%; }
+        .w-preview { width: 60%; }
+        .w-actions { width: 20%; }
+    </style>
+</head>
+<body class="flex">
+    <!-- Left Sidebar -->
+    <div class="w-64 bg-gray-800 min-h-screen p-4 flex-shrink-0">
+        <div class="text-white text-xl font-bold mb-8">TKY材料管理系统</div>
+        <nav>
+            <ul class="space-y-4">
+                <li>
+                    <a href="chailiaogli.html" class="block text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                        <span class="text-sm font-medium">员工管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="xingxicaiji.html" class="block text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                        <span class="text-sm font-medium">材料上传</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 修改管理员信息和已登录员工部分 -->
+        <div class="mt-8">
+            <h2 class="text-white text-xl font-bold mb-4">管理员信息</h2>
+            <div class="mb-4">
+                <p class="text-gray-300">管理员: <span id="current-admin">加载中...</span></p>
+            </div>
+            <h2 class="text-white text-xl font-bold mb-4">已登录员工</h2>
+            <!-- 在左侧边栏的已登录员工列表下方添加退出按钮 -->
+            <div class="mt-8">
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <ul id="employee-list" class="list-disc list-inside space-y-2">
+                        <!-- 动态加载员工列表 -->
+                    </ul>
+                </div>
+                
+                <!-- 添加退出按钮 -->
+                <div class="mt-8">
+                    <button onclick="logout()" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        退出管理
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 在script标签内添加退出功能 -->
+            <script>
+                // 分享功能
+                async function shareEmployeeData() {
+                    try {
+                        const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                        if (employeeData.length === 0) {
+                            alert('没有可分享的数据！');
+                            return;
+                        }
+
+                        if (navigator.share) {
+                            await navigator.share({
+                                title: 'TKY员工材料数据',
+                                text: `共有 ${employeeData.length} 名员工的材料数据`,
+                                url: window.location.href
+                            });
+                        } else {
+                            const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(employeeData, null, 2))}`;
+                            const downloadAnchor = document.createElement('a');
+                            downloadAnchor.setAttribute('href', dataStr);
+                            downloadAnchor.setAttribute('download', 'employee_data.json');
+                            downloadAnchor.click();
+                        }
+                    } catch (error) {
+                        alert('分享失败：' + error.message);
+                    }
+                }
+
+                // 导出PDF功能
+                async function exportToPDF() {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                    document.body.appendChild(script);
+
+                    script.onload = async function() {
+                        const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                        if (employeeData.length === 0) {
+                            alert('没有可导出的数据！');
+                            return;
+                        }
+
+                        // 创建更详细的导出容器
+                        const container = document.createElement('div');
+                        container.innerHTML = `
+                            <div style="padding: 20px;">
+                                <h1 style="text-align: center; margin-bottom: 30px; color: #2563eb;">TKY员工材料清单</h1>
+                                ${employeeData.map(emp => `
+                                    <div style="margin-bottom: 40px; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px;">
+                                        <h2 style="color: #1f2937; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                                            员工信息：${emp.name}
+                                        </h2>
+                                        <div style="margin-bottom: 20px;">
+                                            <h3 style="color: #4b5563; margin-bottom: 10px;">已上传材料：</h3>
+                                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                                                ${Object.entries(emp.files || {}).map(([type, file]) => `
+                                                    <div style="border: 1px solid #d1d5db; padding: 10px; border-radius: 4px;">
+                                                        <p style="margin-bottom: 10px; color: #4b5563; font-weight: bold;">
+                                                            ${getFileTypeName(type)}
+                                                        </p>
+                                                        <img src="${file.data}" 
+                                                             alt="${type}" 
+                                                             style="max-width: 100%; height: auto; border-radius: 4px;">
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+
+                        const opt = {
+                            margin: [10, 10],
+                            filename: 'employee_materials_complete.pdf',
+                            image: { type: 'jpeg', quality: 0.98 },
+                            html2canvas: { 
+                                scale: 2,
+                                useCORS: true,
+                                logging: true
+                            },
+                            jsPDF: { 
+                                unit: 'mm', 
+                                format: 'a4', 
+                                orientation: 'portrait'
+                            }
+                        };
+
+                        try {
+                            // 显示加载提示
+                            alert('正在生成PDF，请稍候...');
+                            await html2pdf().set(opt).from(container).save();
+                        } catch (error) {
+                            alert('PDF导出失败：' + error.message);
+                        }
+                    };
+                }
+
+                // 下载数据功能
+                function downloadData() {
+                    try {
+                        const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                        if (employeeData.length === 0) {
+                            alert('没有可下载的数据！');
+                            return;
+                        }
+
+                        const dataStr = JSON.stringify(employeeData, null, 2);
+                        const blob = new Blob([dataStr], { type: 'application/json' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'employee_data_backup.json';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    } catch (error) {
+                        alert('下载失败：' + error.message);
+                    }
+                }
+            </script>
+        </div>
+    </div>
+
+    <!-- Right Content -->
+    <div class="flex-1 p-8 overflow-x-hidden">
+        <!-- Top Navigation Bar -->
+        <nav class="bg-orange-500 mb-8 p-4 rounded-lg">
+            <div class="flex items-center justify-between">
+                <h1 class="text-white text-xl font-bold">员工材料管理</h1>
+                <!-- 在导航栏按钮部分修改 -->
+                <div class="space-x-4">
+                    <button onclick="shareEmployeeData()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">分享</button>
+                    <button onclick="exportToPDF()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">导出</button>
+                    <button onclick="downloadData()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">下载</button>
+                </div>
+                
+                <!-- 在script标签内添加以下函数 -->
+                <script>
+                    // 分享功能
+                    async function shareEmployeeData() {
+                        try {
+                            const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                            if (employeeData.length === 0) {
+                                alert('没有可分享的数据！');
+                                return;
+                            }
+
+                            if (navigator.share) {
+                                await navigator.share({
+                                    title: 'TKY员工材料数据',
+                                    text: `共有 ${employeeData.length} 名员工的材料数据`,
+                                    url: window.location.href
+                                });
+                            } else {
+                                const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(employeeData, null, 2))}`;
+                                const downloadAnchor = document.createElement('a');
+                                downloadAnchor.setAttribute('href', dataStr);
+                                downloadAnchor.setAttribute('download', 'employee_data.json');
+                                downloadAnchor.click();
+                            }
+                        } catch (error) {
+                            alert('分享失败：' + error.message);
+                        }
+                    }
+
+                    // 导出PDF功能
+                    async function exportToPDF() {
+                        // 添加html2pdf库
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                        document.body.appendChild(script);
+
+                        script.onload = async function() {
+                            const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                            if (employeeData.length === 0) {
+                                alert('没有可导出的数据！');
+                                return;
+                            }
+
+                            // 创建用于导出的临时容器
+                            const container = document.createElement('div');
+                            container.innerHTML = `
+                                <h1 style="text-align: center; margin-bottom: 20px;">TKY员工材料清单</h1>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">员工姓名</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">已上传材料</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${employeeData.map(emp => `
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">${emp.name}</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">
+                                                    ${Object.keys(emp.files || {}).map(type => getFileTypeName(type)).join(', ')}
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            `;
+
+                            const opt = {
+                                margin: 1,
+                                filename: 'employee_materials.pdf',
+                                image: { type: 'jpeg', quality: 0.98 },
+                                html2canvas: { scale: 2 },
+                                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                            };
+
+                            try {
+                                await html2pdf().set(opt).from(container).save();
+                            } catch (error) {
+                                alert('PDF导出失败：' + error.message);
+                            }
+                        };
+                    }
+
+                    // 下载数据功能
+                    function downloadData() {
+                        try {
+                            const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                            if (employeeData.length === 0) {
+                                alert('没有可下载的数据！');
+                                return;
+                            }
+
+                            const dataStr = JSON.stringify(employeeData, null, 2);
+                            const blob = new Blob([dataStr], { type: 'application/json' });
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'employee_data_backup.json';
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                        } catch (error) {
+                            alert('下载失败：' + error.message);
+                        }
+                    }
+                </script>
+            </div>
+        </nav>
+
+        <!-- Employee Data Table -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200 table-fixed">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="w-name px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">员工名簿</th>
+                        <th scope="col" class="w-preview px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">材料预览</th>
+                        <th scope="col" class="w-actions px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="employee-data" class="bg-white divide-y divide-gray-200">
+                    <!-- 动态加载的数据将显示在这里 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add Employee Form -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">添加新员工</h2>
+            <div class="flex items-center space-x-4">
+                <input type="text" id="new-employee" class="border border-gray-300 rounded-lg px-4 py-2 flex-1" placeholder="输入新员工姓名">
+                <button id="add-employee" class="bg-green-500 hover:bg-green-700 text-white px-6 py-2 rounded-lg">添加员工</button>
+            </div>
+        </div>
+
+        <!-- Employee Details Modal -->
+        <div id="employeeDetailsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-4/5 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold" id="modalEmployeeName"></h3>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="imagePreview" class="grid grid-cols-2 gap-4">
+                    <!-- 图片预览将在这里动态加载 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showEmployeeDetails(encodedData) {
+            const employee = JSON.parse(decodeURIComponent(encodedData));
+            const modal = document.getElementById('employeeDetailsModal');
+            const previewDiv = document.getElementById('imagePreview');
+            const nameTitle = document.getElementById('modalEmployeeName');
+    
+            nameTitle.textContent = employee.name;
+            previewDiv.innerHTML = '';
+            
+            if (employee.files) {
+                Object.entries(employee.files).forEach(([type, file]) => {
+                    const previewContainer = document.createElement('div');
+                    previewContainer.className = 'flex flex-col items-center';
+                    
+                    const img = document.createElement('img');
+                    img.src = file.data;
+                    img.className = 'max-w-full h-auto rounded-lg shadow-md';
+                    img.alt = type;
+                    
+                    const label = document.createElement('p');
+                    label.className = 'mt-2 text-sm text-gray-600';
+                    label.textContent = getFileTypeName(type);
+                    
+                    previewContainer.appendChild(img);
+                    previewContainer.appendChild(label);
+                    previewDiv.appendChild(previewContainer);
+                });
+            }
+    
+            modal.classList.remove('hidden');
+        }
+    
+        function closeModal() {
+            document.getElementById('employeeDetailsModal').classList.add('hidden');
+        }
+    
+        function getFileTypeName(type) {
+            const typeNames = {
+                'healthInsurance': '健康保险卡',
+                'residencePermit': '在留卡',
+                'laborInsurance': '劳灾保险',
+                'pensionManual': '年金手册',
+                'healthCheckup': '健康诊断'
+            };
+            return typeNames[type] || type;
+        }
+
+        function loadEmployeeData() {
+            const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+            const employeeTable = document.getElementById('employee-data');
+            employeeTable.innerHTML = '';
+
+            employeeData.forEach(employee => {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="showEmployeeDetails('${encodeURIComponent(JSON.stringify(employee))}')" 
+                                class="text-indigo-600 hover:text-indigo-900 employee-name">
+                            ${employee.name}
+                        </button>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2 flex-wrap gap-2">
+                            ${Object.entries(employee.files || {}).map(([type, file]) => `
+                                <img src="${file.data}" 
+                                     alt="${type}" 
+                                     class="h-8 w-8 object-cover rounded"
+                                     title="${getFileTypeName(type)}"
+                                     onclick="showEmployeeDetails('${encodeURIComponent(JSON.stringify(employee))}')">
+                            `).join('')}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-900 mr-2" 
+                                onclick="editEmployee('${employee.name.replace(/'/g, "\\'")}')">编辑</button>
+                        <button class="text-red-600 hover:text-red-900" 
+                                onclick="deleteEmployee('${employee.name.replace(/'/g, "\\'")}')">删除</button>
+                    </td>
+                `;
+                employeeTable.appendChild(newRow);
+            });
+        }
+
+        function editEmployee(employeeName) {
+            window.location.href = `xingxicaiji.html?edit=${encodeURIComponent(employeeName)}`;
+        }
+
+        function deleteEmployee(employeeName) {
+            // 解码员工名称
+            const decodedName = decodeURIComponent(employeeName);
+            
+            if (confirm(`确定要删除员工 ${decodedName} 吗？`)) {
+                const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                // 使用解码后的名称进行比较
+                const updatedData = employeeData.filter(emp => emp.name !== decodedName);
+                
+                // 如果数据没有变化，说明没有找到要删除的员工
+                if (updatedData.length === employeeData.length) {
+                    alert('未找到要删除的员工！');
+                    return;
+                }
+                
+                localStorage.setItem('employeeData', JSON.stringify(updatedData));
+                loadEmployeeData();
+            }
+        }
+
+        // 在生成表格行时修改删除按钮的事件处理
+        function loadEmployeeData() {
+            const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+            const employeeTable = document.getElementById('employee-data');
+            employeeTable.innerHTML = '';
+
+            employeeData.forEach(employee => {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="showEmployeeDetails('${encodeURIComponent(JSON.stringify(employee))}')" 
+                                class="text-indigo-600 hover:text-indigo-900 employee-name">
+                            ${employee.name}
+                        </button>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2 flex-wrap gap-2">
+                            ${Object.entries(employee.files || {}).map(([type, file]) => `
+                                <img src="${file.data}" 
+                                     alt="${type}" 
+                                     class="h-8 w-8 object-cover rounded"
+                                     title="${getFileTypeName(type)}"
+                                     onclick="showEmployeeDetails('${encodeURIComponent(JSON.stringify(employee))}')">
+                            `).join('')}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-900 mr-2" 
+                                onclick="editEmployee('${encodeURIComponent(employee.name)}')">编辑</button>
+                        <button class="text-red-600 hover:text-red-900" 
+                                onclick="deleteEmployee('${encodeURIComponent(employee.name)}')">删除</button>
+                    </td>
+                `;
+                employeeTable.appendChild(newRow);
+            });
+        }
+
+        // 添加新员工
+        document.getElementById('add-employee').addEventListener('click', function() {
+            const employeeName = document.getElementById('new-employee').value.trim();
+            if (employeeName) {
+                const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                if (employeeData.some(emp => emp.name === employeeName)) {
+                    alert('该员工已存在！');
+                    return;
+                }
+                employeeData.push({
+                    name: employeeName,
+                    files: {}
+                });
+                localStorage.setItem('employeeData', JSON.stringify(employeeData));
+                loadEmployeeData();
+                document.getElementById('new-employee').value = '';
+            }
+        });
+
+        // 页面加载时初始化数据
+        window.addEventListener('load', loadEmployeeData);
+
+        // 退出功能
+        function logout() {
+            if (confirm('确定要退出管理系统吗？')) {
+                // 清除当前登录的管理员信息
+                sessionStorage.removeItem('currentAdmin');
+                // 记录退出时间
+                localStorage.setItem('lastLogoutTime', new Date().toISOString());
+                // 强制跳转到登录页面
+                window.location.href = 'index-login.html';
+            }
+        }
+    </script>
+
+    <script>
+        // 页面加载时检查登录状态
+        window.addEventListener('DOMContentLoaded', function() {
+            // 如果未登录，则重定向到登录页面
+            if (!sessionStorage.getItem('currentAdmin')) {
+                window.location.href = 'index-login.html';
+                return;
+            }
+            
+            // 加载管理员信息
+            const currentAdmin = sessionStorage.getItem('currentAdmin');
+            if (currentAdmin) {
+                document.getElementById('current-admin').textContent = currentAdmin;
+            }
+            
+            // 加载员工数据
+            loadEmployeeData();
+            
+            // 加载已登录员工列表
+            loadLoggedInEmployees();
+        });
+        
+        // 加载已登录员工列表
+        function loadLoggedInEmployees() {
+            const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+            const employeeList = document.getElementById('employee-list');
+            
+            // 清空现有列表
+            employeeList.innerHTML = '';
+            
+            // 如果没有员工数据，显示提示信息
+            if (employeeData.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'text-gray-300';
+                li.textContent = '暂无员工数据';
+                employeeList.appendChild(li);
+                return;
+            }
+            
+            // 最多显示5名员工
+            const displayCount = Math.min(employeeData.length, 5);
+            for (let i = 0; i < displayCount; i++) {
+                const li = document.createElement('li');
+                li.className = 'text-gray-300';
+                li.textContent = employeeData[i].name;
+                employeeList.appendChild(li);
+            }
+            
+            // 如果有更多员工，显示剩余数量
+            if (employeeData.length > 5) {
+                const li = document.createElement('li');
+                li.className = 'text-gray-300';
+                li.textContent = `...等共${employeeData.length}名员工`;
+                employeeList.appendChild(li);
+            }
+        }
+        
+        // 添加新员工
+        document.getElementById('add-employee').addEventListener('click', function() {
+            const employeeName = document.getElementById('new-employee').value.trim();
+            if (employeeName) {
+                const employeeData = JSON.parse(localStorage.getItem('employeeData') || '[]');
+                if (employeeData.some(emp => emp.name === employeeName)) {
+                    alert('该员工已存在！');
+                    return;
+                }
+                employeeData.push({
+                    name: employeeName,
+                    files: {}
+                });
+                localStorage.setItem('employeeData', JSON.stringify(employeeData));
+                loadEmployeeData();
+                document.getElementById('new-employee').value = '';
+            }
+        });
+
+        // 页面加载时初始化数据
+        window.addEventListener('load', loadEmployeeData);
+
+        // 退出功能
+        function logout() {
+            if (confirm('确定要退出管理系统吗？')) {
+                // 清除当前登录的管理员信息
+                sessionStorage.removeItem('currentAdmin');
+                // 记录退出时间
+                localStorage.setItem('lastLogoutTime', new Date().toISOString());
+                // 强制跳转到登录页面
+                window.location.href = 'index-login.html';
+            }
+        }
+    </script>
+</body>
+</html>
