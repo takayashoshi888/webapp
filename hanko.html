@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日式印章生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f0f4f8;
+            color: black;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 bg-blue-50 dark:bg-gray-800">
+    <div class="w-full max-w-3xl bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
+        <h1 class="text-3xl font-bold mb-6 text-center">日式印章生成器</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- 预览区域 -->
+            <div class="w-full h-96 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <canvas id="stamp" class="w-full h-full bg-white"></canvas>
+            </div>
+            
+            <!-- 控制面板 -->
+            <div class="w-full">
+                <h2 class="text-xl font-semibold mb-4">创建您的日式印章</h2>
+                <form id="stamp-form" class="space-y-4">
+                    <div>
+                        <label for="text" class="block text-sm font-medium">文字</label>
+                        <input type="text" id="text" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white" placeholder="输入印章上的文字">
+                    </div>
+                    <div>
+                        <label for="shape" class="block text-sm font-medium">形状</label>
+                        <select id="shape" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <option value="circle-japanese">日式圆形</option>
+                            <option value="square">方形</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="color" class="block text-sm font-medium">颜色</label>
+                        <input type="color" id="color" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700">
+                    </div>
+                    <div>
+                        <label for="fontSize" class="block text-sm font-medium">字体大小</label>
+                        <input type="number" id="fontSize" min="12" max="300" value="24" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label for="borderWidth" class="block text-sm font-medium">边框宽度</label>
+                        <input type="number" id="borderWidth" min="0" max="20" value="10" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label for="fontFamily" class="block text-sm font-medium">字体选择</label>
+                        <select id="fontFamily" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <option value="SimHei">黑体</option>
+                            <option value="FangSong">仿宋</option>
+                            <option value="KaiTi">楷体</option>
+                            <option value="LiSu">隶书</option>
+                            <option value="RuGuangzi">鲁广纵</option>
+                            <option value="STHeiti">华文黑体</option>
+                        </select>
+                    </div>
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium">真实印章仿真滤镜</h3>
+                        <div>
+                            <label for="brightness" class="block text-sm font-medium">亮度</label>
+                            <input type="range" id="brightness" min="0" max="200" value="100" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">当前值: <span id="brightnessValue">100</span>%</div>
+                        </div>
+                        <div>
+                            <label for="contrast" class="block text-sm font-medium">对比度</label>
+                            <input type="range" id="contrast" min="0" max="200" value="100" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">当前值: <span id="contrastValue">100</span>%</div>
+                        </div>
+                        <div>
+                            <label for="grayscale" class="block text-sm font-medium">灰度</label>
+                            <input type="range" id="grayscale" min="0" max="100" value="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">当前值: <span id="grayscaleValue">0</span>%</div>
+                        </div>
+                        <div>
+                            <label for="sharpness" class="block text-sm font-medium">锐化度</label>
+                            <input type="range" id="sharpness" min="0" max="10" value="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">当前值: <span id="sharpnessValue">0</span></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="textXOffset" class="block text-sm font-medium">水平位置</label>
+                            <input type="range" id="textXOffset" min="-50" max="50" value="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">当前值: <span id="textXOffsetValue">0</span>%</div>
+                        </div>
+                        <div>
+                            <label for="textYOffset" class="block text-sm font-medium">垂直位置</label>
+                            <input type="range" id="textYOffset" min="-50" max="50" value="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">当前值: <span id="textYOffsetValue">0</span>%</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" id="download-stamp" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">下载印章</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('stamp');
+        const ctx = canvas.getContext('2d');
+        
+        function setCanvasSize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        setCanvasSize();
+        
+        function generateStamp() {
+            const text = document.getElementById('text').value;
+            const shape = document.getElementById('shape').value;
+            const color = document.getElementById('color').value;
+            const fontSize = document.getElementById('fontSize').value;
+            const borderWidth = document.getElementById('borderWidth').value;
+            const fontFamily = document.getElementById('fontFamily').value;
+            const textXOffset = document.getElementById('textXOffset').value;
+            const textYOffset = document.getElementById('textYOffset').value;
+            const brightness = document.getElementById('brightness').value;
+            const contrast = document.getElementById('contrast').value;
+            const grayscale = document.getElementById('grayscale').value;
+            const sharpness = document.getElementById('sharpness').value;
+
+            // 更新显示值
+            document.getElementById('textXOffsetValue').textContent = textXOffset;
+            document.getElementById('textYOffsetValue').textContent = textYOffset;
+            document.getElementById('brightnessValue').textContent = brightness;
+            document.getElementById('contrastValue').textContent = contrast;
+            document.getElementById('grayscaleValue').textContent = grayscale;
+            document.getElementById('sharpnessValue').textContent = sharpness;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 应用滤镜
+            ctx.filter = `
+                brightness(${brightness}%)
+                contrast(${contrast}%)
+                grayscale(${grayscale}%)
+                drop-shadow(0 0 ${sharpness}px)
+            `;
+
+            // 绘制形状
+            ctx.beginPath();
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) / 2 - borderWidth;
+
+            if (shape === 'circle-japanese') {
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            } else if (shape === 'square') {
+                const sideLength = radius * 2;
+                ctx.rect(centerX - sideLength/2, centerY - sideLength/2, sideLength, sideLength);
+            }
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = borderWidth;
+            ctx.stroke();
+
+            // 绘制文字
+            ctx.fillStyle = color;
+            ctx.font = `normal ${fontSize}px ${fontFamily}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const textLines = text.split('');
+            const midPoint = Math.ceil(textLines.length / 2);
+            
+            if (shape === 'circle-japanese') {
+                // 上半部分
+                ctx.textBaseline = 'top';
+                ctx.fillText(textLines.slice(0, midPoint).join(''), 
+                    centerX + (canvas.width * textXOffset / 100), 
+                    centerY + (canvas.height * textYOffset / 100) - 10);
+                // 下半部分
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(textLines.slice(midPoint).join(''), 
+                    centerX + (canvas.width * textXOffset / 100), 
+                    centerY + (canvas.height * textYOffset / 100) + 10);
+            } else if (shape === 'square') {
+                // 中心文字
+                ctx.fillText(text, 
+                    centerX + (canvas.width * textXOffset / 100), 
+                    centerY + (canvas.height * textYOffset / 100));
+            }
+
+            // 移除滤镜
+            ctx.filter = 'none';
+        }
+
+        document.getElementById('download-stamp').addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.download = '日式印章.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        // 监听所有输入事件
+        document.getElementById('text').addEventListener('input', generateStamp);
+        document.getElementById('shape').addEventListener('change', generateStamp);
+        document.getElementById('color').addEventListener('change', generateStamp);
+        document.getElementById('fontSize').addEventListener('change', generateStamp);
+        document.getElementById('borderWidth').addEventListener('change', generateStamp);
+        document.getElementById('fontFamily').addEventListener('change', generateStamp);
+        document.getElementById('textXOffset').addEventListener('input', generateStamp);
+        document.getElementById('textYOffset').addEventListener('input', generateStamp);
+        document.getElementById('brightness').addEventListener('input', generateStamp);
+        document.getElementById('contrast').addEventListener('input', generateStamp);
+        document.getElementById('grayscale').addEventListener('input', generateStamp);
+        document.getElementById('sharpness').addEventListener('input', generateStamp);
+
+        generateStamp();
+    </script>
+</body>
+</html>
