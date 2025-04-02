@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web应用管理中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4cc9f0;
+            --warning-color: #f8961e;
+            --danger-color: #f94144;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+        }
+
+        /* 登录页面样式 */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .auth-card h2 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .auth-tab.active {
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-3 {
+            margin-top: 15px;
+        }
+
+        /* 主应用页面样式 */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 250px;
+            background: white;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+            z-index: 100;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: #777;
+            background: #f0f2f5;
+            padding: 2px 5px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: var(--transition);
+            color: #555;
+        }
+
+        .menu-item:hover {
+            background-color: #f0f2f5;
+            color: var(--primary-color);
+        }
+
+        .menu-item.active {
+            background-color: #e6f0ff;
+            color: var(--primary-color);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .menu-item i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* 主内容区样式 */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-bar {
+            position: relative;
+            width: 300px;
+            margin-right: 15px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-bar input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+        }
+
+        .search-bar i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #777;
+            display: flex;
+            align-items: center;
+        }
+
+        .logout-btn:hover {
+            color: var(--danger-color);
+        }
+
+        .logout-btn i {
+            margin-right: 5px;
+        }
+
+        /* 应用分类筛选 */
+        .category-filter {
+            display: flex;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .category-filter::-webkit-scrollbar {
+            height: 5px;
+        }
+
+        .category-filter::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 15px;
+            margin-right: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+            background: #f0f2f5;
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* 应用卡片网格 */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-card-header {
+            height: 120px;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2.5rem;
+        }
+
+        .app-card-body {
+            padding: 20px;
+        }
+
+        .app-card-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+
+        .app-card-desc {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .app-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px 20px;
+        }
+
+        .app-card-actions {
+            display: flex;
+        }
+
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f2f5;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            background: #e0e2e5;
+        }
+
+        .app-card-category {
+            font-size: 0.8rem;
+            background: #e6f0ff;
+            color: var(--primary-color);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        /* 添加新应用按钮 */
+        .add-app-card {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .add-app-card:hover {
+            border-color: var(--primary-color);
+            background: #f8f9ff;
+        }
+
+        .add-app-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .add-app-text {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: hidden;
+            }
+            
+            .sidebar-header h2, .menu-item span, .user-info, .user-role {
+                display: none;
+            }
+            
+            .menu-item {
+                justify-content: center;
+                padding: 15px 0;
+            }
+            
+            .menu-item i {
+                margin-right: 0;
+                font-size: 1.3rem;
+            }
+            
+            .user-profile {
+                justify-content: center;
+                padding: 15px 0;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-actions {
+                width: 100%;
+                margin-top: 15px;
+            }
+            
+            .search-bar {
+                width: 100%;
+                margin-right: 10px;
+            }
+            
+            .apps-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                width: 250px;
+                height: 100%;
+                z-index: 1000;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: block !important;
+            }
+            
+            .user-info, .user-role {
+                display: block !important;
+            }
+        }
+
+        /* 移动端菜单切换按钮 */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark-color);
+            margin-right: 15px;
+        }
+
+        /* 拖拽样式 */
+        .app-card.dragging {
+            opacity: 0.5;
+            background: #f0f2f5;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: modalFadeIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+
+        .modal-header h3 {
+            font-size: 1.3rem;
+            color: var(--dark-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #777;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            position: sticky;
+            bottom: 0;
+            background: white;
+        }
+
+        .btn-secondary {
+            background: #f0f2f5;
+            color: #555;
+            margin-right: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e2e5;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e03131;
+        }
+
+        /* 图标选择器 */
+        .icon-selector {
+            margin-top: 15px;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .icon-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .icon-option:hover {
+            background: #f0f2f5;
+        }
+
+        .icon-option i {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .icon-option.active {
+            background: #e6f0ff;
+            border: 1px solid var(--primary-color);
+        }
+
+        .icon-option.active i {
+            color: var(--primary-color);
+        }
+
+        .icon-option span {
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        /* 自定义图标上传 */
+        .custom-icon-upload {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px dashed #ddd;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .custom-icon-upload input {
+            display: none;
+        }
+
+        .custom-icon-upload label {
+            display: block;
+            cursor: pointer;
+            color: var(--primary-color);
+        }
+
+        .custom-icon-upload label:hover {
+            text-decoration: underline;
+        }
+
+        .custom-icon-preview {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .custom-icon-preview img {
+            max-width: 50px;
+            max-height: 50px;
+        }
+
+        /* 管理功能 */
+        .admin-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--warning-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        /* 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录/注册页面 -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-card">
+            <h2>应用管理中心</h2>
+            
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="loginTab">登录</div>
+                <div class="auth-tab" id="registerTab">注册</div>
+            </div>
+            
+            <form class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">邮箱</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="输入您的邮箱" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">密码</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="输入您的密码" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">登录</button>
+            </form>
+            
+            <form class="auth-form" id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label for="registerName">用户名</label>
+                    <input type="text" id="registerName" class="form-control" placeholder="输入您的用户名" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerEmail">邮箱</label>
+                    <input type="email" id="registerEmail" class="form-control" placeholder="输入您的邮箱" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerPassword">密码</label>
+                    <input type="password" id="registerPassword" class="form-control" placeholder="输入密码" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerConfirmPassword">确认密码</label>
+                    <input type="password" id="registerConfirmPassword" class="form-control" placeholder="再次输入密码" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">注册</button>
+            </form>
+            
+            <div class="text-center mt-3">
+                <p id="authMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用页面 -->
+    <div class="app-container" id="appContainer">
+        <!-- 侧边导航栏 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>应用管理中心</h2>
+            </div>
+            
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">用户</div>
+                    <div class="user-role" id="userRole">普通用户</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="menu-item active">
+                    <i class="fas fa-th-large"></i>
+                    <span>所有应用</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-star"></i>
+                    <span>常用应用</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-folder"></i>
+                    <span>我的分类</span>
+                </div>
+                <div class="menu-item admin-only" style="display: none;">
+                    <i class="fas fa-users-cog"></i>
+                    <span>用户管理</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-cog"></i>
+                    <span>系统设置</span>
+                </div>
+                <div class="menu-item">
+                    <i class="fas fa-question-circle"></i>
+                    <span>帮助中心</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 顶部导航 -->
+            <div class="header">
+                <button class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>我的应用</h1>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="搜索应用...">
+                    </div>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>退出</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 应用分类筛选 -->
+            <div class="category-filter">
+                <button class="filter-btn active">全部</button>
+                <button class="filter-btn">工具</button>
+                <button class="filter-btn">办公</button>
+                <button class="filter-btn">开发</button>
+                <button class="filter-btn">设计</button>
+                <button class="filter-btn">教育</button>
+                <button class="filter-btn">娱乐</button>
+                <button class="filter-btn">其他</button>
+            </div>
+
+            <!-- 应用卡片网格 -->
+            <div class="apps-grid" id="appsGrid">
+                <!-- 应用卡片将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑应用模态框 -->
+    <div class="modal" id="appModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加新应用</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="appName">应用名称</label>
+                    <input type="text" id="appName" class="form-control" placeholder="输入应用名称" required>
+                </div>
+                <div class="form-group">
+                    <label for="appDescription">应用描述</label>
+                    <textarea id="appDescription" class="form-control" rows="3" placeholder="输入应用描述" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="appCategory">应用分类</label>
+                    <select id="appCategory" class="form-control" required>
+                        <option value="工具">工具</option>
+                        <option value="办公">办公</option>
+                        <option value="开发">开发</option>
+                        <option value="设计">设计</option>
+                        <option value="教育">教育</option>
+                        <option value="娱乐">娱乐</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appUrl">应用URL</label>
+                    <input type="text" id="appUrl" class="form-control" placeholder="输入应用URL" required>
+                </div>
+                <div class="form-group">
+                    <label>应用图标</label>
+                    <div class="icon-selector">
+                        <div class="icon-grid" id="iconGrid">
+                            <!-- 图标选项将通过JavaScript动态生成 -->
+                        </div>
+                        
+                        <div class="custom-icon-upload">
+                            <p>或上传自定义图标</p>
+                            <input type="file" id="customIconInput" accept="image/*">
+                            <label for="customIconInput">选择图片</label>
+                            <div class="custom-icon-preview" id="customIconPreview">
+                                <img id="customIconImage" src="" alt="自定义图标预览">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelModal">取消</button>
+                <button class="btn btn-danger" id="deleteAppBtn" style="display: none; margin-right: auto;">删除应用</button>
+                <button class="btn btn-primary" id="confirmModal">添加应用</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户管理模态框 -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>用户管理</h3>
+                <button class="modal-close" id="closeUserModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-bar" style="width: 100%; margin-bottom: 20px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchUserInput" placeholder="搜索用户...">
+                </div>
+                
+                <div class="users-list" id="usersList">
+                    <!-- 用户列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelUserModal">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 数据存储键名
+        const STORAGE_KEYS = {
+            USERS: 'webAppManager_users',
+            CURRENT_USER: 'webAppManager_currentUser',
+            APPS: 'webAppManager_apps'
+        };
+
+        // 示例图标库
+        const ICON_LIBRARY = [
+            'fas fa-calculator', 'fas fa-calendar-alt', 'fas fa-code', 'fas fa-palette', 
+            'fas fa-language', 'fas fa-music', 'fas fa-chart-line', 'fas fa-envelope', 
+            'fas fa-image', 'fas fa-video', 'fas fa-file-alt', 'fas fa-database', 
+            'fas fa-map-marker-alt', 'fas fa-shopping-cart', 'fas fa-gamepad', 
+            'fas fa-book', 'fas fa-paint-brush', 'fas fa-camera', 'fas fa-headphones', 
+            'fas fa-utensils', 'fas fa-plane', 'fas fa-car', 'fas fa-heart', 
+            'fas fa-cloud', 'fas fa-bell', 'fas fa-key', 'fas fa-lock', 
+            'fas fa-globe', 'fas fa-wifi', 'fas fa-battery-full', 'fas fa-credit-card',
+            'fas fa-home', 'fas fa-building', 'fas fa-hospital', 'fas fa-school',
+            'fas fa-store', 'fas fa-umbrella-beach', 'fas fa-mountain', 'fas fa-tree',
+            'fas fa-flask', 'fas fa-microscope', 'fas fa-atom', 'fas fa-rocket'
+        ];
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否有已登录用户
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                showAppContainer(currentUser);
+            } else {
+                showAuthContainer();
+            }
+            
+            // 初始化登录/注册切换
+            initAuthTabs();
+            
+            // 初始化表单提交
+            initAuthForms();
+            
+            // 初始化模态框
+            initModals();
+            
+            // 初始化图标选择器
+            initIconSelector();
+        });
+
+        // 显示认证页面
+        function showAuthContainer() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+
+        // 显示应用容器
+        function showAppContainer(user) {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            
+            // 更新用户信息
+            updateUserInfo(user);
+            
+            // 加载应用数据
+            loadApps();
+            
+            // 初始化应用页面功能
+            initAppFunctions();
+        }
+
+        // 更新用户信息显示
+        function updateUserInfo(user) {
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userAvatar').textContent = user.name.charAt(0).toUpperCase();
+            
+            // 设置用户角色
+            const roleElement = document.getElementById('userRole');
+            roleElement.textContent = user.isAdmin ? '管理员' : '普通用户';
+            
+            // 显示/隐藏管理员功能
+            const adminElements = document.querySelectorAll('.admin-only');
+            adminElements.forEach(el => {
+                el.style.display = user.isAdmin ? 'flex' : 'none';
+            });
+            
+            // 设置头像颜色
+            const avatar = document.getElementById('userAvatar');
+            avatar.style.backgroundColor = user.isAdmin ? '#f8961e' : '#4361ee';
+        }
+
+        // 初始化登录/注册标签页
+        function initAuthTabs() {
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            
+            loginTab.addEventListener('click', function() {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                loginForm.style.display = 'flex';
+                registerForm.style.display = 'none';
+                document.getElementById('authMessage').textContent = '';
+            });
+            
+            registerTab.addEventListener('click', function() {
+                registerTab.classList.add('active');
+                loginTab.classList.remove('active');
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'flex';
+                document.getElementById('authMessage').textContent = '';
+            });
+        }
+
+        // 初始化认证表单
+        function initAuthForms() {
+            // 登录表单
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                const user = authenticateUser(email, password);
+                if (user) {
+                    setCurrentUser(user);
+                    showAppContainer(user);
+                } else {
+                    document.getElementById('authMessage').textContent = '邮箱或密码错误';
+                }
+            });
+            
+            // 注册表单
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    document.getElementById('authMessage').textContent = '两次输入的密码不一致';
+                    return;
+                }
+                
+                if (registerUser(name, email, password)) {
+                    document.getElementById('authMessage').textContent = '注册成功，请登录';
+                    document.getElementById('loginTab').click();
+                    document.getElementById('loginEmail').value = email;
+                    document.getElementById('loginPassword').value = '';
+                    document.getElementById('registerForm').reset();
+                } else {
+                    document.getElementById('authMessage').textContent = '该邮箱已被注册';
+                }
+            });
+        }
+
+        // 用户认证
+        function authenticateUser(email, password) {
+            const users = getUsers();
+            return users.find(user => user.email === email && user.password === password);
+        }
+
+        // 用户注册
+        function registerUser(name, email, password) {
+            const users = getUsers();
+            
+            // 检查邮箱是否已存在
+            if (users.some(user => user.email === email)) {
+                return false;
+            }
+            
+            // 第一个注册的用户设为管理员
+            const isAdmin = users.length === 0;
+            
+            const newUser = {
+                id: generateId(),
+                name,
+                email,
+                password,
+                isAdmin
+            };
+            
+            users.push(newUser);
+            saveUsers(users);
+            return true;
+        }
+
+        // 获取所有用户
+        function getUsers() {
+            const usersJson = localStorage.getItem(STORAGE_KEYS.USERS);
+            return usersJson ? JSON.parse(usersJson) : [];
+        }
+
+        // 保存用户数据
+        function saveUsers(users) {
+            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+        }
+
+        // 获取当前登录用户
+        function getCurrentUser() {
+            const userJson = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+            return userJson ? JSON.parse(userJson) : null;
+        }
+
+        // 设置当前登录用户
+        function setCurrentUser(user) {
+            localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+        }
+
+        // 登出
+        function logout() {
+            localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+            showAuthContainer();
+            document.getElementById('loginForm').reset();
+            document.getElementById('authMessage').textContent = '';
+        }
+
+        // 加载应用数据
+        function loadApps() {
+            const appsGrid = document.getElementById('appsGrid');
+            appsGrid.innerHTML = '';
+            
+            const apps = getApps();
+            const currentUser = getCurrentUser();
+            
+            apps.forEach(app => {
+                // 只显示当前用户的应用或所有用户的应用(如果是管理员)
+                if (app.userId === currentUser.id || currentUser.isAdmin) {
+                    createAppCard(app, appsGrid);
+                }
+            });
+            
+            // 添加"添加新应用"卡片
+            const addAppCard = document.createElement('div');
+            addAppCard.className = 'app-card add-app-card';
+            addAppCard.id = 'addAppBtn';
+            addAppCard.innerHTML = `
+                <div class="add-app-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <span class="add-app-text">添加新应用</span>
+            `;
+            appsGrid.appendChild(addAppCard);
+            
+            // 如果是管理员，显示所有用户的应用数量
+            if (currentUser.isAdmin) {
+                document.querySelector('h1').textContent = `我的应用 (${apps.length})`;
+            }
+        }
+
+        // 创建应用卡片
+        function createAppCard(app, container) {
+            const currentUser = getCurrentUser();
+            
+            const appCard = document.createElement('div');
+            appCard.className = 'app-card';
+            appCard.setAttribute('draggable', 'true');
+            appCard.setAttribute('data-category', app.category);
+            appCard.setAttribute('data-app-id', app.id);
+            
+            // 如果是管理员且不是自己的应用，显示所有者名称
+            const isAdminViewingOthers = currentUser.isAdmin && app.userId !== currentUser.id;
+            const ownerInfo = isAdminViewingOthers ? `<div class="admin-badge">${getUserNameById(app.userId)}</div>` : '';
+            
+            appCard.innerHTML = `
+                ${ownerInfo}
+                <div class="app-card-header">
+                    ${app.customIcon 
+                        ? `<img src="${app.customIcon}" alt="${app.name}" style="max-width: 60px; max-height: 60px;">` 
+                        : `<i class="${app.icon}"></i>`}
+                </div>
+                <div class="app-card-body">
+                    <h3 class="app-card-title">${app.name}</h3>
+                    <p class="app-card-desc">${app.description}</p>
+                </div>
+                <div class="app-card-footer">
+                    <span class="app-card-category">${app.category}</span>
+                    <div class="app-card-actions">
+                        <div class="action-btn favorite-btn" data-app-id="${app.id}">
+                            <i class="${app.isFavorite ? 'fas' : 'far'} fa-star"></i>
+                        </div>
+                        <div class="action-btn more-btn" data-app-id="${app.id}">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加点击事件打开应用
+            appCard.addEventListener('click', function(e) {
+                if (!e.target.closest('.action-btn')) {
+                    window.open(app.url, '_blank');
+                }
+            });
+            
+            container.insertBefore(appCard, document.getElementById('addAppBtn'));
+        }
+
+        // 获取所有应用
+        function getApps() {
+            const appsJson = localStorage.getItem(STORAGE_KEYS.APPS);
+            return appsJson ? JSON.parse(appsJson) : [];
+        }
+
+        // 保存应用数据
+        function saveApps(apps) {
+            localStorage.setItem(STORAGE_KEYS.APPS, JSON.stringify(apps));
+        }
+
+        // 添加新应用
+        function addApp(app) {
+            const apps = getApps();
+            const currentUser = getCurrentUser();
+            
+            const newApp = {
+                id: generateId(),
+                userId: currentUser.id,
+                name: app.name,
+                description: app.description,
+                category: app.category,
+                url: app.url,
+                icon: app.icon,
+                customIcon: app.customIcon,
+                isFavorite: false,
+                createdAt: new Date().toISOString()
+            };
+            
+            apps.push(newApp);
+            saveApps(apps);
+            loadApps();
+        }
+
+        // 更新应用
+        function updateApp(updatedApp) {
+            const apps = getApps();
+            const index = apps.findIndex(app => app.id === updatedApp.id);
+            
+            if (index !== -1) {
+                apps[index] = {
+                    ...apps[index],
+                    name: updatedApp.name,
+                    description: updatedApp.description,
+                    category: updatedApp.category,
+                    url: updatedApp.url,
+                    icon: updatedApp.icon,
+                    customIcon: updatedApp.customIcon
+                };
+                
+                saveApps(apps);
+                loadApps();
+            }
+        }
+
+        // 删除应用
+        function deleteApp(appId) {
+            const apps = getApps();
+            const updatedApps = apps.filter(app => app.id !== appId);
+            saveApps(updatedApps);
+            loadApps();
+        }
+
+        // 切换应用收藏状态
+        function toggleFavorite(appId) {
+            const apps = getApps();
+            const index = apps.findIndex(app => app.id === appId);
+            
+            if (index !== -1) {
+                apps[index].isFavorite = !apps[index].isFavorite;
+                saveApps(apps);
+                loadApps();
+            }
+        }
+
+        // 初始化应用页面功能
+        function initAppFunctions() {
+            const currentUser = getCurrentUser();
+            
+            // 移动端菜单切换
+            const menuToggle = document.querySelector('.menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+            
+            // 菜单项点击效果
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    menuItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 如果是用户管理菜单
+                    if (this.querySelector('i').classList.contains('fa-users-cog')) {
+                        showUserManagement();
+                    }
+                    
+                    // 移动端点击后自动关闭菜单
+                    if (window.innerWidth <= 576) {
+                        sidebar.classList.remove('active');
+                    }
+                });
+            });
+            
+            // 分类筛选
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const category = this.textContent.trim();
+                    filterApps(category);
+                });
+            });
+            
+            // 搜索功能
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const apps = document.querySelectorAll('.app-card[draggable="true"]');
+                
+                apps.forEach(app => {
+                    const title = app.querySelector('.app-card-title').textContent.toLowerCase();
+                    const desc = app.querySelector('.app-card-desc').textContent.toLowerCase();
+                    
+                    if (title.includes(searchTerm) || desc.includes(searchTerm)) {
+                        app.style.display = 'block';
+                    } else {
+                        app.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 登出功能
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            
+            // 添加应用按钮
+            document.getElementById('addAppBtn').addEventListener('click', function() {
+                openAppModal();
+            });
+            
+            // 收藏按钮事件委托
+            document.getElementById('appsGrid').addEventListener('click', function(e) {
+                if (e.target.closest('.favorite-btn')) {
+                    const appId = e.target.closest('.favorite-btn').getAttribute('data-app-id');
+                    toggleFavorite(appId);
+                }
+                
+                // 更多按钮(编辑/删除)
+                if (e.target.closest('.more-btn')) {
+                    const appId = e.target.closest('.more-btn').getAttribute('data-app-id');
+                    const apps = getApps();
+                    const app = apps.find(a => a.id === appId);
+                    
+                    if (app) {
+                        // 只有所有者或管理员可以编辑/删除
+                        if (app.userId === currentUser.id || currentUser.isAdmin) {
+                            openAppModal(app);
+                        }
+                    }
+                }
+            });
+            
+            // 初始化拖拽排序
+            initDragAndDrop();
+        }
+
+        // 筛选应用
+        function filterApps(category) {
+            const apps = document.querySelectorAll('.app-card[draggable="true"]');
+            
+            apps.forEach(app => {
+                if (category === '全部') {
+                    app.style.display = 'block';
+                } else {
+                    const appCategory = app.getAttribute('data-category');
+                    if (appCategory === category) {
+                        app.style.display = 'block';
+                    } else {
+                        app.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // 初始化拖拽排序
+        function initDragAndDrop() {
+            const appsGrid = document.getElementById('appsGrid');
+            
+            // 设置拖拽事件
+            const appCards = document.querySelectorAll('.app-card[draggable="true"]');
+            appCards.forEach(card => {
+                card.addEventListener('dragstart', function(e) {
+                    this.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', this.getAttribute('data-app-id'));
+                });
+                
+                card.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+            });
+            
+            // 拖拽放置区域
+            appsGrid.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const draggingElement = document.querySelector('.dragging');
+                const notDraggingElements = [...this.querySelectorAll('.app-card:not(.dragging)')];
+                const nextElement = notDraggingElements.find(element => {
+                    return e.clientY <= element.getBoundingClientRect().top + element.offsetHeight / 2;
+                });
+                
+                if (nextElement) {
+                    this.insertBefore(draggingElement, nextElement);
+                } else {
+                    this.appendChild(draggingElement);
+                }
+            });
+            
+            // 拖拽结束保存新顺序
+            appsGrid.addEventListener('dragend', function() {
+                const apps = getApps();
+                const appIds = [...document.querySelectorAll('.app-card[draggable="true"]')].map(card => card.getAttribute('data-app-id'));
+                
+                // 重新排序应用数组
+                const sortedApps = [];
+                appIds.forEach(id => {
+                    const app = apps.find(a => a.id === id);
+                    if (app) sortedApps.push(app);
+                });
+                
+                // 保存新顺序
+                saveApps(sortedApps);
+            });
+        }
+
+        // 初始化模态框
+        function initModals() {
+            const appModal = document.getElementById('appModal');
+            const closeModal = document.getElementById('closeModal');
+            const cancelModal = document.getElementById('cancelModal');
+            const confirmModal = document.getElementById('confirmModal');
+            const deleteAppBtn = document.getElementById('deleteAppBtn');
+            
+            // 关闭模态框
+            function closeAppModal() {
+                appModal.style.display = 'none';
+                document.getElementById('customIconPreview').style.display = 'none';
+                document.getElementById('customIconImage').src = '';
+                document.getElementById('appModal form').reset();
+            }
+            
+            closeModal.addEventListener('click', closeAppModal);
+            cancelModal.addEventListener('click', closeAppModal);
+            
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(e) {
+                if (e.target === appModal) {
+                    closeAppModal();
+                }
+            });
+            
+            // 确认添加/编辑应用
+            confirmModal.addEventListener('click', function() {
+                const name = document.getElementById('appName').value;
+                const desc = document.getElementById('appDescription').value;
+                const category = document.getElementById('appCategory').value;
+                const url = document.getElementById('appUrl').value;
+                
+                // 获取选中的图标或自定义图标
+                const selectedIcon = document.querySelector('.icon-option.active')?.querySelector('i')?.className;
+                const customIcon = document.getElementById('customIconImage').src || '';
+                
+                if (!name || !desc || !category || !url) {
+                    alert('请填写所有必填字段！');
+                    return;
+                }
+                
+                const appData = {
+                    name,
+                    description: desc,
+                    category,
+                    url,
+                    icon: customIcon ? '' : selectedIcon,
+                    customIcon: customIcon || ''
+                };
+                
+                // 检查是添加还是编辑
+                const editingAppId = confirmModal.getAttribute('data-editing-id');
+                if (editingAppId) {
+                    appData.id = editingAppId;
+                    updateApp(appData);
+                } else {
+                    addApp(appData);
+                }
+                
+                closeAppModal();
+            });
+            
+            // 删除应用
+            deleteAppBtn.addEventListener('click', function() {
+                const appId = deleteAppBtn.getAttribute('data-app-id');
+                if (confirm('确定要删除此应用吗？')) {
+                    deleteApp(appId);
+                    closeAppModal();
+                }
+            });
+        }
+
+        // 打开应用模态框(添加或编辑)
+        function openAppModal(app = null) {
+            const modal = document.getElementById('appModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const confirmBtn = document.getElementById('confirmModal');
+            const deleteBtn = document.getElementById('deleteAppBtn');
+            
+            // 重置模态框
+            document.getElementById('appName').value = '';
+            document.getElementById('appDescription').value = '';
+            document.getElementById('appCategory').value = '工具';
+            document.getElementById('appUrl').value = '';
+            document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('active'));
+            document.getElementById('customIconPreview').style.display = 'none';
+            document.getElementById('customIconImage').src = '';
+            
+            // 如果是编辑模式
+            if (app) {
+                modalTitle.textContent = '编辑应用';
+                confirmBtn.textContent = '保存更改';
+                confirmBtn.setAttribute('data-editing-id', app.id);
+                deleteBtn.style.display = 'block';
+                deleteBtn.setAttribute('data-app-id', app.id);
+                
+                // 填充表单
+                document.getElementById('appName').value = app.name;
+                document.getElementById('appDescription').value = app.description;
+                document.getElementById('appCategory').value = app.category;
+                document.getElementById('appUrl').value = app.url;
+                
+                // 选择图标
+                if (app.customIcon) {
+                    document.getElementById('customIconImage').src = app.customIcon;
+                    document.getElementById('customIconPreview').style.display = 'block';
+                } else {
+                    const iconOption = [...document.querySelectorAll('.icon-option')].find(
+                        opt => opt.querySelector('i').className === app.icon
+                    );
+                    if (iconOption) iconOption.classList.add('active');
+                }
+            } else {
+                modalTitle.textContent = '添加新应用';
+                confirmBtn.textContent = '添加应用';
+                confirmBtn.removeAttribute('data-editing-id');
+                deleteBtn.style.display = 'none';
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        // 初始化图标选择器
+        function initIconSelector() {
+            const iconGrid = document.getElementById('iconGrid');
+            
+            ICON_LIBRARY.forEach(iconClass => {
+                const iconName = iconClass.split(' ')[1].replace('fa-', '');
+                
+                const iconOption = document.createElement('div');
+                iconOption.className = 'icon-option';
+                iconOption.innerHTML = `
+                    <i class="${iconClass}"></i>
+                    <span>${iconName}</span>
+                `;
+                
+                iconOption.addEventListener('click', function() {
+                    document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById('customIconPreview').style.display = 'none';
+                });
+                
+                iconGrid.appendChild(iconOption);
+            });
+            
+            // 自定义图标上传
+            document.getElementById('customIconInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('customIconImage').src = event.target.result;
+                        document.getElementById('customIconPreview').style.display = 'block';
+                        document.querySelectorAll('.icon-option').forEach(opt => opt.classList.remove('active'));
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // 显示用户管理
+        function showUserManagement() {
+            const userModal = document.getElementById('userModal');
+            const usersList = document.getElementById('usersList');
+            
+            // 加载用户列表
+            usersList.innerHTML = '';
+            const users = getUsers();
+            const currentUser = getCurrentUser();
+            
+            users.forEach(user => {
+                // 不显示当前用户自己
+                if (user.id !== currentUser.id) {
+                    const userElement = document.createElement('div');
+                    userElement.className = 'user-item';
+                    userElement.innerHTML = `
+                        <div style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: ${user.isAdmin ? '#f8961e' : '#4361ee'}; 
+                                color: white; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold;">
+                                ${user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">${user.name}</div>
+                                <div style="font-size: 0.8rem; color: #777;">${user.email}</div>
+                            </div>
+                            <div>
+                                <label class="switch">
+                                    <input type="checkbox" ${user.isAdmin ? 'checked' : ''} data-user-id="${user.id}">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                    usersList.appendChild(userElement);
+                }
+            });
+            
+            // 用户搜索
+            document.getElementById('searchUserInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const userItems = document.querySelectorAll('.user-item');
+                
+                userItems.forEach(item => {
+                    const name = item.querySelector('div[style="font-weight: 500;"]').textContent.toLowerCase();
+                    const email = item.querySelector('div[style="font-size: 0.8rem; color: #777;"]').textContent.toLowerCase();
+                    
+                    if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 切换管理员权限
+            usersList.addEventListener('change', function(e) {
+                if (e.target.matches('input[type="checkbox"]')) {
+                    const userId = e.target.getAttribute('data-user-id');
+                    const isAdmin = e.target.checked;
+                    
+                    const users = getUsers();
+                    const user = users.find(u => u.id === userId);
+                    
+                    if (user) {
+                        user.isAdmin = isAdmin;
+                        saveUsers(users);
+                        
+                        // 如果修改的是当前登录用户，更新显示
+                        const currentUser = getCurrentUser();
+                        if (userId === currentUser.id) {
+                            currentUser.isAdmin = isAdmin;
+                            setCurrentUser(currentUser);
+                            updateUserInfo(currentUser);
+                        }
+                    }
+                }
+            });
+            
+            // 关闭用户管理模态框
+            document.getElementById('closeUserModal').addEventListener('click', function() {
+                userModal.style.display = 'none';
+            });
+            
+            document.getElementById('cancelUserModal').addEventListener('click', function() {
+                userModal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(e) {
+                if (e.target === userModal) {
+                    userModal.style.display = 'none';
+                }
+            });
+            
+            userModal.style.display = 'flex';
+        }
+
+        // 根据用户ID获取用户名
+        function getUserNameById(userId) {
+            const users = getUsers();
+            const user = users.find(u => u.id === userId);
+            return user ? user.name : '未知用户';
+        }
+
+        // 生成唯一ID
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+    </script>
+</body>
+</html>
