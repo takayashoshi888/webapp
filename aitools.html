@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Nexus - 智能未来枢纽</title>
+    <script src="https://cdn.tailwindcss.com"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script> 
+    <style>
+        :root {
+            --deep-space: #0F1C3F;
+            --quantum-purple: #6E3BEC;
+            --neon-green: #00FF9D;
+            --silver-gray: #E0E5EC;
+            --pulse-orange: #FF6D00;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--deep-space);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* 搜索栏样式 */
+        .search-container {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            z-index: 100;
+        }
+        
+        .search-bar {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            padding: 15px 25px;
+            box-shadow: 0 0 20px rgba(110, 59, 236, 0.5);
+        }
+        
+        .search-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            outline: none;
+        }
+        
+        .voice-search {
+            background: var(--quantum-purple);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-search:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+        
+        .voice-search svg {
+            fill: white;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .quick-tags {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 15px;
+        }
+        
+        .quick-tags span {
+            background: rgba(0, 255, 157, 0.2);
+            color: var(--neon-green);
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-tags span:hover {
+            background: rgba(0, 255, 157, 0.4);
+        }
+        
+        /* AI助手样式 */
+        .ai-assistant {
+            position: absolute;
+            bottom: 5%;
+            right: 5%;
+            background: rgba(224, 229, 236, 0.1);
+            backdrop-filter: blur(5px);
+            border-radius: 15px;
+            padding: 15px;
+            max-width: 300px;
+            border-left: 3px solid var(--pulse-orange);
+        }
+        
+        .assistant-message {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .continue-project {
+            background: var(--pulse-orange);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .continue-project:hover {
+            background: #ff8c00;
+        }
+        
+        /* Three.js  画布样式 */
+        #galaxy-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        /* 工具提示样式 */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--neon-green);
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 250px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .tooltip-title {
+            font-weight: bold;
+            color: var(--neon-green);
+            margin-bottom: 5px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .tooltip-category {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .tooltip-popularity {
+            font-size: 0.8em;
+            color: var(--silver-gray);
+        }
+        
+        .tooltip-description {
+            font-size: 0.85em;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 星系导航区 -->
+        <div id="galaxy-view"></div>
+        
+        <!-- 智能搜索栏 -->
+        <div class="search-container">
+            <div class="search-bar">
+                <input type="text" placeholder="寻找AI解决方案，描述您的需求...">
+                <button class="voice-search">
+                    <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" /></svg>
+                </button>
+            </div>
+            <div class="quick-tags">
+                <span>#视频生成</span>
+                <span>#数据分析</span>
+                <span>#智能写作</span>
+            </div>
+        </div>
+        
+        <!-- 个人AI助手 -->
+        <div class="ai-assistant">
+            <div class="assistant-message">您上次搜索的PPT工具已更新3.0版本</div>
+            <button class="continue-project">继续未完成的项目评估</button>
+        </div>
+        
+        <!-- 工具提示 -->
+        <div class="tooltip">
+            <div class="tooltip-title">工具名称</div>
+            <div class="tooltip-category">分类</div>
+            <div class="tooltip-popularity">热度: 85/100</div>
+            <div class="tooltip-description">工具描述信息将在这里显示</div>
+        </div>
+    </div>
+ 
+    <script>
+        // 初始化Three.js  场景 
+        let scene, camera, renderer, stars = [];
+        let hoveredTool = null;
+        
+        // 更新工具数据，包含实际的AI工具 
+        const toolData = [
+            // 创作类工具 
+            { name: "ChatGPT", category: "创作", popularity: 98, description: "OpenAI的对话式AI，可用于写作、创意生成等" },
+            { name: "Midjourney", category: "创作", popularity: 95, description: "AI图像生成工具，通过文本提示创建艺术作品" },
+            { name: "DALL-E", category: "创作", popularity: 93, description: "OpenAI的图像生成AI，从文本描述创建图像" },
+            { name: "Runway ML", category: "创作", popularity: 88, description: "创意AI工具集，支持视频编辑、图像生成等" },
+            { name: "Jasper", category: "创作", popularity: 85, description: "AI写作助手，帮助创建营销文案和内容" },
+            { name: "Copy.ai",  category: "创作", popularity: 82, description: "AI文案写作工具，生成营销内容和广告文案" },
+            { name: "Synthesia", category: "创作", popularity: 87, description: "AI视频生成平台，创建带虚拟主持人的视频" },
+            
+            // 分析类工具 
+            { name: "Tableau AI", category: "分析", popularity: 92, description: "数据可视化和商业智能工具，带AI分析功能" },
+            { name: "Power BI", category: "分析", popularity: 90, description: "微软的商业分析工具，集成AI洞察" },
+            { name: "Google Analytics AI", category: "分析", popularity: 88, description: "网站分析工具，提供AI驱动的洞察和建议" },
+            { name: "IBM Watson", category: "分析", popularity: 85, description: "IBM的AI平台，提供高级数据分析和预测" },
+            { name: "DataRobot", category: "分析", popularity: 83, description: "自动化机器学习平台，简化预测分析" },
+            { name: "H2O.ai",  category: "分析", popularity: 80, description: "开源AI平台，专注于自动机器学习" },
+            
+            // 自动化类工具 
+            { name: "Zapier", category: "自动化", popularity: 95, description: "连接不同应用的自动化工具，带AI功能" },
+            { name: "Make (Integromat)", category: "自动化", popularity: 88, description: "可视化自动化平台，连接应用和服务" },
+            { name: "UiPath", category: "自动化", popularity: 85, description: "机器人流程自动化(RPA)平台，带AI功能" },
+            { name: "Automation Anywhere", category: "自动化", popularity: 83, description: "企业级RPA解决方案，支持AI集成" },
+            { name: "Microsoft Power Automate", category: "自动化", popularity: 87, description: "微软的低代码自动化平台" },
+            
+            // 编程类工具 
+            { name: "GitHub Copilot", category: "编程", popularity: 96, description: "AI结对编程助手，实时建议代码" },
+            { name: "Amazon CodeWhisperer", category: "编程", popularity: 85, description: "AWS的AI编程助手，类似Copilot" },
+            { name: "Tabnine", category: "编程", popularity: 83, description: "AI代码补全工具，支持多种语言" },
+            { name: "Replit Ghostwriter", category: "编程", popularity: 80, description: "在线IDE中的AI编程助手" },
+            { name: "Sourcegraph Cody", category: "编程", popularity: 78, description: "基于代码库的AI编程助手" },
+            
+            // 设计类工具 
+            { name: "Canva Magic Design", category: "设计", popularity: 94, description: "AI驱动的设计工具，简化图形创建" },
+            { name: "Adobe Firefly", category: "设计", popularity: 92, description: "Adobe的创意生成AI，集成到创意云中" },
+            { name: "Figma AI", category: "设计", popularity: 90, description: "协作设计工具中的AI功能" },
+            { name: "Khroma", category: "设计", popularity: 85, description: "AI颜色工具，生成调色板方案" },
+            { name: "Uizard", category: "设计", popularity: 83, description: "AI辅助的UI/UX设计工具" }
+        ];
+ 
+        function init() {
+            // 创建场景 
+            scene = new THREE.Scene();
+            
+            // 创建相机 
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth   / window.innerHeight,   0.1, 1000);
+            camera.position.z   = 30;
+            
+            // 创建渲染器 
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth,   window.innerHeight);  
+            document.getElementById('galaxy-view').appendChild(renderer.domElement);  
+            
+            // 添加星系背景 
+            createGalaxyBackground();
+            
+            // 创建主要类别(恒星)
+            createMainCategories();
+            
+            // 添加窗口大小调整事件 
+            window.addEventListener('resize',   onWindowResize);
+            
+            // 添加交互事件 
+            document.addEventListener('mousemove',   (event) => {
+                camera.position.x   = (event.clientX   - window.innerWidth   / 2) * 0.01;
+                camera.position.y   = -(event.clientY   - window.innerHeight   / 2) * 0.01;
+            });
+            
+            // 开始动画循环 
+            animate();
+            
+            // 初始化工具提示 
+            initTooltip();
+        }
+ 
+        function createGalaxyBackground() {
+            // 创建星云背景 
+            const geometry = new THREE.SphereGeometry(100, 64, 64);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x1a1a3a,
+                side: THREE.BackSide 
+            });
+            const sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);  
+            
+            // 添加星星 
+            for (let i = 0; i < 1000; i++) {
+                const star = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 16, 16),
+                    new THREE.MeshBasicMaterial({ color: 0xffffff })
+                );
+                
+                star.position.x   = Math.random()   * 200 - 100;
+                star.position.y   = Math.random()   * 200 - 100;
+                star.position.z   = Math.random()   * 200 - 100;
+                
+                scene.add(star);  
+                stars.push(star);  
+            }
+        }
+ 
+        function createMainCategories() {
+            const categories = [
+                { name: "创作", color: 0x00FF9D, position: { x: -15, y: 0, z: 0 } },
+                { name: "分析", color: 0x6E3BEC, position: { x: 0, y: 15, z: 0 } },
+                { name: "自动化", color: 0xFF6D00, position: { x: 15, y: 0, z: 0 } },
+                { name: "编程", color: 0x00B4FF, position: { x: 0, y: -15, z: 0 } },
+                { name: "设计", color: 0xFF00AA, position: { x: 0, y: 0, z: 15 } }
+            ];
+            
+            categories.forEach((category,   index) => {
+                // 创建恒星(主类别)
+                const geometry = new THREE.SphereGeometry(3, 32, 32);
+                const material = new THREE.MeshBasicMaterial({ color: category.color   });
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.position.set(category.position.x,   category.position.y,   category.position.z);  
+                scene.add(sphere);  
+                
+                // 添加文字标签 
+                const canvas = document.createElement('canvas');  
+                canvas.width   = 256;
+                canvas.height   = 128;
+                const context = canvas.getContext('2d');  
+                context.fillStyle   = 'rgba(0, 0, 0, 0.5)';
+                context.fillRect(0,   0, canvas.width,   canvas.height);  
+                context.font   = 'Bold 40px Orbitron';
+                context.textAlign   = 'center';
+                context.fillStyle   = 'white';
+                context.fillText(category.name,   canvas.width/2,   canvas.height/2   + 15);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const labelMaterial = new THREE.SpriteMaterial({ map: texture });
+                const label = new THREE.Sprite(labelMaterial);
+                label.position.set(category.position.x   * 1.5, category.position.y   * 1.5, category.position.z   * 1.5);
+                label.scale.set(10,   5, 1);
+                scene.add(label);  
+                
+                // 创建行星(工具)
+                createToolsAroundCategory(category, index);
+            });
+        }
+ 
+        function createToolsAroundCategory(category, categoryIndex) {
+            const toolsInCategory = toolData.filter(tool   => tool.category   === category.name);  
+            
+            toolsInCategory.forEach((tool,   i) => {
+                const angle = (i / toolsInCategory.length)   * Math.PI * 2;
+                const distance = 8 + Math.random()   * 4;
+                
+                const x = category.position.x   + Math.cos(angle)   * distance;
+                const y = category.position.y   + Math.sin(angle)   * distance;
+                const z = category.position.z   + (Math.random()   - 0.5) * 3;
+                
+                const size = 0.8 + (tool.popularity  / 100) * 0.8; // 根据热度调整大小 
+                const geometry = new THREE.SphereGeometry(size, 16, 16);
+                const material = new THREE.MeshBasicMaterial({ 
+                    color: category.color,  
+                    transparent: true,
+                    opacity: 0.8 
+                });
+                
+                const toolObj = new THREE.Mesh(geometry, material);
+                toolObj.position.set(x,   y, z);
+                toolObj.userData   = { 
+                    isTool: true,
+                    ...tool,
+                    originalColor: category.color,  
+                    originalScale: size 
+                };
+                
+                scene.add(toolObj);  
+                
+                // 添加轨道线 
+                const orbitGeometry = new THREE.BufferGeometry();
+                const points = [];
+                const segments = 64;
+                
+                for (let j = 0; j <= segments; j++) {
+                    const theta = (j / segments) * Math.PI * 2;
+                    points.push(new   THREE.Vector3(
+                        category.position.x   + Math.cos(theta)   * distance,
+                        category.position.y   + Math.sin(theta)   * distance,
+                        category.position.z   
+                    ));
+                }
+                
+                orbitGeometry.setFromPoints(points);  
+                const orbitMaterial = new THREE.LineBasicMaterial({
+                    color: 0x666666,
+                    transparent: true,
+                    opacity: 0.3 
+                });
+                
+                const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+                scene.add(orbit);  
+            });
+        }
+ 
+        function onWindowResize() {
+            camera.aspect   = window.innerWidth   / window.innerHeight;  
+            camera.updateProjectionMatrix();  
+            renderer.setSize(window.innerWidth,   window.innerHeight);  
+        }
+ 
+        function initTooltip() {
+            const tooltip = document.querySelector('.tooltip');  
+            
+            // 射线检测 
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            function onMouseMove(event) {
+                mouse.x = (event.clientX   / window.innerWidth)   * 2 - 1;
+                mouse.y = -(event.clientY   / window.innerHeight)   * 2 + 1;
+                
+                raycaster.setFromCamera(mouse,   camera);
+                const intersects = raycaster.intersectObjects(scene.children);  
+                
+                if (intersects.length   > 0) {
+                    const object = intersects[0].object;
+                    
+                    if (object.userData.isTool)   {
+                        // 更新工具提示 
+                        document.querySelector('.tooltip-title').textContent   = object.userData.name;  
+                        document.querySelector('.tooltip-category').textContent   = object.userData.category;  
+                        document.querySelector('.tooltip-popularity').textContent   = `热度: ${object.userData.popularity}/100`;  
+                        document.querySelector('.tooltip-description').textContent   = object.userData.description; 
+                        
+                        // 显示工具提示 
+                        tooltip.style.left   = `${event.clientX   + 15}px`;
+                        tooltip.style.top   = `${event.clientY   + 15}px`;
+                        tooltip.style.opacity   = '1';
+                        
+                        // 高亮效果 
+                        if (hoveredTool && hoveredTool !== object) {
+                            hoveredTool.material.color.setHex(hoveredTool.userData.originalColor);  
+                            hoveredTool.scale.set(  
+                                hoveredTool.userData.originalScale,  
+                                hoveredTool.userData.originalScale,  
+                                hoveredTool.userData.originalScale   
+                            );
+                        }
+                        
+                        object.material.color.setHex(0xffffff);  
+                        object.scale.set( 
+                            object.userData.originalScale  * 1.2, 
+                            object.userData.originalScale  * 1.2, 
+                            object.userData.originalScale  * 1.2 
+                        );
+                        hoveredTool = object;
+                        return;
+                    }
+                }
+                
+                // 没有悬停在工具上 
+                if (hoveredTool) {
+                    hoveredTool.material.color.setHex(hoveredTool.userData.originalColor);  
+                    hoveredTool.scale.set(  
+                        hoveredTool.userData.originalScale,  
+                        hoveredTool.userData.originalScale,  
+                        hoveredTool.userData.originalScale   
+                    );
+                    hoveredTool = null;
+                }
+                
+                tooltip.style.opacity   = '0';
+            }
+            
+            window.addEventListener('mousemove',   onMouseMove, false);
+        }
+ 
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // 旋转星星 
+            stars.forEach(star   => {
+                star.rotation.x   += 0.001;
+                star.rotation.y   += 0.001;
+            });
+            
+            // 轻微旋转整个场景 
+            scene.rotation.y   += 0.001;
+            
+            renderer.render(scene,   camera);
+        }
+ 
+        // 初始化场景 
+        init();
+ 
+        // 语音搜索按钮事件 
+        document.querySelector('.voice-search').addEventListener('click',   function() {
+            alert('语音搜索功能将在未来版本中实现');
+        });
+ 
+        // 继续项目按钮事件 
+        document.querySelector('.continue-project').addEventListener('click',   function() {
+            alert('正在加载您未完成的项目评估...');
+        });
+ 
+        // 快速标签点击事件 
+        document.querySelectorAll('.quick-tags   span').forEach(tag => {
+            tag.addEventListener('click',   function() {
+                alert(`正在搜索: ${this.textContent}   相关工具`);
+            });
+        });
+    </script>
+</body>
+</html>
