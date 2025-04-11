@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工作记录助手</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="images/icon-192x192.png" type="image/png">
+  <meta name="theme-color" content="#4CAF50">
+  <style>
+    body {
+      background-color: #e6f7ff; /* 添加淡蓝色背景 */
+    }
+    .help-button:hover {
+      background-color: darkorange !important;
+    }
+    .modal-content {
+      border-radius: 8px;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const helpBtn = document.getElementById('help-btn');
+      const modal = document.getElementById('help-modal');
+      const closeBtn = modal.querySelector('.close');
+
+      helpBtn.addEventListener('click', () => {
+        modal.style.display = 'block';
+      });
+
+      closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+
+      window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 导航栏 -->
+    <nav class="navbar">
+      <div class="logo">工作记录助手</div>
+      <div class="nav-links">
+        <a href="#" class="nav-link active" data-page="record">记录</a>
+        <a href="#" class="nav-link" data-page="statistics">统计</a>
+        <a href="#" class="nav-link" data-page="settings">设置</a>
+        <button id="help-btn" class="help-button" style="background-color: orange; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">使用说明</button>
+        <button id="logout-btn" class="logout-button">注销</button>
+      </div>
+    </nav>
+
+    <!-- 记录页面 -->
+    <div class="page active" id="record-page">
+      <div class="card">
+        <h2>今日工作记录</h2>
+        <form id="record-form">
+          <div class="form-group">
+            <label for="date">日期</label>
+            <input type="date" id="date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label for="name">姓名</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="people">人数</label>
+            <input type="number" id="people" name="people" min="1" required>
+          </div>
+          <div class="form-group">
+            <label for="location">现场名称</label>
+            <input type="text" id="location" name="location" required>
+          </div>
+          <div class="form-group">
+            <label for="highway-fee">高速费 (元)</label>
+            <input type="number" id="highway-fee" name="highway-fee" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label for="parking-fee">停车费 (元)</label>
+            <input type="number" id="parking-fee" name="parking-fee" min="0" step="0.01">
+          </div>
+          <button type="submit" class="btn btn-primary">保存记录</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>最近记录</h2>
+        <div class="recent-records" id="recent-records">
+          <!-- 最近记录将通过JavaScript动态添加 -->
+          <div class="empty-state">暂无记录</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 统计页面 -->
+    <div class="page" id="statistics-page">
+      <div class="card">
+        <h2>数据统计</h2>
+        <div class="stats-container">
+          <div class="stat-card">
+            <div class="stat-title">总天数</div>
+            <div class="stat-value" id="total-days">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">总人数</div>
+            <div class="stat-value" id="total-people">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">总费用</div>
+            <div class="stat-value" id="total-fees">0.00 元</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>月度统计</h2>
+        <div class="month-selector">
+          <select id="month-select">
+            <!-- 月份选项将通过JavaScript动态添加 -->
+          </select>
+        </div>
+        <div class="monthly-stats">
+          <div class="stat-row">
+            <div class="stat-label">工作天数:</div>
+            <div class="stat-value" id="monthly-days">0</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">总人数:</div>
+            <div class="stat-value" id="monthly-people">0</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">高速费:</div>
+            <div class="stat-value" id="monthly-highway">0.00 元</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">停车费:</div>
+            <div class="stat-value" id="monthly-parking">0.00 元</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">总费用:</div>
+            <div class="stat-value" id="monthly-total">0.00 元</div>
+          </div>
+        </div>
+        <button id="export-btn" class="btn btn-secondary">导出数据</button>
+      </div>
+    </div>
+
+    <!-- 设置页面 -->
+    <div class="page" id="settings-page">
+      <div class="card">
+        <h2>提醒设置</h2>
+        <div class="form-group">
+          <label for="reminder-time">每日提醒时间</label>
+          <input type="time" id="reminder-time" name="reminder-time" value="08:00">
+        </div>
+        <div class="form-group">
+          <label class="switch-label">
+            启用提醒
+            <div class="switch">
+              <input type="checkbox" id="enable-reminder" checked>
+              <span class="slider"></span>
+            </div>
+          </label>
+        </div>
+        <button id="save-settings" class="btn btn-primary">保存设置</button>
+        <div id="notification-status" class="notification-status"></div>
+      </div>
+
+      <div class="card">
+        <h2>默认信息</h2>
+        <div class="form-group">
+          <label for="default-name">默认姓名</label>
+          <input type="text" id="default-name" name="default-name">
+        </div>
+        <button id="save-defaults" class="btn btn-primary">保存默认值</button>
+      </div>
+
+      <div class="card">
+        <h2>数据管理</h2>
+        <button id="clear-data" class="btn btn-danger">清除所有数据</button>
+        <p class="warning-text">警告：此操作将删除所有记录，且无法恢复！</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通知提示 -->
+  <div id="toast" class="toast"></div>
+
+  <!-- 使用说明弹窗 -->
+  <!-- 使用说明弹窗 -->
+  <div id="help-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%;">
+      <span class="close" style="float: right; cursor: pointer;">&times;</span>
+      <h2>使用说明</h2>
+      <p>请在以下输入框中输入你的信息，并提交：</p>
+      <ol>
+        <li>在"日期"栏选择工作日期</li>
+        <li>在"姓名"栏输入你的姓名</li>
+        <li>在"人数"栏输入参与工作的人数</li>
+        <li>在"现场名称"栏输入工作地点</li>
+        <li>在"高速费"和"停车费"栏输入相关费用（如无则留空）</li>
+        <li>点击"保存记录"按钮提交信息</li>
+      </ol>
+      <p>提示：所有带*号的字段为必填项，请确保填写完整后再提交。</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="sw-register.js"></script>
+  <script>
+    // 检查登录状态
+    window.addEventListener('load', () => {
+      if(localStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'login.html';
+      }
+    });
+  
+    // 添加注销功能
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('isLoggedIn');
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>
