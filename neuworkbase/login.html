@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现代登录界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 380px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            transition: 0.3s;
+        }
+
+        .login-title {
+            color: #333;
+            font-weight: 600;
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-bottom: 2px solid #ddd;
+            outline: none;
+            font-size: 1em;
+            transition: 0.3s;
+        }
+
+        .input-group label {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus ~ label,
+        .input-group input:valid ~ label {
+            top: -5px;
+            font-size: 0.8em;
+            color: #4ecdc4;
+        }
+
+        .input-group input:focus,
+        .input-group input:valid {
+            border-color: #4ecdc4;
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 0.9em;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background: #4ecdc4;
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .login-button:hover {
+            background: #45b7b0;
+            transform: translateY(-2px);
+        }
+
+        .social-login {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .social-icons a {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .social-icons a:hover {
+            background: #4ecdc4;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 90%;
+                padding: 30px;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // Initialize Supabase client
+      const supabaseUrl = 'https://bibgpghgjbmkylunzaud.supabase.co';
+      const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'; // Replace with your actual key
+      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2 class="login-title">用户登录</h2>
+        
+        <!-- 登录表单 -->
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="text" id="username" required>
+                <label>用户名</label>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="password" required>
+                <label>密码</label>
+            </div>
+
+            <div class="remember-forgot">
+                <label>
+                    <input type="checkbox"> 记住我
+                </label>
+                <a href="#">忘记密码？</a>
+            </div>
+
+            <button type="submit" class="login-button">立即登录</button>
+
+            <div class="social-login">
+                <p>其他方式登录</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-google"></i></a>
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                </div>
+            </div>
+        </form>
+
+        <!-- 注册表单 -->
+        <form id="registerForm" style="display: none;">
+            <div class="input-group">
+                <input type="text" id="register-username" required>
+                <label>用户名</label>
+            </div>
+            <div class="input-group">
+                <input type="email" id="register-email" required>
+                <label>邮箱</label>
+            </div>
+            <div class="input-group">
+                <input type="password" id="register-password" required minlength="6">
+                <label>密码</label>
+            </div>
+            <div class="input-group">
+                <input type="password" id="register-confirm-password" required minlength="6">
+                <label>确认密码</label>
+            </div>
+            <button type="submit" class="login-button">注册</button>
+        </form>
+
+        <!-- 取回密码表单 -->
+        <form id="forgotPasswordForm" style="display: none;">
+            <div class="input-group">
+                <input type="email" id="forgot-email" required>
+                <label>注册邮箱</label>
+            </div>
+            <button type="submit" class="login-button">发送重置链接</button>
+        </form>
+
+        <div class="form-links">
+            <a href="#" id="showRegister">注册新账号</a> | 
+            <a href="#" id="showForgotPassword">忘记密码？</a> | 
+            <a href="#" id="showLogin">返回登录</a>
+        </div>
+    </div>
+
+    <!-- Font Awesome 图标 -->
+    <script src="https://kit.fontawesome.com/your-kit-code.js"></script>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+    
+            try {
+              const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+              });
+    
+              if (error) throw error;
+              
+              // 登录成功，跳转到index.html
+              window.location.href = 'index.html';
+            } catch (error) {
+              console.error('登录失败:', error);
+              alert('登录失败: ' + error.message);
+            }
+          });
+      </script>
+</body>
+</html>
+
+<script>
+  // 表单切换
+  document.getElementById('showRegister').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('forgotPasswordForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'block';
+  });
+
+  document.getElementById('showForgotPassword').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('forgotPasswordForm').style.display = 'block';
+  });
+
+  document.getElementById('showLogin').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('forgotPasswordForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+  });
+
+  // 注册功能
+  document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('register-username').value;
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const confirmPassword = document.getElementById('register-confirm-password').value;
+
+    if (password !== confirmPassword) {
+      alert('两次输入的密码不一致');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            username: username
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      alert('注册成功！请检查您的邮箱进行验证');
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+    } catch (error) {
+      console.error('注册失败:', error);
+      alert('注册失败: ' + error.message);
+    }
+  });
+</script>
+
+<style>
+  .form-links {
+    margin-top: 20px;
+    text-align: center;
+  }
+  .form-links a {
+    color: #4ecdc4;
+    text-decoration: none;
+    margin: 0 5px;
+  }
+  .form-links a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<script>
+  document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('forgot-email').value;
+    
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+      
+      if (error) throw error;
+      
+      alert('重置链接已发送至您的邮箱：' + email);
+      document.getElementById('forgotPasswordForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+    } catch (error) {
+      console.error('发送重置链接失败:', error);
+      alert('发送重置链接失败: ' + error.message);
+    }
+  });
+</script>
