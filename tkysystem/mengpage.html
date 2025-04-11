@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/src/js/auth.js"></script>
+    <script src="/src/js/userManager.js"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- 顶部导航条 -->
+    <div class="bg-orange-500 py-3 px-6 shadow-sm fixed top-0 left-0 right-0 z-10">
+        <div class="flex justify-between items-center">
+            <div class="text-lg font-bold text-white">会员管理系统</div>
+            <div class="flex items-center space-x-4">
+                <span class="text-white">管理员：</span>
+                <button id="logout" class="text-white hover:text-red-100">
+                    退出登录
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="min-h-screen flex pt-12">
+        <!-- 侧边栏 -->
+        <aside class="w-64 bg-gray-800 fixed h-full p-4 top-12">
+            <nav>
+                <ul class="space-y-4">
+                    <li>
+                        <a href="#" class="block text-gray-300 hover:text-white px-4 py-2 rounded-lg">用户管理</a>
+                    </li>
+                    <li>
+                        <a href="#" class="block text-gray-300 hover:text-white px-4 py-2 rounded-lg">角色管理</a>
+                    </li>
+                    <li>
+                        <a href="#" class="block text-gray-300 hover:text-white px-4 py-2 rounded-lg">权限管理</a>
+                    </li>
+                    <li>
+                        <a href="#" class="block text-gray-300 hover:text-white px-4 py-2 rounded-lg">系统设置</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 ml-64 p-8 pt-12">
+            <!-- 顶部标题 -->
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-gray-800">会员管理</h1>
+            </div>
+
+            <!-- 操作区 -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">会员列表</h2>
+                    <button id="addUser" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        添加会员
+                    </button>
+                </div>
+
+                <!-- 表格 -->
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户名</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">角色</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- 示例数据 -->
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">1</td>
+                                <td class="px-6 py-4 whitespace-nowrap">admin</td>
+                                <td class="px-6 py-4 whitespace-nowrap">admin@example.com</td>
+                                <td class="px-6 py-4 whitespace-nowrap">超级管理员</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <button class="text-blue-600 hover:text-blue-900">编辑</button>
+                                    <button class="text-red-600 hover:text-red-900 ml-2">删除</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 添加用户模态框 -->
+    <div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-white rounded-lg p-6 w-96">
+                <h3 class="text-lg font-semibold mb-4">添加新会员</h3>
+                <form id="addUserForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">用户名</label>
+                            <input type="text" id="addUsername" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">邮箱</label>
+                            <input type="email" id="addEmail" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">角色</label>
+                            <select id="addRole" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                                <option value="member">普通会员</option>
+                                <option value="admin">管理员</option>
+                                <option value="superadmin">超级管理员</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="document.getElementById('addUserModal').classList.add('hidden')" 
+                            class="bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                        <button type="submit" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑用户模态框 -->
+    <div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-white rounded-lg p-6 w-96">
+                <h3 class="text-lg font-semibold mb-4">编辑会员</h3>
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">用户名</label>
+                            <input type="text" id="editUsername" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">邮箱</label>
+                            <input type="email" id="editEmail" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">角色</label>
+                            <select id="editRole" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                                <option value="member">普通会员</option>
+                                <option value="admin">管理员</option>
+                                <option value="superadmin">超级管理员</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditModal()" 
+                            class="bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                        <button type="submit" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 角色映射关系
+        const roleMap = {
+            member: '普通会员',
+            admin: '管理员',
+            superadmin: '超级管理员'
+        };
+
+        // 反向角色映射
+        const reverseRoleMap = {
+            '普通会员': 'member',
+            '管理员': 'admin',
+            '超级管理员': 'superadmin'
+        };
+
+        // 初始化数据
+        let currentData = [];
+        
+        // 在首次加载时添加默认管理员账号
+        if (!localStorage.getItem('users')) {
+            const defaultAdmin = {
+                id: 1,
+                username: 'admin',
+                email: 'admin@example.com',
+                password: '123456',
+                role: 'admin',
+                createdAt: new Date().toISOString()
+            };
+            localStorage.setItem('users', JSON.stringify([defaultAdmin]));
+        }
+
+        // 加载用户数据函数
+        // 修改 loadUsers 函数中的按钮部分
+        function loadUsers() {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const tbody = document.querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            users.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${user.username}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${user.email}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${roleMap[user.role]}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="deleteUser(${user.id})" 
+                            class="bg-orange-500 text-white px-3 py-1 rounded-md hover:bg-orange-600 transition-colors">
+                            清除用户
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 删除用户函数
+        function deleteUser(userId) {
+            if (!confirm('确定要删除此用户吗？')) {
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            const numericUserId = parseInt(userId);
+            const userToDelete = users.find(u => u.id === numericUserId);
+            
+            // 检查是否为最后一个管理员
+            if (userToDelete && ['admin', 'superadmin'].includes(userToDelete.role)) {
+                const adminCount = users.filter(u => ['admin', 'superadmin'].includes(u.role)).length;
+                if (adminCount <= 1) {
+                    alert('无法删除最后一个管理员账号');
+                    return;
+                }
+            }
+
+            // 修改这里，添加调试信息
+            console.log('删除前用户数量:', users.length);
+            console.log('要删除的用户ID:', numericUserId);
+            console.log('用户列表:', users);
+            
+            // 确保使用严格相等进行过滤
+            users = users.filter(user => user.id !== numericUserId);
+            
+            console.log('删除后用户数量:', users.length);
+            
+            localStorage.setItem('users', JSON.stringify(users));
+            loadUsers();
+            
+            // 添加成功提示
+            alert('用户删除成功');
+        }
+
+        // 编辑用户函数
+        function editUser(userId) {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const user = users.find(u => u.id === parseInt(userId));
+            if (user) {
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editUsername').value = user.username;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editRole').value = user.role;
+                document.getElementById('editUserModal').classList.remove('hidden');
+            }
+        }
+
+        // 关闭编辑模态框
+        function closeEditModal() {
+            document.getElementById('editUserModal').classList.add('hidden');
+        }
+
+        // 处理编辑表单提交
+        document.getElementById('editUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userId = parseInt(document.getElementById('editUserId').value);
+            const username = document.getElementById('editUsername').value;
+            const email = document.getElementById('editEmail').value;
+            const role = document.getElementById('editRole').value;
+
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            
+            // 检查用户名是否已存在（排除当前编辑的用户）
+            if (users.some(u => u.username === username && u.id !== userId)) {
+                alert('用户名已存在');
+                return;
+            }
+
+            // 检查是否为最后一个管理员
+            const currentUser = users.find(u => u.id === userId);
+            if (currentUser && ['admin', 'superadmin'].includes(currentUser.role) && 
+                !['admin', 'superadmin'].includes(role)) {
+                const adminCount = users.filter(u => ['admin', 'superadmin'].includes(u.role)).length;
+                if (adminCount <= 1) {
+                    alert('无法修改最后一个管理员的角色');
+                    return;
+                }
+            }
+
+            users = users.map(user => {
+                if (user.id === userId) {
+                    return {
+                        ...user,
+                        username,
+                        email,
+                        role
+                    };
+                }
+                return user;
+            });
+
+            localStorage.setItem('users', JSON.stringify(users));
+            loadUsers();
+            closeEditModal();
+        });
+
+        // 检查管理员权限
+        function checkAdminAuth() {
+            if (localStorage.getItem('userRole') !== 'admin') {
+                window.location.href = 'index.html';
+                return;
+            }
+            const username = localStorage.getItem('username');
+            // 修改这里：使用更精确的选择器找到顶部导航条中的管理员信息元素
+            document.querySelector('.flex.items-center.space-x-4 span.text-white').textContent = `管理员：${username}`;
+        }
+
+        // 退出登录
+        document.getElementById('logout').addEventListener('click', function() {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('username');
+            localStorage.removeItem('userRole');
+            window.location.href = 'index.html';
+        });
+
+        // 打开添加用户模态框
+        document.getElementById('addUser').addEventListener('click', function() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        });
+
+        // 关闭模态框
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('addUserModal')) {
+                document.getElementById('addUserModal').classList.add('hidden');
+            }
+            if (event.target === document.getElementById('editUserModal')) {
+                document.getElementById('editUserModal').classList.add('hidden');
+            }
+        }
+
+        // 处理添加表单提交
+        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('addUsername').value;
+            const email = document.getElementById('addEmail').value;
+            const role = document.getElementById('addRole').value;
+
+            // 检查用户名是否已存在
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            if (users.some(u => u.username === username)) {
+                alert('用户名已存在');
+                return;
+            }
+
+            const newUser = {
+                id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
+                username,
+                email,
+                role,
+                password: '123456', // 默认密码
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            loadUsers();  // 确保数据立即刷新
+            document.getElementById('addUserModal').classList.add('hidden');
+            this.reset();
+            
+            // 添加成功提示
+            alert('用户添加成功');
+        });
+        
+        // 删除重复的事件监听器，只保留一个页面加载时初始化代码
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAdminAuth();
+            loadUsers();  // 加载用户数据
+        });
+    </script>
+</body>
+</html>

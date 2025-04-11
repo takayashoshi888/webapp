@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现场管理系统 - 数据管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 在head部分添加autoTable插件 -->
+    <!-- 在head部分添加中文字体 -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-customfonts@latest/dist/jspdf.customfonts.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-customfonts@latest/dist/default_vfs.js"></script>
+
+    <!-- 修改PDF导出函数 -->
+    <!-- 移除旧的PDF导出功能 -->
+    <!-- 重新初始化PDF导出功能 -->
+    <script>
+        function initializePDFExport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4');
+
+            // 确保数据正确加载
+            const data = getTableData();
+            if (!data || data.length === 0) {
+                console.error("数据为空，无法生成PDF");
+                return;
+            }
+
+            // 设定字体，避免 `widths` 相关错误
+            doc.setFont("helvetica", "normal");
+
+            let yPosition = 20;
+            data.forEach(row => {
+                if (row.name && row.status && row.site) {
+                    doc.text(`${row.name} - ${row.status} - ${row.site}`, 10, yPosition);
+                    yPosition += 10; // 调整 Y 轴位置以避免文本重叠
+                }
+            });
+
+            // 安全保存 PDF
+            try {
+                doc.save("export.pdf");
+            } catch (error) {
+                console.error("PDF 生成失败:", error);
+            }
+        }
+
+        function getTableData() {
+            const rows = document.querySelectorAll("table tr");
+            return Array.from(rows).map(row => {
+                const cells = row.querySelectorAll("td");
+                return {
+                    name: cells[1]?.innerText.trim(),
+                    status: cells[3]?.innerText.trim(),
+                    site: cells[4]?.innerText.trim(),
+                };
+            }).filter(item => item.name); // 过滤掉无效数据
+        }
+    </script>
+    <!-- 修改导出功能为CSV格式 -->
+    <script>
+        function exportToCSV() {
+            // 直接从 localStorage 获取数据
+            const data = JSON.parse(localStorage.getItem('siteData')) || [];
+            if (data.length === 0) {
+                alert("没有可导出的数据");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // 添加BOM以支持中文
+            csvContent += "日期,姓名,人数,状态,现场名,高速费,停车费\n";
+
+            data.forEach(row => {
+                const rowContent = `${row.date},${row.name},${row.peopleCount},${row.status},${row.siteName},${row.highwayFee},${row.parkingFee}\n`;
+                csvContent += rowContent;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "现场管理数据.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</head>
+<body class="bg-[#B0E0E6] text-gray-900 min-h-screen">
+    <div class="mx-auto px-4 py-8 w-full lg:w-4/5 max-w-7xl">
+        <!-- 顶部操作栏 -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+            <div class="flex justify-between items-center">
+                <!-- 系统标题 -->
+                <h1 class="text-2xl font-bold">现场管理系统</h1>
+                
+                <!-- 操作按钮组 -->
+                <div class="flex space-x-4">
+                    <button onclick="window.location.href='kanliapp.html'" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-200">
+                        返回录入
+                    </button>
+                    <!-- 添加重置数据按钮 -->
+                    <button onclick="confirmReset()"
+                            class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-200">
+                        重置数据
+                    </button>
+                    <button onclick="exportToCSV()"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-200">
+                        导出CSV
+                    </button>
+                    <button onclick="handleLogout()" 
+                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-200">
+                        退出登录
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索和过滤 -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+            <div class="flex items-center space-x-4">
+                <input type="text" id="searchInput" placeholder="搜索姓名/现场名" 
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="statusFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">所有状态</option>
+                    <option value="出勤">出勤</option>
+                    <option value="休息">休息</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- 人数统计卡片 -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">总人数</p>
+                        <p class="text-2xl font-semibold text-gray-900"><span id="totalPeople">0</span> 人</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 高速费统计卡片 -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">总高速费</p>
+                        <p class="text-2xl font-semibold text-gray-900"><span id="totalHighwayFee">0</span> 元</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 停车费统计卡片 -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">总停车费</p>
+                        <p class="text-2xl font-semibold text-gray-900"><span id="totalParkingFee">0</span> 元</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="bg-white rounded-lg p-6 shadow-md overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th class="...">日期 ▼</th>
+                        <th class="...">姓名 ▼</th>
+                        <th class="...">人数 ▼</th>
+                        <th class="...">状态 ▼</th>
+                        <th class="...">现场名 ▼</th>
+                        <th class="...">高速费 ▼</th>
+                        <th class="...">停车费 ▼</th>
+                        <!-- 删除备注列 -->
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Sample data row -->
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">2023-07-20</td>
+                        <td class="px-6 py-4 whitespace-nowrap">张三</td>
+                        <td class="px-6 py-4 whitespace-nowrap">5人</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                出勤
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">A施工现场</td>
+                        <!-- 新增高速费和停车费数据 -->
+                        <td class="px-6 py-4 whitespace-nowrap">100元</td>
+                        <td class="px-6 py-4 whitespace-nowrap">50元</td>
+                        <!-- 删除备注列 -->
+                    </tr>
+                    <!-- More rows would follow -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 添加费用统计功能 -->
+        <!-- 删除这个部分 -->
+        <!-- <div class="mt-6 bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">费用统计</h2>
+            <p>总高速费: <span id="totalHighwayFee">0</span> 元</p>
+            <p>总停车费: <span id="totalParkingFee">0</span> 元</p>
+        </div> -->
+
+        <script>
+            // 费用统计功能
+            function calculateTotalFees() {
+                const rows = document.querySelectorAll("tbody tr");
+                let totalHighwayFee = 0;
+                let totalParkingFee = 0;
+                let totalPeople = 0;
+
+                rows.forEach(row => {
+                    const peopleCount = parseInt(row.cells[2].textContent.replace('人', '')) || 0;
+                    const highwayFee = parseFloat(row.cells[5].textContent.replace('元', '')) || 0;
+                    const parkingFee = parseFloat(row.cells[6].textContent.replace('元', '')) || 0;
+                    
+                    totalPeople += peopleCount;
+                    totalHighwayFee += highwayFee;
+                    totalParkingFee += parkingFee;
+                });
+
+                document.getElementById('totalPeople').textContent = totalPeople;
+                document.getElementById('totalHighwayFee').textContent = totalHighwayFee;
+                document.getElementById('totalParkingFee').textContent = totalParkingFee;
+            }
+
+            // 页面加载时计算费用
+            window.addEventListener('DOMContentLoaded', calculateTotalFees);
+        </script>
+
+        <!-- 分页 -->
+        <div class="mt-6 flex justify-center">
+            <nav aria-label="Pagination">
+                <ul class="flex items-center space-x-2">
+                    <li>
+                        <button onclick="changePage(-1)" class="px-4 py-2 border rounded-md hover:bg-gray-100">
+                            上一页
+                        </button>
+                    </li>
+                    <li>
+                        <span class="px-4 py-2">第 <span id="currentPage">1</span> 页</span>
+                    </li>
+                    <li>
+                        <button onclick="changePage(1)" class="px-4 py-2 border rounded-md hover:bg-gray-100">
+                            下一页
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <script>
+            // 添加PDF导出功能
+            function exportToPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // 获取表格数据
+                const table = document.querySelector('table');
+                const rows = table.querySelectorAll('tr');
+                
+                // 设置PDF内容
+                doc.setFontSize(18);
+                doc.text('现场管理数据', 10, 10);
+                
+                // 添加表格
+                doc.autoTable({
+                    html: table,
+                    startY: 20,
+                    theme: 'grid',
+                    styles: {
+                        fontSize: 10,
+                        cellPadding: 2
+                    },
+                    headStyles: {
+                        fillColor: [41, 128, 185],
+                        textColor: 255
+                    }
+                });
+                
+                // 保存PDF
+                doc.save('site_data.pdf');
+            }
+
+            // 分页功能
+            function changePage(delta) {
+                currentPage = Math.max(1, currentPage + delta);
+                renderTable();
+            }
+
+            // 更新分页显示
+            function updatePagination() {
+                document.getElementById('currentPage').textContent = currentPage;
+            }
+
+            // 搜索功能
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                currentData = JSON.parse(localStorage.getItem('siteData')) || [];
+                if (searchTerm) {
+                    currentData = currentData.filter(item => 
+                        item.name.toLowerCase().includes(searchTerm) || 
+                        item.siteName.toLowerCase().includes(searchTerm)
+                    );
+                }
+                renderTable();
+            });
+
+            // 状态过滤
+            document.getElementById('statusFilter').addEventListener('change', function() {
+                const status = this.value;
+                currentData = JSON.parse(localStorage.getItem('siteData')) || [];
+                if (status) {
+                    currentData = currentData.filter(item => item.status === status);
+                }
+                renderTable();
+            });
+        </script>
+
+        <!-- 修改加载指示器 -->
+        <div id="loading" class="fixed inset-0 bg-gray-500 bg-opacity-50 items-center justify-center" style="display: none;">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+
+        <!-- 添加操作反馈 -->
+        <div id="alert" class="hidden fixed top-4 right-4 px-4 py-3 rounded shadow-lg max-w-sm"></div>
+
+        <script>
+            // 初始化数据
+            let currentData = [];
+            let currentPage = 1;
+            const pageSize = 10;
+        
+            // 加载数据
+            function loadData() {
+                currentData = JSON.parse(localStorage.getItem('siteData')) || [];
+                renderTable();
+            }
+        
+            // 渲染表格
+            function renderTable() {
+                const start = (currentPage - 1) * pageSize;
+                const paginatedData = currentData.slice(start, start + pageSize);
+                const tbody = document.querySelector('tbody');
+                
+                tbody.innerHTML = '';
+                
+                paginatedData.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4">${item.date}</td>
+                        <td class="px-6 py-4">${item.name}</td>
+                        <td class="px-6 py-4">${item.peopleCount}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${item.status === '出勤' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${item.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">${item.siteName}</td>
+                        <td class="px-6 py-4">${item.highwayFee}元</td>
+                        <td class="px-6 py-4">${item.parkingFee}元</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+        
+                updatePagination();
+                calculateTotalFees(); // 每次渲染表格后重新计算费用
+            }
+
+            // 修改费用统计功能
+            function calculateTotalFees() {
+                const data = JSON.parse(localStorage.getItem('siteData')) || [];
+                let totalHighwayFee = 0;
+                let totalParkingFee = 0;
+                let totalPeople = 0;
+
+                data.forEach(item => {
+                    const peopleCount = parseInt(item.peopleCount) || 0;
+                    const highwayFee = parseFloat(item.highwayFee) || 0;
+                    const parkingFee = parseFloat(item.parkingFee) || 0;
+                    
+                    totalPeople += peopleCount;
+                    totalHighwayFee += highwayFee;
+                    totalParkingFee += parkingFee;
+                });
+
+                document.getElementById('totalPeople').textContent = totalPeople;
+                document.getElementById('totalHighwayFee').textContent = totalHighwayFee;
+                document.getElementById('totalParkingFee').textContent = totalParkingFee;
+            }
+        
+            // 页面加载时初始化
+            window.addEventListener('DOMContentLoaded', loadData);
+        
+            // 检查登录状态
+            function checkLogin() {
+                if (localStorage.getItem('isLoggedIn') !== 'true') {
+                    window.location.href = 'index.html';
+                    return;
+                }
+            }
+
+            // 处理退出登录
+            function handleLogout() {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('username');
+                window.location.href = 'index.html';
+            }
+
+            // 页面加载时检查登录状态
+            window.addEventListener('DOMContentLoaded', () => {
+                checkLogin();
+                loadData();
+            });
+        
+        // 添加显示/隐藏加载指示器的函数
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        </script>
+
+        <!-- 在现有样式后添加 -->
+        <style>
+            .status-badge {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+                padding-top: 0.25rem;
+                padding-bottom: 0.25rem;
+                border-radius: 9999px;
+                font-size: 0.75rem;
+                font-weight: 500;
+            }
+            .status-badge.出勤 { 
+                background-color: #dcfce7;
+                color: #166534;
+            }
+            .status-badge.休息 { 
+                background-color: #fee2e2;
+                color: #991b1b;
+            }
+        </style>
+    </div>
+</body>
+</html>
+
+<!-- 删除以下样式 -->
+<style>
+    /* 为备注栏添加特殊样式 */
+    td.remarks-cell {
+        max-width: 200px;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+</style>
+
+<script>
+            // 添加确认重置功能
+            function confirmReset() {
+                if (confirm('确定要重置所有数据吗？此操作不可恢复！')) {
+                    resetAllData();
+                }
+            }
+
+            // 重置数据功能
+            function resetAllData() {
+                try {
+                    localStorage.removeItem('siteData');
+                    currentData = [];
+                    currentPage = 1;
+                    renderTable();
+                    calculateTotalFees();
+                    // 显示成功提示
+                    const alert = document.getElementById('alert');
+                    alert.textContent = '数据已成功重置';
+                    alert.classList.remove('hidden');
+                    alert.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-700');
+                    setTimeout(() => {
+                        alert.classList.add('hidden');
+                    }, 3000);
+                } catch (error) {
+                    // 显示错误提示
+                    const alert = document.getElementById('alert');
+                    alert.textContent = '重置数据时出错';
+                    alert.classList.remove('hidden');
+                    alert.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700');
+                    setTimeout(() => {
+                        alert.classList.add('hidden');
+                    }, 3000);
+                }
+            }
+        </script>
