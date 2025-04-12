@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI工具导航中心</title>
+    <link rel="stylesheet" href="styles/navbar.css">
+    <body>
+    <!-- 确保已添加导航条 -->
+    <div class="navbar">TKY工具导航</div>
+   
+</body>
+    <style>
+                :root {
+            --bg-color: #bce8f0;
+            --card-color: #ffffff;
+            --text-color: #333333;
+            --text-light: #666666;
+            --border-color: #e0e0e0;
+            --primary-color: #1e88e5;
+            --primary-light: #64b5f6;
+            --hover-color: #f0f0f0;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-light: #aaaaaa;
+            --border-color: #333333;
+            --hover-color: #2a2a2a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+            
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 50px auto 0;
+            background-color: var(--card-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        /* 顶部信息栏 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .time-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .time {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .date {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-color);
+            padding: 5px;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--hover-color);
+        }
+
+        /* 搜索框 */
+        .search-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 500px;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s;
+            background-color: var(--card-color);
+            color: var(--text-color);
+        }
+
+        .search-box:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
+        }
+
+        /* 分类标签 */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .category-tab {
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            background-color: var(--hover-color);
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .category-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .category-tab:hover:not(.active) {
+            background-color: var(--border-color);
+        }
+
+        .add-category-btn {
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            background-color: transparent;
+            border: 1px dashed var(--border-color);
+            color: var(--text-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+        }
+
+        .add-category-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        /* 工具网格 */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            min-height: 100px;
+        }
+
+        .tool-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            user-select: none;
+        }
+
+        .tool-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-light);
+        }
+
+        .tool-item.dragging {
+            opacity: 0.5;
+            background-color: var(--primary-light);
+            border-color: var(--primary-color);
+        }
+
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 8px;
+            object-fit: contain;
+            border-radius: var(--radius-sm);
+            background-color: var(--hover-color);
+            padding: 5px;
+        }
+
+        .tool-name {
+            font-size: 13px;
+            text-align: center;
+            word-break: break-word;
+            width: 100%;
+        }
+
+        /* 操作按钮 */
+        .tool-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
+        }
+
+        .tool-item:hover .tool-actions {
+            display: flex;
+        }
+
+        .action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background-color: var(--card-color);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 3px;
+            font-size: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .delete-btn {
+            color: #f44336;
+        }
+
+        /* 添加工具按钮 */
+        .add-tool {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+            border: 1px dashed var(--border-color);
+        }
+
+        .add-tool:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            background-color: rgba(30, 136, 229, 0.05);
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-content {
+            background-color: var(--card-color);
+            border-radius: var(--radius-md);
+            width: 90%;
+            max-width: 500px;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background-color: var(--card-color);
+            color: var(--text-color);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1565c0;
+        }
+
+        .btn-default {
+            background-color: var(--hover-color);
+            color: var(--text-color);
+        }
+
+        .btn-default:hover {
+            background-color: var(--border-color);
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+
+        /* 拖拽占位符 */
+        .drag-placeholder {
+            border: 2px dashed var(--primary-color);
+            background-color: rgba(30, 136, 229, 0.1);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .tools-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 10px;
+            }
+            
+            .tool-item {
+                padding: 10px 5px;
+            }
+            
+            .tool-icon {
+                width: 36px;
+                height: 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .tools-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部信息栏 -->
+        <div class="header">
+            <div class="time-info">
+                <div class="time" id="current-time">09:05</div>
+                <div class="date" id="current-date">4月12日 星期六 三月十五</div>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" id="theme-toggle" title="切换主题">🌓</button>
+                <button class="action-btn" id="add-category-btn" title="添加分类">📁</button>
+            </div>
+        </div>
+        
+        <!-- 搜索框 -->
+        <div class="search-container">
+            <input type="text" class="search-box" placeholder="请输入搜索内容" id="search-input">
+        </div>
+        
+        <!-- 分类标签 -->
+        <div class="category-tabs" id="category-tabs">
+            <!-- 分类标签将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 工具网格 -->
+        <div class="tools-grid" id="tools-container">
+            <!-- 工具项将通过JavaScript动态生成 -->
+        </div>
+    </div>
+    
+    <!-- 添加/编辑工具模态框 -->
+    <div class="modal-overlay" id="tool-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">添加新工具</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">工具名称</label>
+                <input type="text" class="form-input" id="tool-name" placeholder="例如: ChatGPT">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">工具网址</label>
+                <input type="url" class="form-input" id="tool-url" placeholder="例如: https://chat.openai.com">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">图标URL (可选)</label>
+                <input type="url" class="form-input" id="tool-icon" placeholder="例如: https://example.com/icon.png">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">分类</label>
+                <select class="form-input" id="tool-category">
+                    <!-- 分类选项将通过JavaScript动态生成 -->
+                </select>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-default" id="cancel-btn">取消</button>
+                <button class="btn btn-danger" id="delete-btn" style="display: none;">删除</button>
+                <button class="btn btn-primary" id="save-btn">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加/编辑分类模态框 -->
+    <div class="modal-overlay" id="category-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="category-modal-title">添加分类</h3>
+                <button class="close-btn" id="close-category-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">分类名称</label>
+                <input type="text" class="form-input" id="category-name" placeholder="例如: 常用工具">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-default" id="cancel-category-btn">取消</button>
+                <button class="btn btn-danger" id="delete-category-btn" style="display: none;">删除</button>
+                <button class="btn btn-primary" id="save-category-btn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始数据
+        const initialData = {
+            categories: [
+                { id: 1, name: '常用工具', order: 1 },
+                { id: 2, name: 'AI工具', order: 2 },
+                { id: 3, name: '办公效率', order: 3 }
+            ],
+            tools: [
+                { id: 1, name: '新闻', url: 'https://news.baidu.com', icon: '', categoryId: 1 },
+                { id: 2, name: '影音', url: 'https://www.iqiyi.com', icon: '', categoryId: 1 },
+                { id: 3, name: '知乎', url: 'https://www.zhihu.com', icon: '', categoryId: 1 },
+                { id: 4, name: 'ChatGPT', url: 'https://chat.openai.com', icon: '', categoryId: 2 },
+                { id: 5, name: 'DeepSeek', url: 'https://www.deepseek.com', icon: '', categoryId: 2 },
+                { id: 6, name: 'GitHub', url: 'https://github.com', icon: '', categoryId: 3 },
+                { id: 7, name: '腾讯文档', url: 'https://docs.qq.com', icon: '', categoryId: 3 }
+            ]
+        };
+
+        // 获取DOM元素
+        const toolsContainer = document.getElementById('tools-container');
+        const categoryTabs = document.getElementById('category-tabs');
+        const searchInput = document.getElementById('search-input');
+        const toolModal = document.getElementById('tool-modal');
+        const categoryModal = document.getElementById('category-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const categoryModalTitle = document.getElementById('category-modal-title');
+        const toolNameInput = document.getElementById('tool-name');
+        const toolUrlInput = document.getElementById('tool-url');
+        const toolIconInput = document.getElementById('tool-icon');
+        const toolCategorySelect = document.getElementById('tool-category');
+        const categoryNameInput = document.getElementById('category-name');
+        const saveBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const deleteBtn = document.getElementById('delete-btn');
+        const saveCategoryBtn = document.getElementById('save-category-btn');
+        const cancelCategoryBtn = document.getElementById('cancel-category-btn');
+        const deleteCategoryBtn = document.getElementById('delete-category-btn');
+        const closeModalBtn = document.getElementById('close-modal');
+        const closeCategoryModalBtn = document.getElementById('close-category-modal');
+        const currentTimeEl = document.getElementById('current-time');
+        const currentDateEl = document.getElementById('current-date');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const addCategoryBtn = document.getElementById('add-category-btn');
+
+        // 状态变量
+        let data = JSON.parse(localStorage.getItem('navData')) || initialData;
+        let currentEditId = null;
+        let currentCategoryEditId = null;
+        let isEditing = false;
+        let isEditingCategory = false;
+        let currentCategoryId = data.categories[0]?.id || null;
+        let dragItem = null;
+        let dragStartIndex = null;
+
+        // 初始化页面
+        function init() {
+            renderCategories();
+            renderTools();
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // 从本地存储加载数据
+            if (!localStorage.getItem('navData')) {
+                saveToLocalStorage();
+            }
+            
+            // 检查主题偏好
+            checkThemePreference();
+        }
+
+        // 渲染分类标签
+        function renderCategories() {
+            categoryTabs.innerHTML = '';
+            
+            // 按order排序
+            const sortedCategories = [...data.categories].sort((a, b) => a.order - b.order);
+            
+            sortedCategories.forEach(category => {
+                const tab = document.createElement('div');
+                tab.className = `category-tab ${category.id === currentCategoryId ? 'active' : ''}`;
+                tab.textContent = category.name;
+                tab.dataset.id = category.id;
+                
+                tab.addEventListener('click', () => {
+                    currentCategoryId = category.id;
+                    renderCategories();
+                    renderTools();
+                });
+                
+                // 长按编辑分类
+                tab.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    openEditCategoryModal(category.id);
+                });
+                
+                categoryTabs.appendChild(tab);
+            });
+            
+            // 添加"添加分类"按钮
+            const addTab = document.createElement('div');
+            addTab.className = 'category-tab add-category-btn';
+            addTab.innerHTML = '+';
+            addTab.addEventListener('click', openAddCategoryModal);
+            categoryTabs.appendChild(addTab);
+        }
+
+        // 渲染工具列表
+        function renderTools(filter = '') {
+            toolsContainer.innerHTML = '';
+            
+            // 获取当前分类的工具
+            let toolsToShow = data.tools.filter(tool => tool.categoryId === currentCategoryId);
+            
+            // 应用搜索过滤
+            if (filter) {
+                toolsToShow = toolsToShow.filter(tool => 
+                    tool.name.toLowerCase().includes(filter.toLowerCase()) || 
+                    tool.url.toLowerCase().includes(filter.toLowerCase())
+                );
+            }
+            
+            // 渲染工具项
+            toolsToShow.forEach((tool, index) => {
+                const toolItem = document.createElement('div');
+                toolItem.className = 'tool-item';
+                toolItem.draggable = true;
+                toolItem.dataset.id = tool.id;
+                toolItem.dataset.index = index;
+                toolItem.innerHTML = `
+                    <img class="tool-icon" src="${tool.icon || getDefaultIcon(tool.url)}" alt="${tool.name}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjNjY2NjY2Ij48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTMuNTkgOC04IDh6Ii8+PHBhdGggZD0iTTEyIDZjLTMuMzEgMC02IDIuNjktNiA2czIuNjkgNiA2IDYgNi0yLjY5IDYtNi0yLjY5LTYtNi02em0wIDEwYy0yLjIxIDAtNC0xLjc5LTQtNHMxLjc5LTQgNC00IDQgMS43OSA0IDQtMS43OSA0LTQgNHoiLz48L3N2Zz4='">
+                    <div class="tool-name">${tool.name}</div>
+                    <div class="tool-actions">
+                        <button class="action-btn edit-btn" data-id="${tool.id}">✏️</button>
+                        <button class="action-btn delete-btn" data-id="${tool.id}">×</button>
+                    </div>
+                `;
+                toolsContainer.appendChild(toolItem);
+                
+                // 添加点击事件
+                toolItem.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('action-btn')) {
+                        window.open(tool.url, '_blank');
+                    }
+                });
+                
+                // 拖拽相关事件
+                toolItem.addEventListener('dragstart', handleDragStart);
+                toolItem.addEventListener('dragover', handleDragOver);
+                toolItem.addEventListener('dragenter', handleDragEnter);
+                toolItem.addEventListener('dragleave', handleDragLeave);
+                toolItem.addEventListener('drop', handleDrop);
+                toolItem.addEventListener('dragend', handleDragEnd);
+            });
+            
+            // 添加"添加工具"按钮
+            const addToolBtn = document.createElement('div');
+            addToolBtn.className = 'tool-item add-tool';
+            addToolBtn.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 5px;">+</div>
+                <div class="tool-name">添加工具</div>
+            `;
+            addToolBtn.addEventListener('click', openAddToolModal);
+            toolsContainer.appendChild(addToolBtn);
+            
+            // 添加编辑和删除按钮事件
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    openEditToolModal(id);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    deleteTool(id);
+                });
+            });
+        }
+
+        // 获取默认图标（基于域名）
+        function getDefaultIcon(url) {
+            try {
+                const domain = new URL(url).hostname.replace('www.', '');
+                return `https://www.google.com/s2/favicons?domain=${domain}`;
+            } catch {
+                return '';
+            }
+        }
+
+        // 打开添加工具模态框
+        function openAddToolModal() {
+            isEditing = false;
+            currentEditId = null;
+            modalTitle.textContent = '添加新工具';
+            toolNameInput.value = '';
+            toolUrlInput.value = '';
+            toolIconInput.value = '';
+            deleteBtn.style.display = 'none';
+            
+            // 填充分类选择
+            toolCategorySelect.innerHTML = '';
+            data.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                option.selected = category.id === currentCategoryId;
+                toolCategorySelect.appendChild(option);
+            });
+            
+            toolModal.style.display = 'flex';
+        }
+
+        // 打开编辑工具模态框
+        function openEditToolModal(id) {
+            const tool = data.tools.find(t => t.id === id);
+            if (tool) {
+                isEditing = true;
+                currentEditId = id;
+                modalTitle.textContent = '编辑工具';
+                toolNameInput.value = tool.name;
+                toolUrlInput.value = tool.url;
+                toolIconInput.value = tool.icon || '';
+                deleteBtn.style.display = 'inline-block';
+                
+                // 填充分类选择
+                toolCategorySelect.innerHTML = '';
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    option.selected = category.id === tool.categoryId;
+                    toolCategorySelect.appendChild(option);
+                });
+                
+                toolModal.style.display = 'flex';
+            }
+        }
+
+        // 打开添加分类模态框
+        function openAddCategoryModal() {
+            isEditingCategory = false;
+            currentCategoryEditId = null;
+            categoryModalTitle.textContent = '添加分类';
+            categoryNameInput.value = '';
+            deleteCategoryBtn.style.display = 'none';
+            categoryModal.style.display = 'flex';
+        }
+
+        // 打开编辑分类模态框
+        function openEditCategoryModal(id) {
+            const category = data.categories.find(c => c.id === id);
+            if (category) {
+                isEditingCategory = true;
+                currentCategoryEditId = id;
+                categoryModalTitle.textContent = '编辑分类';
+                categoryNameInput.value = category.name;
+                deleteCategoryBtn.style.display = 'inline-block';
+                categoryModal.style.display = 'flex';
+            }
+        }
+
+        // 保存工具
+        function saveTool() {
+            const name = toolNameInput.value.trim();
+            let url = toolUrlInput.value.trim();
+            const icon = toolIconInput.value.trim();
+            const categoryId = parseInt(toolCategorySelect.value);
+            
+            if (!name || !url) {
+                alert('请填写工具名称和网址');
+                return;
+            }
+            
+            // 确保URL有协议前缀
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            
+            if (isEditing) {
+                // 更新现有工具
+                const index = data.tools.findIndex(t => t.id === currentEditId);
+                if (index !== -1) {
+                    data.tools[index] = { ...data.tools[index], name, url, icon, categoryId };
+                }
+            } else {
+                // 添加新工具
+                const newId = Math.max(...data.tools.map(t => t.id), 0) + 1;
+                data.tools.push({ id: newId, name, url, icon, categoryId });
+            }
+            
+            saveToLocalStorage();
+            renderTools();
+            closeModal();
+        }
+
+        // 保存分类
+        function saveCategory() {
+            const name = categoryNameInput.value.trim();
+            
+            if (!name) {
+                alert('请填写分类名称');
+                return;
+            }
+            
+            if (isEditingCategory) {
+                // 更新现有分类
+                const index = data.categories.findIndex(c => c.id === currentCategoryEditId);
+                if (index !== -1) {
+                    data.categories[index].name = name;
+                }
+            } else {
+                // 添加新分类
+                const newId = Math.max(...data.categories.map(c => c.id), 0) + 1;
+                const newOrder = Math.max(...data.categories.map(c => c.order), 0) + 1;
+                data.categories.push({ id: newId, name, order: newOrder });
+                
+                // 切换到新分类
+                currentCategoryId = newId;
+            }
+            
+            saveToLocalStorage();
+            renderCategories();
+            renderTools();
+            closeCategoryModal();
+        }
+
+        // 删除工具
+        function deleteTool(id) {
+            if (confirm('确定要删除这个工具吗？')) {
+                data.tools = data.tools.filter(tool => tool.id !== id);
+                saveToLocalStorage();
+                renderTools();
+                closeModal();
+            }
+        }
+
+        // 删除分类
+        function deleteCategory() {
+            if (data.categories.length <= 1) {
+                alert('至少需要保留一个分类');
+                return;
+            }
+            
+            if (confirm('确定要删除这个分类吗？分类下的工具将一并删除')) {
+                // 删除分类
+                data.categories = data.categories.filter(c => c.id !== currentCategoryEditId);
+                
+                // 删除该分类下的所有工具
+                data.tools = data.tools.filter(tool => tool.categoryId !== currentCategoryEditId);
+                
+                // 切换到第一个分类
+                currentCategoryId = data.categories[0]?.id || null;
+                
+                saveToLocalStorage();
+                renderCategories();
+                renderTools();
+                closeCategoryModal();
+            }
+        }
+
+        // 关闭工具模态框
+        function closeModal() {
+            toolModal.style.display = 'none';
+        }
+
+        // 关闭分类模态框
+        function closeCategoryModal() {
+            categoryModal.style.display = 'none';
+        }
+
+        // 保存到本地存储
+        function saveToLocalStorage() {
+            localStorage.setItem('navData', JSON.stringify(data));
+        }
+
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            
+            // 格式化时间 (09:05)
+            const time = now.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            // 格式化日期 (4月12日 星期六 三月十五)
+            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const weekday = weekdays[now.getDay()];
+            
+            // 简化版农历日期
+            const lunarDate = getLunarDate(now);
+            
+            currentTimeEl.textContent = time;
+            currentDateEl.textContent = `${month}月${day}日 ${weekday} ${lunarDate}`;
+        }
+
+        // 简化版农历日期计算
+        function getLunarDate(date) {
+            // 这是一个简化版本，实际农历转换更复杂
+            const lunarMonths = ['正月', '二月', '三月', '四月', '五月', '六月', 
+                                '七月', '八月', '九月', '十月', '冬月', '腊月'];
+            const lunarDays = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
+                            '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+                            '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
+            
+            // 简单模拟，实际应该根据农历算法计算
+            const monthIndex = date.getMonth() % 12;
+            const dayIndex = date.getDate() % 30;
+            
+            return `${lunarMonths[monthIndex]}${lunarDays[dayIndex]}`;
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // 检查主题偏好
+        function checkThemePreference() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+            }
+        }
+
+        // 拖拽排序功能
+        function handleDragStart(e) {
+            dragItem = this;
+            dragStartIndex = parseInt(this.dataset.index);
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            
+            setTimeout(() => {
+                this.classList.add('dragging');
+            }, 0);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            if (this !== dragItem) {
+                this.classList.add('drag-placeholder');
+            }
+        }
+
+        function handleDragLeave() {
+            this.classList.remove('drag-placeholder');
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            if (this !== dragItem) {
+                this.classList.remove('drag-placeholder');
+                
+                // 获取拖拽项和目标项的索引
+                const dragIndex = dragStartIndex;
+                const dropIndex = parseInt(this.dataset.index);
+                
+                // 过滤出当前分类的工具并按原始顺序排列
+                const currentTools = data.tools
+                    .filter(tool => tool.categoryId === currentCategoryId)
+                    .sort((a, b) => data.tools.indexOf(a) - data.tools.indexOf(b));
+                
+                // 重新排序数组
+                const [removed] = currentTools.splice(dragIndex, 1);
+                currentTools.splice(dropIndex, 0, removed);
+                
+                // 更新原始数据中的顺序
+                const otherTools = data.tools.filter(tool => tool.categoryId !== currentCategoryId);
+                data.tools = [...otherTools, ...currentTools];
+                
+                saveToLocalStorage();
+                renderTools();
+            }
+            
+            return false;
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.tool-item').forEach(item => {
+                item.classList.remove('drag-placeholder');
+            });
+        }
+
+        // 事件监听
+        saveBtn.addEventListener('click', saveTool);
+        cancelBtn.addEventListener('click', closeModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        deleteBtn.addEventListener('click', () => {
+            if (currentEditId) {
+                deleteTool(currentEditId);
+            }
+        });
+        
+        saveCategoryBtn.addEventListener('click', saveCategory);
+        cancelCategoryBtn.addEventListener('click', closeCategoryModal);
+        closeCategoryModalBtn.addEventListener('click', closeCategoryModal);
+        deleteCategoryBtn.addEventListener('click', deleteCategory);
+        
+        searchInput.addEventListener('input', (e) => {
+            renderTools(e.target.value);
+        });
+        
+        themeToggleBtn.addEventListener('click', toggleTheme);
+        addCategoryBtn.addEventListener('click', openAddCategoryModal);
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
