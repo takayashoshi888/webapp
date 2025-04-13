@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>带模糊与文本大小调节的日式电子印章生成器</title>
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    input[type="text"], select, input[type="color"], input[type="range"] {
+      width: 300px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    label {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #d22;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #a00;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      /* 删除背景色设置 */
+      margin-top: 10px;
+    }
+    .download-link {
+      display: inline-block;
+      margin-top: 10px;
+      text-decoration: none;
+      color: #d22;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>日式电子印章生成器</h2>
+    <!-- 印章文字输入 -->
+    <input type="text" id="stampText" value="印章" placeholder="请输入印章文字">
+    <br>
+    <!-- 模板选择 -->
+    <label for="templateSelect">模板选择：</label>
+    <select id="templateSelect">
+      <option value="circle">圆形</option>
+      <option value="oval">椭圆</option>
+      <option value="square">方形</option>
+    </select>
+    <br>
+    <!-- 字体选择 -->
+    <label for="fontSelect">字体选择：</label>
+    <select id="fontSelect">
+      <option value="'Noto Sans JP', sans-serif">Noto Sans JP</option>
+      <option value="'KaiTi', serif">楷体</option>
+      <option value="'SimHei', sans-serif">黑体</option>
+      <option value="'Courier New', monospace">Courier New</option>
+      <option value="'Noto Serif CJK SC', serif">Noto Serif CJK</option>
+      <option value="'Yu Mincho', serif">Yu Mincho</option>
+      <option value="'Yu Gothic', sans-serif">Yu Gothic</option>
+      <option value="'Microsoft YaHei', sans-serif">微软雅黑</option>
+      <option value="'Songti SC', serif">宋体</option>
+    </select>
+    <br>
+    <!-- 颜色选择 -->
+    <label for="colorPicker">印章颜色：</label>
+    <input type="color" id="colorPicker" value="#d22">
+    <br>
+    <!-- 模糊度调节 -->
+    <label for="blurRange">边框模糊度：</label>
+    <input type="range" id="blurRange" min="0" max="10" step="0.5" value="2">
+    <br>
+    <!-- 文本大小调节 -->
+    <label for="textSizeRange">文本大小：</label>
+    <input type="range" id="textSizeRange" min="40" max="100" step="1" value="70">
+    <br>
+    <!-- 动态效果开关 -->
+    <label for="dynamicEffect">动态效果：</label>
+    <input type="checkbox" id="dynamicEffect" checked>
+    <br>
+    <button id="generateBtn">生成印章</button>
+    <br>
+    <canvas id="stampCanvas" width="300" height="300"></canvas>
+    <br>
+    <a id="downloadLink" class="download-link" href="#" download="stamp.png">下载印章</a>
+  </div>
+
+  <script>
+    // 获取各个元素
+    const generateBtn = document.getElementById('generateBtn');
+    const stampTextInput = document.getElementById('stampText');
+    const templateSelect = document.getElementById('templateSelect');
+    const fontSelect = document.getElementById('fontSelect');
+    const colorPicker = document.getElementById('colorPicker');
+    const blurRange = document.getElementById('blurRange');
+    const textSizeRange = document.getElementById('textSizeRange');
+    const dynamicEffectCheckbox = document.getElementById('dynamicEffect');
+    const canvas = document.getElementById('stampCanvas');
+    const downloadLink = document.getElementById('downloadLink');
+    const ctx = canvas.getContext('2d');
+
+    // 全局动画变量
+    let animationRequestId;
+    const animationDuration = 1000; // 动画时长（毫秒）
+    let startTime;
+
+    // 主函数：根据用户设置生成印章
+    function drawStamp() {
+      if (animationRequestId) {
+        cancelAnimationFrame(animationRequestId);
+      }
+      // 清除矩形时使用透明背景
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // 设置全局合成操作为源图像
+      ctx.globalCompositeOperation = 'source-over';
+
+      const chosenText = stampTextInput.value.trim() || "印章";
+      const chosenTemplate = templateSelect.value;  // "circle", "oval", "square"
+      const chosenFont = fontSelect.value;
+      const chosenColor = colorPicker.value;
+      const blurValue = parseFloat(blurRange.value);
+      const textSizeValue = parseInt(textSizeRange.value, 10);
+      const dynamicEffect = dynamicEffectCheckbox.checked;
+
+      // 将所有配置参数存入 config 对象
+      const config = {
+        text: chosenText,
+        template: chosenTemplate,
+        font: chosenFont,
+        color: chosenColor,
+        blur: blurValue,
+        fontSize: textSizeValue
+      };
+
+      if (dynamicEffect) {
+        startTime = null;
+        animateBorder(config);
+      } else {
+        drawShapeBorder(config, 1);  // progress 为 1 表示完整绘制
+        drawInnerElements(config);
+      }
+    }
+
+    // 动画绘制边框
+    function animateBorder(config) {
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / animationDuration, 1);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawShapeBorder(config, progress);
+        if (progress < 1) {
+          animationRequestId = requestAnimationFrame(step);
+        } else {
+          drawInnerElements(config);
+        }
+      }
+      animationRequestId = requestAnimationFrame(step);
+    }
+
+    // 绘制印章外边框（仅外层，不绘制内部细线），并应用模糊效果
+    function drawShapeBorder(config, progress) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 120;
+      ctx.save();
+      ctx.filter = "blur(" + config.blur + "px)";
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = config.color;
+      ctx.beginPath();
+      if (config.template === "circle") {
+        ctx.arc(centerX, centerY, radius, 0, progress * 2 * Math.PI, false);
+        ctx.stroke();
+      } else if (config.template === "oval") {
+        ctx.ellipse(centerX, centerY, radius, radius * 0.7, 0, 0, progress * 2 * Math.PI, false);
+        ctx.stroke();
+      } else if (config.template === "square") {
+        const halfSide = 100;
+        const topLeft = { x: centerX - halfSide, y: centerY - halfSide };
+        const topRight = { x: centerX + halfSide, y: centerY - halfSide };
+        const bottomRight = { x: centerX + halfSide, y: centerY + halfSide };
+        const bottomLeft = { x: centerX - halfSide, y: centerY + halfSide };
+        const points = [topLeft, topRight, bottomRight, bottomLeft, topLeft];
+        const sideLength = 2 * halfSide;
+        const totalPerimeter = 4 * sideLength;
+        const drawLength = totalPerimeter * progress;
+        ctx.moveTo(points[0].x, points[0].y);
+        let remaining = drawLength;
+        for (let i = 0; i < 4; i++) {
+          if (remaining >= sideLength) {
+            ctx.lineTo(points[i + 1].x, points[i + 1].y);
+            remaining -= sideLength;
+          } else {
+            const start = points[i];
+            const end = points[i + 1];
+            const fraction = remaining / sideLength;
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            ctx.lineTo(start.x + dx * fraction, start.y + dy * fraction);
+            remaining = 0;
+            break;
+          }
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 绘制印章内部文字与印泥效果
+    function drawInnerElements(config) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      ctx.save();
+      const fontSize = config.fontSize;
+      ctx.font = `bold ${fontSize}px ${config.font}`;
+      ctx.fillStyle = config.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      if (config.text.length === 2) {
+        // 两字符竖排显示，间隔更紧凑
+        let chars = config.text.split('');
+        let gap = fontSize * 0.05;
+        let totalHeight = fontSize * 2 + gap;
+        let firstY = centerY - totalHeight / 2 + fontSize / 2;
+        ctx.fillText(chars[0], centerX, firstY);
+        ctx.fillText(chars[1], centerX, firstY + fontSize + gap);
+      } else {
+        ctx.fillText(config.text, centerX, centerY);
+      }
+      ctx.restore();
+
+      // 添加印泥效果：随机散布的小点
+      createDistressedEffect(config.color);
+      updateDownloadLink();
+    }
+
+    // 模拟印泥效果，随机绘制散布小点
+    function createDistressedEffect(color) {
+      const numDots = 200;
+      for (let i = 0; i < numDots; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        ctx.fillStyle = hexToRgba(color, 0.05);
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 1.5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    // 辅助函数：将十六进制颜色转换为 rgba 格式
+    function hexToRgba(hex, opacity) {
+      let c;
+      if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+        c = hex.substring(1).split('');
+        if (c.length === 3) {
+          c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+        }
+        c = '0x' + c.join('');
+        return 'rgba(' + [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',') + ',' + opacity + ')';
+      }
+      return hex;
+    }
+
+    // 更新下载链接，使用户能保存生成的印章图片
+    function updateDownloadLink() {
+      // 指定PNG格式并保持透明度
+      const dataURL = canvas.toDataURL('image/png');
+      downloadLink.href = dataURL;
+    }
+
+    generateBtn.addEventListener('click', drawStamp);
+    window.addEventListener('load', drawStamp);
+  </script>
+</body>
+</html>
