@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>請求書作成システム</title>
+  <!-- 使用 pdfmake 库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <!-- 使用支持日文的字体 -->
+  <script>
+    // 预加载日文字体
+    window.pdfMake = window.pdfMake || {};
+    window.pdfMake.vfs = window.pdfMake.vfs || {};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.min.js"></script>
+  <style>
+    /* 白蓝主调配色 */
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      margin: 20px;
+      background: #e8f0fa; /* 浅蓝背景 */
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #007BFF;
+    }
+    /* 表单卡片样式，最大宽度600px，并居中显示 */
+    form {
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #007BFF;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    textarea {
+      resize: vertical;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #007BFF;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    .button-group {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .button-group button {
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 0 5px;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+    /* 预览区域样式，同样限制宽度600px，并居中显示 */
+    #invoicePreview {
+      background: #fff;
+      padding: 20px;
+      margin-top: 30px;
+      border: 2px solid #c9dcf0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .right {
+      text-align: right;
+    }
+    /* 打印时保证颜色 */
+    @media print {
+      body {
+        print-color-adjust: exact; /* 标准属性 */
+        -webkit-print-color-adjust: exact; /* Webkit 浏览器前缀 */
+      }
+    }
+    
+    /* 添加导航条样式 */
+    .navbar {
+      background-color: #007BFF;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .navbar h1 {
+      color: white;
+      margin: 0;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .nav-button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .stamp-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .pdf-btn {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .help-btn {
+      background-color: #fd7e14;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>請求書作成システム</h1>
+    <div class="nav-buttons">
+      <a href="https://takayashoshi888.github.io/webapp/kouqing/hanko.html" target="_blank">
+        <button class="nav-button stamp-btn">電子印章2</button>
+      </a>
+      <a href="https://stamp.onl.jp/" target="_blank">
+        <button class="nav-button stamp-btn">電子印章</button>
+      </a>
+      <a href="https://tools.pdf24.org/zh/edit-pdf" target="_blank">
+        <button class="nav-button pdf-btn">PDF編集</button>
+      </a>
+      <button class="nav-button help-btn" onclick="showHelp()">使用説明書</button>
+    </div>
+  </div>
+  <form id="invoiceForm">
+    <!-- 請求書基本信息 -->
+    <label>請求書日付
+      <input type="date" name="invoiceDate" required>
+    </label>
+    <label>請求書番号
+      <input type="text" name="invoiceNumber" placeholder="例: 20220502-1" required>
+    </label>
+    <label>宛先（御中）
+      <input type="text" name="recipient" placeholder="例: (有)中村工業" required>
+    </label>
+    <label>件名
+      <input type="text" name="subject" placeholder="例: 4月の請求書 (上野現場)" required>
+    </label>
+    <!-- 発行者（自社）情報 -->
+    <label>発行者名
+      <input type="text" name="issuer" placeholder="例: ナカムラタロウ" required>
+    </label>
+    <label>住所
+      <input type="text" name="address" placeholder="例: 〒332-0023 埼玉県川口市中区1-1-1" required>
+    </label>
+    <label>電話番号
+      <input type="text" name="phone" placeholder="例: 090888888" required>
+    </label>
+    <!-- 明细（品目）部分 -->
+    <h2>明細入力</h2>
+    <table id="itemsTable">
+      <thead>
+        <tr>
+          <th>名前</th>
+          <th>数量</th>
+          <th>単価 (円)</th>
+          <th>金額 (円)</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="text" name="itemName[]" placeholder="例: ナカムラタロウ" required></td>
+          <td><input type="number" name="quantity[]" min="0" value="0" onchange="updateRowAmount(this)" required></td>
+          <td><input type="number" name="unitPrice[]" min="0" value="0" onchange="updateRowAmount(this)" required></td>
+          <td class="rowAmount">0</td>
+          <td><button type="button" onclick="removeRow(this)">削除</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="button-group">
+      <button type="button" onclick="addRow()">行を追加</button>
+    </div>
+    <!-- 備考 -->
+    <label>備考
+      <textarea name="remarks" rows="3" placeholder="例: 渡辺太郎は2日を休みました。"></textarea>
+    </label>
+    <!-- 振込先情報 -->
+    <h2>振込先情報</h2>
+    <label>支払銀行
+      <input type="text" name="bankName" placeholder="例: 横浜銀行" required>
+    </label>
+    <label>金融コード
+      <input type="text" name="bankCode" placeholder="例: 0033" required>
+    </label>
+    <label>支店番号
+      <input type="text" name="branchNumber" placeholder="例: 006" required>
+    </label>
+    <label>支店名
+      <input type="text" name="branchName" placeholder="例: つばめ支店" required>
+    </label>
+    <label>口座番号
+      <input type="text" name="accountNumber" placeholder="例: 3209701" required>
+    </label>
+    <label>受取人名
+      <input type="text" name="accountRecipient" placeholder="例: ナカムラタロウ" required>
+    </label>
+    <div class="button-group">
+      <button type="button" onclick="generateInvoice()">請求書を生成する</button>
+    </div>
+  </form>
+
+  <!-- 請求書预览区域 -->
+  <div id="invoicePreview" style="display: none;">
+    <!-- invoiceContent 存放生成的請求書内容，此区域仅用于预览，不用于PDF -->
+    <div id="invoiceContent"></div>
+    <!-- 操作按钮区域，不会出现在PDF中 -->
+    <div class="button-group">
+      <button type="button" onclick="window.print()">印刷する</button>
+      <button type="button" onclick="exportPDF()">PDF導出</button>
+    </div>
+  </div>
+
+  <style>
+    /* 添加明細行
+    function addRow() {
+      const tbody = document.getElementById("itemsTable").getElementsByTagName("tbody")[0];
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="text" name="itemName[]" placeholder="名前" required></td>
+        <td><input type="number" name="quantity[]" min="0" value="0" onchange="updateRowAmount(this)" required></td>
+        <td><input type="number" name="unitPrice[]" min="0" value="0" onchange="updateRowAmount(this)" required></td>
+        <td class="rowAmount">0</td>
+        <td><button type="button" onclick="removeRow(this)">削除</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+    
+    // 删除明細行
+    function removeRow(button) {
+      const row = button.closest("tr");
+      row.remove();
+    }
+    
+    // 根据数量和单价计算本行金额
+    function updateRowAmount(element) {
+      const row = element.closest("tr");
+      const quantity = parseFloat(row.querySelector("input[name='quantity[]']").value) || 0;
+      const unitPrice = parseFloat(row.querySelector("input[name='unitPrice[]']").value) || 0;
+      const amount = quantity * unitPrice;
+      row.querySelector(".rowAmount").innerText = amount.toLocaleString();
+    }
+    
+    // 生成請求書预览，并显示在 invoiceContent 中
+    function generateInvoice() {
+      // 更新所有明細行金额
+      document.querySelectorAll("input[name='quantity[]'], input[name='unitPrice[]']").forEach(input => {
+        updateRowAmount(input);
+      });
+      
+      // 获取表单数据
+      const form = document.getElementById("invoiceForm");
+      const invoiceDate = form.invoiceDate.value;
+      const invoiceNumber = form.invoiceNumber.value;
+      const recipient = form.recipient.value;
+      const subject = form.subject.value;
+      const issuer = form.issuer.value;
+      const address = form.address.value;
+      const phone = form.phone.value;
+      const remarks = form.remarks.value;
+      const bankName = form.bankName.value;
+      const bankCode = form.bankCode.value;
+      const branchNumber = form.branchNumber.value;
+      const branchName = form.branchName.value;
+      const accountNumber = form.accountNumber.value;
+      const accountRecipient = form.accountRecipient.value;
+      
+      // 构造明細表格的HTML，用于预览展示
+      const itemNames = document.getElementsByName("itemName[]");
+      const quantities = document.getElementsByName("quantity[]");
+      const unitPrices = document.getElementsByName("unitPrice[]");
+      let subtotal = 0;
+      let itemsHTML = `<table style="width:100%; border-collapse:collapse;" border="1">
+        <thead>
+          <tr>
+            <th style="width: 40%">名前</th>
+            <th style="width: 15%">数量</th>
+            <th style="width: 20%">単価 (円)</th>
+            <th style="width: 25%">金額 (円)</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      
+      for (let i = 0; i < itemNames.length; i++) {
+        const name = itemNames[i].value;
+        const qty = parseFloat(quantities[i].value) || 0;
+        const price = parseFloat(unitPrices[i].value) || 0;
+        const amount = qty * price;
+        subtotal += amount;
+        itemsHTML += `<tr>
+          <td>${name}</td>
+          <td>${qty}</td>
+          <td class="right">${price.toLocaleString()}</td>
+          <td class="right">${amount.toLocaleString()}</td>
+        </tr>`;
+      }
+      itemsHTML += `</tbody></table>`;
+      
+      // 示例中消费税为 0
+      const tax = 0;
+      const total = subtotal;
+      
+      // 构造請求書预览的HTML：
+      let contentHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="text-align: left; white-space: nowrap;">${invoiceDate}</div>
+          <div style="flex: 1; text-align: center;">
+            <h1 style="margin: 0; color: #007BFF;">請求書</h1>
+          </div>
+          <div style="text-align: right; white-space: nowrap;">請求書番号: ${invoiceNumber}</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+          <div style="text-align: left;">
+            <p style="margin:0;">${recipient} 御中:</p>
+            <p style="margin:20px 0 0 0;">件名: ${subject}</p>
+          </div>
+          <div style="text-align: right;">
+            <p style="margin:0;">氏名: ${issuer}</p>
+            <p style="margin:0;">住所: ${address}</p>
+            <p style="margin:0;">携帯: ${phone}</p>
+          </div>
+        </div>
+        <p style="margin-top:50px;">下記のとおりご請求申し上げます。</p>
+        ${itemsHTML}
+        <p class="right">小計: ${subtotal.toLocaleString()} 円</p>
+        <p class="right">消費税(10%): ${tax.toLocaleString()} 円</p>
+        <p class="right"><strong>合計: ${total.toLocaleString()} 円</strong></p>
+        <hr>
+        <h3 style="color: #007BFF;">振込先</h3>
+        <p>支払銀行: ${bankName}</p>
+        <p>金融コード: ${bankCode}　支店番号: ${branchNumber}</p>
+        <p>支店名: ${branchName}</p>
+        <p>口座番号: ${accountNumber}</p>
+        <p>受取人: ${accountRecipient}</p>
+        <hr>
+        <p>備考: ${remarks}</p>
+      `;
+      
+      document.getElementById("invoiceContent").innerHTML = contentHTML;
+      document.getElementById("invoicePreview").style.display = "block";
+      document.getElementById("invoicePreview").scrollIntoView({ behavior: "smooth" });
+    }
+    
+    // 使用pdfmake生成PDF
+    function exportPDF() {
+      // 添加字体配置 - 使用内置的Roboto字体作为基础，并添加日文支持
+      pdfMake.fonts = {
+        Roboto: {
+          normal: 'Roboto-Regular.ttf',
+          bold: 'Roboto-Medium.ttf',
+          italics: 'Roboto-Italic.ttf',
+          bolditalics: 'Roboto-MediumItalic.ttf'
+        },
+        // 添加NotoSansJP字体支持日文
+        NotoSansJP: {
+          normal: 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@4.5.12/files/noto-sans-jp-japanese-400-normal.woff',
+          bold: 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@4.5.12/files/noto-sans-jp-japanese-700-normal.woff',
+        }
+      };
+    
+      const form = document.getElementById("invoiceForm");
+      const invoiceDate = form.invoiceDate.value;
+      const invoiceNumber = form.invoiceNumber.value;
+      const recipient = form.recipient.value;
+      const subject = form.subject.value;
+      const issuer = form.issuer.value;
+      const address = form.address.value;
+      const phone = form.phone.value;
+      const remarks = form.remarks.value;
+      const bankName = form.bankName.value;
+      const bankCode = form.bankCode.value;
+      const branchNumber = form.branchNumber.value;
+      const branchName = form.branchName.value;
+      const accountNumber = form.accountNumber.value;
+      const accountRecipient = form.accountRecipient.value;
+      
+      // 准备明细表数据
+      const itemNames = document.getElementsByName("itemName[]");
+      const quantities = document.getElementsByName("quantity[]");
+      const unitPrices = document.getElementsByName("unitPrice[]");
+      let subtotal = 0;
+      const tableBody = [];
+      
+      // 表头
+      tableBody.push([
+        { text: '名前', style: 'tableHeader' },
+        { text: '数量', style: 'tableHeader' },
+        { text: '単価 (円)', style: 'tableHeader' },
+        { text: '金額 (円)', style: 'tableHeader' }
+      ]);
+    
+      // 表格内容
+      for (let i = 0; i < itemNames.length; i++) {
+        const item = itemNames[i].value;
+        const qty = parseFloat(quantities[i].value) || 0;
+        const price = parseFloat(unitPrices[i].value) || 0;
+        const amount = qty * price;
+        subtotal += amount;
+        
+        tableBody.push([
+          { text: item, alignment: 'left' }, // 添加左对齐
+          { text: qty.toString(), alignment: 'center' },
+          { text: price.toLocaleString(), alignment: 'right' },
+          { text: amount.toLocaleString(), alignment: 'right' }
+        ]);
+      }
+    
+      const tax = 0;
+      const total = subtotal;
+    
+      // 定义文档结构
+      const docDefinition = {
+        content: [
+          // 第一行 - 日期和发票号
+          {
+            columns: [
+              { text: '', width: '*' },  // 左侧留空
+              { text: invoiceDate, alignment: 'right', width: 'auto' },
+              { text: '\n', width: 20 },  // 添加间距
+              { text: `請求書番号: ${invoiceNumber}`, alignment: 'right', width: 'auto' }
+            ]
+          },
+          { text: '\n' },
+          
+          // 标题
+          {
+            text: '請求書',
+            style: 'header',
+            alignment: 'center',
+            margin: [0, 10, 0, 20]
+          },
+          
+          // 收件人信息
+          { text: `${recipient} 御中`, style: 'recipient', margin: [0, 0, 0, 5] },
+          { text: `件名: ${subject}`, margin: [0, 0, 0, 20] },
+          
+          // 发件人信息（右对齐）
+          {
+            columns: [
+              { text: '', width: '*' },  // 左侧留空
+              {
+                stack: [
+                  { 
+                    columns: [
+                      { text: `氏名: ${issuer}`, alignment: 'left' },
+                      { 
+                        canvas: [
+                          {
+                            type: 'circle',
+                            x: 12.5,
+                            y: 12.5,
+                            r: 12.5,
+                            color: 'red'
+                          }
+                        ],
+                        width: 25
+                      }
+                    ],
+                    columnGap: 10
+                  },
+                  { text: `〒${address}`, alignment: 'left' },
+                  { text: `TEL:${phone}`, alignment: 'left' }
+                ],
+                width: 'auto'
+              }
+            ]
+          },
+          { text: '\n' }, // 空行
+          
+          // 正文
+          { text: '下記のとおりご請求申し上げます。', margin: [0, 0, 0, 10] },
+          
+          // 表格
+          {
+            
+            table: {
+              headerRows: 1,
+              widths: ['40%', '15%', '20%', '25%'],
+              body: tableBody
+            },
+            layout: 'lightHorizontalLines'
+          },
+          { text: '\n' }, // 空行
+          // 合计
+          { text: `小計: ${subtotal.toLocaleString()} 円`, alignment: 'right' },
+          { text: `消費税(10%): ${tax.toLocaleString()} 円`, alignment: 'right' },
+          { text: `合計: ${total.toLocaleString()} 円`, alignment: 'right', bold: true },
+          { text: '\n' }, // 空行
+          
+          // 分隔线
+          { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 595-40, y2: 5, lineWidth: 1 }] },
+          { text: '\n' }, // 空行
+          
+          // 银行信息
+          { text: '振込先', style: 'subheader' },
+          { text: `支払銀行: ${bankName}` },
+          { text: `金融コード: ${bankCode}　支店番号: ${branchNumber}` },
+          { text: `支店名: ${branchName}` },
+          { text: `口座番号: ${accountNumber}` },
+          { text: `受取人: ${accountRecipient}` },
+          { text: '\n' }, // 空行
+          
+          // 分隔线
+          { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 595-40, y2: 5, lineWidth: 1 }] },
+          { text: '\n' }, // 空行
+          
+          // 备注
+          { text: `備考: ${remarks}` }
+        ],
+        
+        // 样式定义
+        styles: {
+          header: {
+            fontSize: 18,
+            bold: true,
+            color: 'blue'
+          },
+          subheader: {
+            fontSize: 14,
+            bold: true,
+            color: 'blue',
+            margin: [0, 10, 0, 5]
+          },
+          tableHeader: {
+            bold: true,
+            fontSize: 10,
+            color: 'black',
+            fillColor: '#e8f5e9', // 修改为淡绿色背景
+            alignment: 'center'
+          },
+          recipient: {
+            fontSize: 12,
+            bold: true
+          }
+        },
+        
+        // 默认样式
+        defaultStyle: {
+          font: 'NotoSansJP', // 使用NotoSansJP字体支持日文
+          fontSize: 10,
+          characterSpacing: 0.5 // 添加字符间距改善显示效果
+        },
+        
+        pageOrientation: 'portrait', // 明确页面方向
+        pageMargins: [40, 60, 40, 60], // 设置页面边距
+        info: {
+          title: '請求書',
+          author: '請求書作成システム',
+          subject: '請求書',
+          keywords: '請求書, 発行, PDF'
+        }
+      };
+    
+      // 生成PDF
+      pdfMake.createPdf(docDefinition).download('請求書.pdf');
+    }
+  </style>
+</body>
+</html>
+
+<style>
+  /* 添加弹窗样式 */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+    position: relative;
+  }
+  
+  .close-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+</style>
+
+<!-- 在body末尾添加弹窗HTML -->
+<div id="helpModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeHelp()">&times;</span>
+    <h2>使用説明書</h2>
+    <p>1. 请仔细输入所有必要的内容</p>
+    <p>2. 确认所有输入内容无误</p>
+    <p>3. 点击"請求書を生成する"按钮生成预览</p>
+    <p>4. 检查预览内容</p>
+    <p>5. 点击"PDF導出"按钮导出PDF文件</p>
+    <p>6. 需要时可以添加电子印章</p>
+  </div>
+</div>
+
+<script>
+  // 显示使用说明书弹窗
+  function showHelp() {
+    document.getElementById('helpModal').style.display = 'block';
+  }
+  
+  // 关闭使用说明书弹窗
+  function closeHelp() {
+    document.getElementById('helpModal').style.display = 'none';
+  }
+  
+  // 点击弹窗外部关闭弹窗
+  window.onclick = function(event) {
+    const modal = document.getElementById('helpModal');
+    if (event.target == modal) {
+      modal.style.display = 'none';
+    }
+  }
+</script>
