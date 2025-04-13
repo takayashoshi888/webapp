@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日出工记录系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #e67e22;
+            --text-color: #333;
+            --input-border-color: #bdc3c7;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6f9;
+            color: var(--text-color);
+        }
+
+        .form-container,
+        .table-container,
+        .stats-container,
+        .chart-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--input-border-color);
+            border-radius: 8px;
+            transition: border-color 0.3s ease;
+            color: var(--text-color);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #d35400;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #2c3e50;
+        }
+
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .notification.error {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .notification.warning {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .pagination button {
+            margin: 0 0.25rem;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #loginContainer {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #loginForm {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+
+<body class="container mx-auto p-4 md:p-8">
+    <!-- 登录界面 -->
+    <div id="loginContainer">
+        <form id="loginForm">
+            <h2 class="text-2xl font-bold mb-6 text-center">用户登录</h2>
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" required>
+            </div>
+            <div class="flex justify-between items-center mt-6">
+                <button type="button" id="registerBtn" class="btn-secondary">注册</button>
+                <button type="submit" class="btn-primary">登录</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 主应用界面 -->
+    <div id="appContainer" class="hidden">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">每日出工记录系统</h1>
+            <div class="flex items-center space-x-4">
+                <span id="currentUser" class="font-semibold"></span>
+                <button id="logoutBtn" class="btn-secondary text-sm">退出登录</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 数据采集 -->
+            <div class="form-container lg:col-span-1">
+                <h2 class="text-xl font-bold mb-4">数据采集</h2>
+                <form id="recordForm">
+                    <div class="form-group">
+                        <label for="date">日期</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">姓名</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="numberOfPeople">人数</label>
+                        <input type="number" id="numberOfPeople" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="siteName">现场名称</label>
+                        <input type="text" id="siteName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="highwayFee">高速费</label>
+                        <input type="number" id="highwayFee" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="parkingFee">停车费</label>
+                        <input type="number" id="parkingFee" min="0" step="0.01" required>
+                    </div>
+                    <button type="submit" class="btn-primary w-full">提交记录</button>
+                </form>
+            </div>
+
+            <!-- 记录列表和统计 -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="table-container">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">记录列表</h2>
+                        <div class="flex space-x-2">
+                            <input type="text" id="searchInput" placeholder="搜索..." class="border rounded px-3 py-1">
+                            <select id="filterSelect" class="border rounded px-3 py-1">
+                                <option value="">全部</option>
+                                <option value="date">按日期</option>
+                                <option value="name">按姓名</option>
+                                <option value="site">按现场</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="recordTable" class="w-full">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="p-3 text-left">日期</th>
+                                    <th class="p-3 text-left">姓名</th>
+                                    <th class="p-3 text-left">人数</th>
+                                    <th class="p-3 text-left">现场名称</th>
+                                    <th class="p-3 text-left">高速费</th>
+                                    <th class="p-3 text-left">停车费</th>
+                                    <th class="p-3 text-left">总费用</th>
+                                    <th class="p-3 text-left">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination mt-4">
+                        <button id="prevPage" disabled>上一页</button>
+                        <span id="pageInfo" class="mx-4"></span>
+                        <button id="nextPage" disabled>下一页</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="stats-container">
+                        <h2 class="text-xl font-bold mb-4">统计信息</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-gray-600">总天数</p>
+                                <p class="text-2xl font-bold" id="totalDays">0</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">总人数</p>
+                                <p class="text-2xl font-bold" id="totalPeople">0</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">总费用</p>
+                                <p class="text-2xl font-bold" id="totalFee">0</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">平均费用</p>
+                                <p class="text-2xl font-bold" id="avgFee">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h2 class="text-xl font-bold mb-4">费用分布</h2>
+                        <canvas id="feeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-4 mt-6">
+            <button id="exportCSV" class="btn-secondary">导出 CSV</button>
+            <button id="exportExcel" class="btn-secondary">导出 Excel</button>
+            <button id="exportPDF" class="btn-primary">导出 PDF</button>
+        </div>
+    </div>
+
+    <!-- 通知组件 -->
+    <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+        <button class="ml-4" onclick="this.parentElement.classList.remove('show')">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // 全局变量
+        let records = [];
+        let currentUser = null;
+        let currentPage = 1;
+        const recordsPerPage = 10;
+        let feeChart = null;
+
+        // DOM元素
+        const loginContainer = document.getElementById('loginContainer');
+        const appContainer = document.getElementById('appContainer');
+        const loginForm = document.getElementById('loginForm');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const currentUserSpan = document.getElementById('currentUser');
+        const recordForm = document.getElementById('recordForm');
+        const recordTable = document.getElementById('recordTable').getElementsByTagName('tbody')[0];
+        const searchInput = document.getElementById('searchInput');
+        const filterSelect = document.getElementById('filterSelect');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const pageInfoSpan = document.getElementById('pageInfo');
+        const totalDaysElement = document.getElementById('totalDays');
+        const totalPeopleElement = document.getElementById('totalPeople');
+        const totalFeeElement = document.getElementById('totalFee');
+        const avgFeeElement = document.getElementById('avgFee');
+        const exportCSVButton = document.getElementById('exportCSV');
+        const exportExcelButton = document.getElementById('exportExcel');
+        const exportPDFButton = document.getElementById('exportPDF');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notificationMessage');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+            
+            // 加载用户数据
+            checkAuthState();
+            
+            // 初始化图表
+            initChart();
+            
+            // 设置提醒
+            setReminder();
+        });
+
+        // 用户认证相关功能
+        function checkAuthState() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                currentUserSpan.textContent = currentUser.username;
+                loginContainer.style.display = 'none';
+                appContainer.classList.remove('hidden');
+                loadRecords();
+            } else {
+                loginContainer.style.display = 'flex';
+                appContainer.classList.add('hidden');
+            }
+        }
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // 简单验证 - 实际应用中应该使用更安全的认证方式
+            if (username && password) {
+                currentUser = { username };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showNotification('登录成功', 'success');
+                checkAuthState();
+            } else {
+                showNotification('请输入用户名和密码', 'error');
+            }
+        });
+
+        registerBtn.addEventListener('click', function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username && password) {
+                // 在实际应用中，这里应该将用户信息发送到服务器进行注册
+                showNotification('注册成功，请登录', 'success');
+            } else {
+                showNotification('请输入用户名和密码', 'error');
+            }
+        });
+
+        logoutBtn.addEventListener('click', function() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem(`records_${currentUser?.username}`);
+            showNotification('已退出登录', 'success');
+            checkAuthState();
+        });
+
+        // 记录表单提交
+        recordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 验证输入
+            const date = document.getElementById('date').value;
+            const name = document.getElementById('name').value;
+            const numberOfPeople = parseInt(document.getElementById('numberOfPeople').value);
+            const siteName = document.getElementById('siteName').value;
+            const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
+            const parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
+            
+            if (!date) {
+                showNotification('请选择日期', 'error');
+                return;
+            }
+            
+            if (!name) {
+                showNotification('请输入姓名', 'error');
+                return;
+            }
+            
+            if (isNaN(numberOfPeople)) {
+                showNotification('请输入有效的人数', 'error');
+                return;
+            }
+            
+            if (numberOfPeople <= 0) {
+                showNotification('人数必须大于0', 'error');
+                return;
+            }
+            
+            if (!siteName) {
+                showNotification('请输入现场名称', 'error');
+                return;
+            }
+            
+            // 创建记录对象
+            const record = {
+                date,
+                name,
+                numberOfPeople,
+                siteName,
+                highwayFee,
+                parkingFee,
+                totalFee: highwayFee + parkingFee,
+                createdAt: new Date().toISOString()
+            };
+            
+            // 添加到记录数组
+            records.push(record);
+            
+            // 保存并更新UI
+            saveRecords();
+            updateTable();
+            updateStatistics();
+            updateChart();
+            
+            // 重置表单
+            recordForm.reset();
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            showNotification('记录已保存', 'success');
+        });
+
+        // 数据存储功能
+        function saveRecords() {
+            if (currentUser) {
+                localStorage.setItem(`records_${currentUser.username}`, JSON.stringify(records));
+            }
+        }
+
+        function loadRecords() {
+            if (currentUser) {
+                const savedRecords = localStorage.getItem(`records_${currentUser.username}`);
+                if (savedRecords) {
+                    records = JSON.parse(savedRecords);
+                    updateTable();
+                    updateStatistics();
+                    updateChart();
+                }
+            }
+        }
+
+        // 表格更新功能
+        function updateTable() {
+            recordTable.innerHTML = '';
+            
+            // 分页计算
+            const start = (currentPage - 1) * recordsPerPage;
+            const end = start + recordsPerPage;
+            const paginatedRecords = records.slice(start, end);
+            
+            // 填充表格
+            paginatedRecords.forEach((record, index) => {
+                const row = recordTable.insertRow();
+                
+                // 日期单元格
+                const dateCell = row.insertCell(0);
+                dateCell.textContent = record.date;
+                
+                // 姓名单元格
+                const nameCell = row.insertCell(1);
+                nameCell.textContent = record.name;
+                
+                // 人数单元格
+                const peopleCell = row.insertCell(2);
+                peopleCell.textContent = record.numberOfPeople;
+                
+                // 现场名称单元格
+                const siteCell = row.insertCell(3);
+                siteCell.textContent = record.siteName;
+                
+                // 高速费单元格
+                const highwayCell = row.insertCell(4);
+                highwayCell.textContent = record.highwayFee.toFixed(2);
+                
+                // 停车费单元格
+                const parkingCell = row.insertCell(5);
+                parkingCell.textContent = record.parkingFee.toFixed(2);
+                
+                // 总费用单元格
+                const totalCell = row.insertCell(6);
+                totalCell.textContent = record.totalFee.toFixed(2);
+                
+                // 操作单元格
+                const actionCell = row.insertCell(7);
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '<i class="fas fa-trash text-red-500"></i>';
+                deleteBtn.className = 'hover:text-red-700';
+                deleteBtn.onclick = () => deleteRecord(start + index);
+                actionCell.appendChild(deleteBtn);
+            });
+            
+            // 更新分页信息
+            updatePagination();
+        }
+
+        function deleteRecord(index) {
+            if (confirm('确定要删除这条记录吗?')) {
+                records.splice(index, 1);
+                saveRecords();
+                updateTable();
+                updateStatistics();
+                updateChart();
+                showNotification('记录已删除', 'success');
+            }
+        }
+
+        // 分页功能
+        function updatePagination() {
+            const totalPages = Math.ceil(records.length / recordsPerPage);
+            
+            prevPageBtn.disabled = currentPage <= 1;
+            nextPageBtn.disabled = currentPage >= totalPages;
+            
+            pageInfoSpan.textContent = `第 ${currentPage} 页 / 共 ${totalPages || 1} 页`;
+        }
+
+        prevPageBtn.addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateTable();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', function() {
+            const totalPages = Math.ceil(records.length / recordsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateTable();
+            }
+        });
+
+        // 搜索和筛选功能
+        searchInput.addEventListener('input', function() {
+            currentPage = 1;
+            updateTable();
+        });
+
+        filterSelect.addEventListener('change', function() {
+            currentPage = 1;
+            updateTable();
+        });
+
+        // 统计功能
+        function updateStatistics() {
+            const totalDays = records.length;
+            let totalPeople = 0;
+            let totalFee = 0;
+            
+            records.forEach(record => {
+                totalPeople += record.numberOfPeople;
+                totalFee += record.totalFee;
+            });
+            
+            const avgFee = totalDays > 0 ? totalFee / totalDays : 0;
+            
+            totalDaysElement.textContent = totalDays;
+            totalPeopleElement.textContent = totalPeople;
+            totalFeeElement.textContent = totalFee.toFixed(2);
+            avgFeeElement.textContent = avgFee.toFixed(2);
+        }
+
+        // 图表功能
+        function initChart() {
+            const ctx = document.getElementById('feeChart').getContext('2d');
+            feeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '费用分布',
+                        data: [],
+                        backgroundColor: 'rgba(230, 126, 34, 0.7)',
+                        borderColor: 'rgba(230, 126, 34, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            // 按日期分组统计
+            const dateMap = {};
+            
+            records.forEach(record => {
+                if (!dateMap[record.date]) {
+                    dateMap[record.date] = 0;
+                }
+                dateMap[record.date] += record.totalFee;
+            });
+            
+            const dates = Object.keys(dateMap).sort();
+            const fees = dates.map(date => dateMap[date]);
+            
+            feeChart.data.labels = dates;
+            feeChart.data.datasets[0].data = fees;
+            feeChart.update();
+        }
+
+        // 导出功能
+        exportCSVButton.addEventListener('click', function() {
+            if (records.length === 0) {
+                showNotification('没有可导出的记录', 'warning');
+                return;
+            }
+            
+            const csvContent = "data:text/csv;charset=utf-8," +
+                "日期,姓名,人数,现场名称,高速费,停车费,总费用\n" +
+                records.map(record => 
+                    `${record.date},${record.name},${record.numberOfPeople},${record.siteName},${record.highwayFee.toFixed(2)},${record.parkingFee.toFixed(2)},${record.totalFee.toFixed(2)}`
+                ).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `出工记录_${currentUser?.username || ''}_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('CSV导出成功', 'success');
+        });
+
+        exportExcelButton.addEventListener('click', function() {
+            if (records.length === 0) {
+                showNotification('没有可导出的记录', 'warning');
+                return;
+            }
+            
+            // 准备数据
+            const data = [
+                ['日期', '姓名', '人数', '现场名称', '高速费', '停车费', '总费用'],
+                ...records.map(record => [
+                    record.date,
+                    record.name,
+                    record.numberOfPeople,
+                    record.siteName,
+                    record.highwayFee.toFixed(2),
+                    record.parkingFee.toFixed(2),
+                    record.totalFee.toFixed(2)
+                ])
+            ];
+            
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, '出工记录');
+            
+            // 导出文件
+            XLSX.writeFile(wb, `出工记录_${currentUser?.username || ''}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            
+            showNotification('Excel导出成功', 'success');
+        });
+
+        exportPDFButton.addEventListener('click', function() {
+            if (records.length === 0) {
+                showNotification('没有可导出的记录', 'warning');
+                return;
+            }
+            
+            try {
+                // 使用html2canvas方法，避免字体问题
+                // 创建一个临时表格来渲染数据
+                const tempDiv = document.createElement('div');
+                tempDiv.style.width = '100%';
+                tempDiv.style.padding = '20px';
+                tempDiv.style.backgroundColor = 'white';
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                
+                // 添加标题和统计信息
+                const title = document.createElement('h1');
+                title.textContent = '每日出工记录汇总表';
+                title.style.textAlign = 'center';
+                title.style.marginBottom = '20px';
+                title.style.fontFamily = 'Arial, "Microsoft YaHei", sans-serif';
+                tempDiv.appendChild(title);
+                
+                // 添加用户和日期信息
+                const infoDiv = document.createElement('div');
+                infoDiv.style.marginBottom = '20px';
+                infoDiv.innerHTML = `
+                    <p>用户: ${currentUser?.username || '未知'}</p>
+                    <p>导出时间: ${new Date().toLocaleString()}</p>
+                `;
+                infoDiv.style.fontFamily = 'Arial, "Microsoft YaHei", sans-serif';
+                tempDiv.appendChild(infoDiv);
+                
+                // 添加统计信息
+                const totalPeople = records.reduce((sum, r) => sum + r.numberOfPeople, 0);
+                const totalFee = records.reduce((sum, r) => sum + r.totalFee, 0);
+                
+                const statsDiv = document.createElement('div');
+                statsDiv.style.marginBottom = '20px';
+                statsDiv.innerHTML = `
+                    <p>总记录数: ${records.length}</p>
+                    <p>总人数: ${totalPeople}</p>
+                    <p>总费用: ¥${totalFee.toFixed(2)}</p>
+                `;
+                statsDiv.style.fontFamily = 'Arial, "Microsoft YaHei", sans-serif';
+                tempDiv.appendChild(statsDiv);
+                
+                // 创建表格
+                const table = document.createElement('table');
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+                table.style.marginBottom = '20px';
+                table.style.fontFamily = 'Arial, "Microsoft YaHei", sans-serif';
+                
+                // 添加表头
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                ['日期', '姓名', '人数', '现场名称', '高速费(¥)', '停车费(¥)', '总费用(¥)'].forEach(text => {
+                    const th = document.createElement('th');
+                    th.textContent = text;
+                    th.style.border = '1px solid #ddd';
+                    th.style.padding = '8px';
+                    th.style.backgroundColor = '#4285f4';
+                    th.style.color = 'white';
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+                
+                // 添加表体
+                const tbody = document.createElement('tbody');
+                records.forEach((record, index) => {
+                    const row = document.createElement('tr');
+                    row.style.backgroundColor = index % 2 === 0 ? '#f2f2f2' : 'white';
+                    
+                    [record.date, record.name, record.numberOfPeople, record.siteName, 
+                     record.highwayFee.toFixed(2), record.parkingFee.toFixed(2), record.totalFee.toFixed(2)
+                    ].forEach(text => {
+                        const td = document.createElement('td');
+                        td.textContent = text;
+                        td.style.border = '1px solid #ddd';
+                        td.style.padding = '8px';
+                        td.style.textAlign = 'center';
+                        row.appendChild(td);
+                    });
+                    
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+                tempDiv.appendChild(table);
+                
+                // 添加到文档中但不显示
+                document.body.appendChild(tempDiv);
+                
+                // 使用html2canvas将表格转换为图像
+                html2canvas(tempDiv).then(canvas => {
+                    // 移除临时元素
+                    document.body.removeChild(tempDiv);
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    const { jsPDF } = window.jspdf;
+                    
+                    // 创建PDF文档
+                    const pdf = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+                    
+                    // 计算图像尺寸以适应PDF页面
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+                    const imgY = 10;
+                    
+                    // 添加图像到PDF
+                    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+                    
+                    // 保存PDF
+                    pdf.save(`出工记录_${currentUser?.username || '未知'}_${new Date().toISOString().split('T')[0]}.pdf`);
+                    showNotification('PDF导出成功', 'success');
+                });
+            } catch (error) {
+                console.error('PDF生成错误:', error);
+                showNotification('PDF导出失败: ' + error.message, 'error');
+            }
+        });
+
+        // 添加思源黑体字体的base64编码
+        const sourceHanSansFont = '...'; // 这里是字体的base64编码，太长了，实际使用时需要完整添加
+
+        // 提醒功能
+        function setReminder() {
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            
+            // 检查今天是否已有记录
+            const hasRecordToday = records.some(r => r.date === today);
+            if (hasRecordToday) return;
+            
+            const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+            if (now > reminderTime) {
+                reminderTime.setDate(reminderTime.getDate() + 1);
+            }
+            
+            const timeUntilReminder = reminderTime - now;
+            setTimeout(() => {
+                showNotification('请记录今日出工信息！', 'warning');
+                setReminder();
+            }, timeUntilReminder);
+        }
+
+        // 通知功能
+        function showNotification(message, type = 'success') {
+            notificationMessage.textContent = message;
+            notification.className = 'notification';
+            notification.classList.add(type, 'show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
