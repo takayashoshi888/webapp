@@ -254,8 +254,9 @@
     </div>
   </div>
 
-  <style>
-    /* 添加明細行
+  <!-- 删除这个错误的style标签，将JavaScript代码放到正确的script标签中 -->
+  <script>
+    // 添加明細行
     function addRow() {
       const tbody = document.getElementById("itemsTable").getElementsByTagName("tbody")[0];
       const tr = document.createElement("tr");
@@ -597,7 +598,7 @@
       // 生成PDF
       pdfMake.createPdf(docDefinition).download('請求書.pdf');
     }
-  </style>
+  </script>
 </body>
 </html>
 
@@ -661,7 +662,7 @@
   // 点击弹窗外部关闭弹窗
   window.onclick = function(event) {
     const modal = document.getElementById('helpModal');
-    if (event.target == modal) {
+    if (event.target === modal) {
       modal.style.display = 'none';
     }
   }
