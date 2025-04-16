@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - 管理者パネル</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="admin-header">
+            <h1 class="logo">TKY株式会社 - 管理者パネル</h1>
+            <button id="logout" class="btn-logout">ログアウト</button>
+        </header>
+        
+        <nav class="admin-nav">
+            <button class="tab-btn active" data-tab="members">メンバー管理</button>
+            <button class="tab-btn" data-tab="teams">チーム管理</button>
+            <button class="tab-btn" data-tab="sites">现场管理</button>
+            <button class="tab-btn" data-tab="stats">統計</button>
+        </nav>
+        
+        <main class="admin-content">
+            <!-- メンバー管理タブ -->
+            <div id="members" class="tab-content active">
+                <div class="action-bar">
+                    <button id="addMember" class="btn-add">+ メンバー追加</button>
+                </div>
+                <table id="membersTable">
+                    <thead>
+                        <tr>
+                            <th>氏名</th>
+                            <th>チーム</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+            <!-- チーム管理タブ -->
+            <div id="teams" class="tab-content">
+                <div class="action-bar">
+                    <button id="addTeam" class="btn-add">+ チーム追加</button>
+                </div>
+                <table id="teamsTable">
+                    <thead>
+                        <tr>
+                            <th>チーム名</th>
+                            <th>メンバー数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+            <!-- 統計タブ -->
+            <div id="stats" class="tab-content">
+                <div class="filter-bar">
+                    <select id="statsTeamFilter">
+                        <option value="all">全チーム</option>
+                    </select>
+                    <select id="statsSiteFilter">
+                        <option value="all">全現場</option>
+                        <option value="東京サイト">東京现场</option>
+                        <option value="大阪サイト">大阪现场</option>
+                        <option value="名古屋サイト">名古屋现场</option>
+                    </select>
+                    <input type="date" id="statsStartDate">
+                    <span>〜</span>
+                    <input type="date" id="statsEndDate">
+                    <button id="exportData" class="btn-export">データエクスポート</button>
+                </div>
+                
+                <div class="excel-style-container">
+                    <!-- 在統計部分的表格中添加正确的类名 -->
+                    <table id="siteStats" class="excel-style-table">
+                        <thead>
+                            <tr>
+                                <th colspan="5" class="table-title">現場別統計</th>
+                            </tr>
+                            <tr>
+                                <th>現場名</th>
+                                <th>総出勤日数</th>
+                                <th>総駐車料金</th>
+                                <th>総高速料金</th>
+                                <th>総費用</th>
+                            </tr>
+                        </thead>
+                        <tbody id="siteStats"></tbody>
+                    </table>
+                
+                    <table class="excel-style-table">
+                        <thead>
+                            <tr>
+                                <th colspan="5" class="table-title">メンバー別統計</th>
+                            </tr>
+                            <tr>
+                                <th>氏名</th>
+                                <th>出勤日数</th>
+                                <th>駐車料金合計</th>
+                                <th>高速料金合計</th>
+                                <th>総費用</th>
+                            </tr>
+                        </thead>
+                        <tbody id="memberStats"></tbody>
+                    </table>
+                
+                    <table class="excel-style-table">
+                        <thead>
+                            <tr>
+                                <th colspan="5" class="table-title">チーム別統計</th>
+                            </tr>
+                            <tr>
+                                <th>チーム名</th>
+                                <th>総出勤日数</th>
+                                <th>総駐車料金</th>
+                                <th>総高速料金</th>
+                                <th>総費用</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teamStats"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- メンバー追加/編集モーダル -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalMemberTitle">メンバー追加</h2>
+            <form id="memberForm">
+                <input type="hidden" id="memberId">
+                <div class="form-group">
+                    <label for="memberName">氏名:</label>
+                    <input type="text" id="memberName" required>
+                </div>
+                <div class="form-group">
+                    <label for="memberTeam">チーム:</label>
+                    <select id="memberTeam" required></select>
+                </div>
+                <button type="submit" class="btn-submit">保存</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- チーム追加モーダル -->
+    <div id="teamModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>チーム追加</h2>
+            <form id="teamForm">
+                <div class="form-group">
+                    <label for="teamName">チーム名:</label>
+                    <input type="text" id="teamName" required>
+                </div>
+                <button type="submit" class="btn-submit">保存</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 现场追加/編集モーダル -->
+    <div id="siteModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalSiteTitle">现场追加</h2>
+            <form id="siteForm">
+                <input type="hidden" id="siteId">
+                <div class="form-group">
+                    <label for="siteName">现场名:</label>
+                    <input type="text" id="siteName" required>
+                </div>
+                <button type="submit" class="btn-submit">保存</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 现场管理タブ -->
+    <div id="sites" class="tab-content">
+        <div class="action-bar">
+            <button id="addSite" class="btn-add">+ 现场追加</button>
+        </div>
+        <table id="sitesTable">
+            <thead>
+                <tr>
+                    <th>现场名</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

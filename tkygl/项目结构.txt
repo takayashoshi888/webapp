@@ -1,0 +1,5 @@
+attendance-system/
+├── index.html      # 员工签到页面
+├── admin.html      # 管理员后台
+├── style.css       # 全局样式
+└── script.js       # 主要业务逻辑

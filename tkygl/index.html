@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - 出勤管理システム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="responsive-wrapper">
+            <header>
+                <div class="header-content">
+                    <div class="logo-section">
+                        <img src="images/logo.png" alt="TKY株式会社" style="max-width: 50px; height: auto;">
+                        <p class="subtitle">出勤管理システム</p>
+                    </div>
+                    <div class="info-section">
+                        <p>本日の出勤者数：<span id="attendanceCount">0</span>人</p>
+                        <p>最新情報：<span id="latestNews">システム正常稼働中</span></p>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="login-form">
+                <div class="form-container">
+                    <h2 class="form-title">出勤登録</h2>
+                    <form id="attendanceForm" class="form-grid">
+                        <div class="form-group">
+                            <label for="site">現場名:</label>
+                            <select id="site" required>
+                                <option value="">選択してください</option>
+                                <option value="東京サイト">東京現場</option>
+                                <option value="大阪サイト">大阪現場</option>
+                                <option value="名古屋サイト">名古屋現場</option>
+                                <option value="渋谷サイト">渋谷現場</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="team">チーム:</label>
+                            <select id="team" required>
+                                <option value="">選択してください</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="name">氏名:</label>
+                            <input type="text" id="name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="parkingFee">駐車料金 (円):</label>
+                            <input type="number" id="parkingFee" min="0" value="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="highwayFee">高速料金 (円):</label>
+                            <input type="number" id="highwayFee" min="0" value="0">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn-submit primary">出勤登録</button>
+                            <button id="adminLogin" class="btn-admin secondary">管理者ログイン</button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
