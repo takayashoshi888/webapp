@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日考勤记录系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1>每日考勤记录系统</h1>
+            <div class="user-info">
+                <span id="currentUser"></span>
+                <button id="logoutBtn">退出登录</button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- 数据录入表单 -->
+        <div class="form-container">
+            <h2>新增记录</h2>
+            <form id="recordForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="recordDate">日期：</label>
+                        <input type="date" id="recordDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="name">姓名：</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="peopleCount">人数：</label>
+                        <input type="number" id="peopleCount" min="1" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="siteName">现场名称：</label>
+                        <input type="text" id="siteName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="parkingFee">停车费（円）：</label>
+                        <input type="number" id="parkingFee" min="0" step="0.01" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="highwayFee">高速费（円）：</label>
+                        <input type="number" id="highwayFee" min="0" step="0.01" value="0">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">保存记录</button>
+                    <button type="button" id="clearForm" class="secondary-btn">清空</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 查询和统计区域 -->
+        <div class="query-section">
+            <h2>查询与统计</h2>
+            <div class="query-options">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startDate">开始日期：</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endDate">结束日期：</label>
+                        <input type="date" id="endDate">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="filterName">按姓名筛选：</label>
+                        <input type="text" id="filterName">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="filterSite">按现场筛选：</label>
+                        <input type="text" id="filterSite">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="queryBtn" class="primary-btn">查询</button>
+                        <button id="resetQuery" class="secondary-btn">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 统计结果显示 -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>总人数</h3>
+                    <p id="totalPeople">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>总停车费</h3>
+                    <p id="totalParking">0円</p>
+                </div>
+                <div class="stat-card">
+                    <h3>总高速费</h3>
+                    <p id="totalHighway">0円</p>
+                </div>
+                <div class="stat-card">
+                    <h3>总费用</h3>
+                    <p id="totalFee">0円</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 记录列表 -->
+        <div class="records-container">
+            <div class="section-header">
+                <h2>记录列表</h2>
+                <div class="actions">
+                    <button id="exportBtn" class="primary-btn">导出为CSV</button>
+                    <button id="backupBtn" class="secondary-btn">备份数据</button>
+                    <button id="restoreBtn" class="secondary-btn">恢复数据</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="recordsTable">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>姓名</th>
+                            <th>人数</th>
+                            <th>现场名称</th>
+                            <th>停车费</th>
+                            <th>高速费</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsBody">
+                        <!-- 记录将通过JavaScript动态添加 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="prevPage" disabled>上一页</button>
+                <span id="pageInfo">第1页</span>
+                <button id="nextPage" disabled>下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>注册新账户</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="newUsername">用户名</label>
+                    <input type="text" id="newUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">密码</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">注册</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 备份/恢复模态框 -->
+    <div id="backupModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="backupModalTitle">备份数据</h2>
+            <div id="backupContent">
+                <textarea id="backupData" rows="10" readonly></textarea>
+                <button id="copyBackup" class="primary-btn">复制到剪贴板</button>
+            </div>
+            <div id="restoreContent" style="display: none;">
+                <textarea id="restoreData" rows="10" placeholder="粘贴备份数据..."></textarea>
+                <button id="confirmRestore" class="primary-btn">确认恢复</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
