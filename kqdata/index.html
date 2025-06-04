@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="login-background"></div>
+    <div class="login-background" id="loginBackground"></div>
     <div class="login-container">
         <div class="login-box">
             <h1>考勤记录系统</h1>
@@ -23,6 +23,32 @@
                 <div class="form-actions">
                     <button type="submit">登录</button>
                     <button type="button" id="registerBtn">注册新账户</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>注册新账户</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="newUsername">用户名</label>
+                    <input type="text" id="newUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">密码</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">注册</button>
+                    <button type="button" class="secondary-btn close-modal">取消</button>
                 </div>
             </form>
         </div>
