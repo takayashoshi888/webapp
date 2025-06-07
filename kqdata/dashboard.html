@@ -315,21 +315,11 @@
     <!-- 可选：Supabase 初始化脚本 -->
     <script>
         // 这里可以放置与 Supabase 相关的初始化代码
+        
+import { createClient } from '@supabase/supabase-js'
+const supabaseUrl = 'https://bibgpghgjbmkylunzaud.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
     </script>
 </body>
 </html>
-```
-
-```
-document.getElementById('recordsBody').addEventListener('click', async function(event) {
-    if (event.target.classList.contains('delete-btn')) {
-        const id = event.target.getAttribute('data-id');
-        if (confirm('确定要删除这条记录吗？')) {
-            const success = await deleteAttendanceRecord(id);
-            if (success) {
-                alert('记录删除成功');
-                await loadRecords();
-            }
-        }
-    }
-});
