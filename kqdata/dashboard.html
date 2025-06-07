@@ -6,6 +6,11 @@
     <title>每日考勤记录系统</title>
     <!-- 引入 Supabase 客户端库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <!-- Supabase 初始化脚本 -->
+    <script>
+        // 使用 CDN 加载的 Supabase 全局变量
+        const supabase = window.supabase.createClient('https://bibgpghgjbmkylunzaud.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpYmdwZ2hnamJta3lsdW56YXVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDM0NDk4NSwiZXhwIjoyMDU5OTIwOTg1fQ.7-Xp-8vfrvi6J9QfVo0xcP4s132cdv9Xcy0HlNx_6J8');
+    </script>
     <!-- 样式表 -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -28,37 +33,37 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="recordDate">日期：</label>
-                        <input type="date" id="recordDate" required>
+                        <input type="date" id="recordDate" autocomplete="bday" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="name">姓名：</label>
-                        <input type="text" id="name" required>
+                        <input type="text" id="name" autocomplete="name" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="peopleCount">人数：</label>
-                        <input type="number" id="peopleCount" min="1" required>
+                        <input type="number" id="peopleCount" min="1" autocomplete="off" required>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="siteName">现场名称：</label>
-                        <input type="text" id="siteName" required>
+                        <input type="text" id="siteName" autocomplete="off" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="parkingFee">停车费（円）：</label>
-                        <input type="number" id="parkingFee" min="0" step="0.01" value="0">
+                        <input type="number" id="parkingFee" min="0" step="0.01" value="0" autocomplete="off">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="highwayFee">高速费（円）：</label>
-                        <input type="number" id="highwayFee" min="0" step="0.01" value="0">
+                        <input type="number" id="highwayFee" min="0" step="0.01" value="0" autocomplete="off">
                     </div>
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="submit" class="primary-btn">保存记录</button>
                     <button type="button" id="clearForm" class="secondary-btn">清空</button>
@@ -213,28 +218,40 @@
             // 初始化用户数据（设置用户名）
             const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
             document.getElementById('currentUser').textContent = `欢迎，${currentUser.username}`;
-            
+    
             // 加载考勤记录
             await loadRecords();
 
             // 表单提交事件
-            document.getElementById('recordForm')?.addEventListener('submit', async function(event) {
+            const recordForm = document.getElementById('recordForm');
+            const submitButton = recordForm.querySelector('.primary-btn');
+
+            recordForm.addEventListener('submit', async function(event) {
                 event.preventDefault();
 
-                const record = {
-                    date: document.getElementById('recordDate').value,
-                    name: document.getElementById('name').value,
-                    people_count: parseInt(document.getElementById('peopleCount').value),
-                    site_name: document.getElementById('siteName').value,
-                    parking_fee: parseFloat(document.getElementById('parkingFee').value) || 0,
-                    highway_fee: parseFloat(document.getElementById('highwayFee').value) || 0
-                };
+                // 禁用保存按钮以防止重复提交
+                submitButton.disabled = true;
 
-                const result = await addAttendanceRecord(record);
-                if (result) {
-                    alert('记录保存成功');
-                    document.getElementById('recordForm').reset();
-                    await loadRecords();
+                try {
+                    const record = {
+                        date: document.getElementById('recordDate').value,
+                        name: document.getElementById('name').value,
+                        people_count: parseInt(document.getElementById('peopleCount').value),
+                        site_name: document.getElementById('siteName').value,
+                        parking_fee: parseFloat(document.getElementById('parkingFee').value) || 0,
+                        highway_fee: parseFloat(document.getElementById('highwayFee').value) || 0
+                    };
+
+                    // 调用 app.js 中的 saveRecord 函数，而不是直接调用 addAttendanceRecord
+                    saveRecord();
+                    
+                    // 不需要额外的处理，因为 saveRecord 函数会处理成功和失败的情况
+                } catch (error) {
+                    console.error('保存记录时出错:', error);
+                    alert('保存记录失败: ' + (error.message || '请稍后重试'));
+                } finally {
+                    // 重新启用保存按钮
+                    submitButton.disabled = false;
                 }
             });
 
@@ -299,6 +316,20 @@
                 `;
                 tbody.appendChild(row);
             });
+
+            // 绑定删除按钮事件
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const recordId = this.getAttribute('data-id');
+                    const success = await deleteAttendanceRecord(recordId);
+                    if (success) {
+                        alert('记录删除成功');
+                        await loadRecords();
+                    } else {
+                        alert('删除记录失败，请稍后重试');
+                    }
+                });
+            });
         }
     </script>
     <script>
@@ -311,15 +342,6 @@
                 });
             }
         });
-    </script>
-    <!-- 可选：Supabase 初始化脚本 -->
-    <script>
-        // 这里可以放置与 Supabase 相关的初始化代码
-        
-import { createClient } from '@supabase/supabase-js'
-const supabaseUrl = 'https://bibgpghgjbmkylunzaud.supabase.co'
-const supabaseKey = process.env.SUPABASE_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
     </script>
 </body>
 </html>

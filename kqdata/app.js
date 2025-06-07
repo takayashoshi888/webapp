@@ -1,9 +1,3 @@
-// 初始化 Supabase
-const { createClient } = supabase;
-const supabaseUrl = 'https://bibgpghgjbmkylunzaud.supabase.co';
-const supabaseKey = 'YOUR_API_KEYeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpYmdwZ2hnamJta3lsdW56YXVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNDQ5ODUsImV4cCI6MjA1OTkyMDk4NX0.8SifggoCT_pa9Hn7-b_KnYi4ZzjHYrlCHHRJ0LOiDks';
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
 // 主应用逻辑
 document.addEventListener('DOMContentLoaded', function() {
     // 检查登录状态
@@ -18,12 +12,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置默认日期为今天
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('recordDate').value = today;
-    
-    // 表单提交事件
-    document.getElementById('recordForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveRecord();
-    });
     
     // 清空表单
     document.getElementById('clearForm').addEventListener('click', clearForm);
@@ -94,38 +82,9 @@ function saveUserData(data) {
 let currentPage = 1;
 const recordsPerPage = 10;
 
-// 插入新的考勤记录
-async function addAttendanceRecord(record) {
-    const { data, error } = await supabaseClient
-        .from('attendance_records')
-        .insert([record]);
-
-    if (error) {
-        console.error('插入记录失败:', error);
-        return null;
-    }
-
-    return data;
-}
-
-// 删除考勤记录
-async function deleteAttendanceRecord(id) {
-    const { error } = await supabaseClient
-        .from('attendance_records')
-        .delete()
-        .match({ id: id });
-
-    if (error) {
-        console.error('删除记录失败:', error);
-        return false;
-    }
-
-    return true;
-}
-
 // 获取所有考勤记录
 async function getAllAttendanceRecords() {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('attendance_records')
         .select('*');
 
@@ -139,7 +98,7 @@ async function getAllAttendanceRecords() {
 
 // 根据条件查询考勤记录
 async function queryAttendanceRecords(filters) {
-    let query = supabaseClient.from('attendance_records').select('*');
+    let query = supabase.from('attendance_records').select('*');
 
     if (filters.startDate && filters.endDate) {
         query = query.between('date', filters.startDate, filters.endDate);
@@ -163,40 +122,101 @@ async function queryAttendanceRecords(filters) {
     return data;
 }
 
+// 删除考勤记录
+async function deleteAttendanceRecord(id) {
+    const { error } = await supabase
+        .from('attendance_records')
+        .delete()
+        .match({ id: id });
+
+    if (error) {
+        console.error('删除记录失败:', error);
+        return false;
+    }
+
+    return true;
+}
+
+// 插入新的考勤记录
+async function addAttendanceRecord(record) {
+    console.log("Attempting to insert record with Supabase:", record);
+    const { data, error: supabaseError } = await supabase // Renamed to avoid confusion
+        .from('attendance_records')
+        .insert([record]);
+
+    if (supabaseError) {
+        console.error('Supabase insert operation failed. Raw error object:', supabaseError);
+        let message = supabaseError.message || '未知 Supabase 错误';
+        let details = supabaseError.details || '';
+        let hint = supabaseError.hint || '';
+        let fullErrorMessage = `Supabase 错误: ${message}`;
+        if (details) fullErrorMessage += ` | 详情: ${details}`;
+        if (hint) fullErrorMessage += ` | 提示: ${hint}`;
+        
+        console.error('Constructed error message to be thrown:', fullErrorMessage);
+        throw new Error(fullErrorMessage);
+    }
+
+    console.log("Supabase insert operation successful. Data:", data);
+    return data;
+}
+
 // 保存记录
 function saveRecord() {
     const record = {
         date: document.getElementById('recordDate').value,
         name: document.getElementById('name').value.trim(),
-        peopleCount: parseInt(document.getElementById('peopleCount').value),
-        siteName: document.getElementById('siteName').value.trim(),
-        parkingFee: parseFloat(document.getElementById('parkingFee').value) || 0,
-        highwayFee: parseFloat(document.getElementById('highwayFee').value) || 0,
-        createdAt: new Date().toISOString()
+        people_count: parseInt(document.getElementById('peopleCount').value),
+        site_name: document.getElementById('siteName').value.trim(),
+        parking_fee: parseFloat(document.getElementById('parkingFee').value) || 0,
+        highway_fee: parseFloat(document.getElementById('highwayFee').value) || 0
+        // 移除 created_at 字段 - Supabase 会自动管理时间戳
     };
-    
+
     // 验证数据
-    if (!record.name || !record.siteName || isNaN(record.peopleCount)) {
+    if (!record.name || !record.site_name || isNaN(record.people_count)) {
         showAlert('请填写完整的姓名、人数和现场名称', 'error');
         return;
     }
-    
-    // 获取现有数据
-    const userData = getUserData();
-    
-    // 添加新记录
-    userData.records.push(record);
-    
-    // 保存数据
-    saveUserData(userData);
-    
-    // 重新加载记录
-    loadRecords();
-    
-    // 清空表单
-    clearForm();
-    
-    showAlert('记录已保存！', 'success');
+
+    // 调用 Supabase 插入方法
+    addAttendanceRecord(record).then(data => {
+        if (data) {
+            // 获取现有数据
+            const userData = getUserData();
+
+            // 添加新记录 - 使用 Supabase 返回的完整记录数据
+            userData.records.push(data[0]);
+
+            // 保存数据
+            saveUserData(userData);
+
+            // 重新加载记录
+            loadRecords();
+
+            // 清空表单
+            clearForm();
+
+            showAlert('记录已保存！', 'success');
+        }
+    }).catch(error => {
+        console.error('保存操作遇到错误:', error); // Log the full error object first
+        let finalErrorMessage = '保存记录失败，请稍后重试。'; // Default message
+
+        if (error && typeof error.message === 'string' && error.message.trim() !== '') {
+            // If error.message is useful (e.g., "Supabase 错误: actual details")
+            finalErrorMessage = `保存记录失败: ${error.message.trim()}`;
+        } else if (error && typeof error.toString === 'function') {
+            // Fallback to error.toString() if message is not good
+            const errorString = error.toString();
+            if (errorString !== '[object Object]' && errorString.trim() !== '') {
+                 finalErrorMessage = `保存记录失败: ${errorString.trim()}`;
+            }
+        }
+        // For debugging, log what message is being sent to showAlert
+        console.log('传递给 showAlert 的消息:', finalErrorMessage);
+        showAlert(finalErrorMessage + " 请检查浏览器控制台获取详细错误信息。", 'error');
+    });
 }
 
 // 显示提示信息
