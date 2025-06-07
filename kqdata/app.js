@@ -109,7 +109,7 @@ async function queryAttendanceRecords(filters) {
     }
 
     if (filters.site) {
-        query = query.ilike('siteName', `%${filters.site}%`);
+        query = query.ilike('site_name', `%${filters.site}%`);
     }
 
     const { data, error } = await query;
@@ -245,7 +245,7 @@ function clearForm() {
 function loadRecords() {
     const userData = getUserData();
     displayRecords(userData.records);
-    updateStatistics(userData.records);
+    updateStatistics(userData.records); // 确保统计信息基于完整数据更新
     updatePagination(userData.records.length);
 }
 
@@ -269,13 +269,13 @@ function queryRecords() {
         if (filterName && !record.name.toLowerCase().includes(filterName)) return false;
         
         // 现场过滤
-        if (filterSite && !record.siteName.toLowerCase().includes(filterSite)) return false;
+        if (filterSite && !record.site_name.toLowerCase().includes(filterSite)) return false;
         
         return true;
     });
     
     displayRecords(filteredRecords);
-    updateStatistics(filteredRecords);
+    updateStatistics(filteredRecords); // 使用过滤后的记录更新统计信息
     updatePagination(filteredRecords.length);
 }
 
@@ -283,7 +283,7 @@ function queryRecords() {
 function displayRecords(records) {
     const tbody = document.getElementById('recordsBody');
     tbody.innerHTML = '';
-    
+
     if (records.length === 0) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
@@ -292,35 +292,36 @@ function displayRecords(records) {
         cell.style.textAlign = 'center';
         row.appendChild(cell);
         tbody.appendChild(row);
+        updateStatistics([]); // 没有记录时清空统计信息
         return;
     }
-    
+
     // 按日期降序排序
     records.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
+
     // 分页处理
     const startIndex = (currentPage - 1) * recordsPerPage;
     const paginatedRecords = records.slice(startIndex, startIndex + recordsPerPage);
-    
+
     paginatedRecords.forEach((record, index) => {
         const row = document.createElement('tr');
         const globalIndex = startIndex + index;
-        
+
         row.innerHTML = `
             <td>${formatDate(record.date)}</td>
             <td>${record.name}</td>
-            <td>${record.peopleCount}</td>
-            <td>${record.siteName}</td>
-            <td>${record.parkingFee}円</td>
-            <td>${record.highwayFee}円</td>
+            <td>${record.people_count}</td>
+            <td>${record.site_name}</td>
+            <td>${record.parking_fee.toFixed(2)}円</td>
+            <td>${record.highway_fee.toFixed(2)}円</td>
             <td>
                 <button class="delete-btn danger-btn" data-index="${globalIndex}">删除</button>
             </td>
         `;
-        
+
         tbody.appendChild(row);
     });
-    
+
     // 添加删除按钮事件
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -328,31 +329,33 @@ function displayRecords(records) {
             deleteRecord(index);
         });
     });
+
+    updateStatistics(paginatedRecords);
 }
 
 // 删除记录
 function deleteRecord(index) {
     if (!confirm('确定要删除这条记录吗？')) return;
-    
+
     const userData = getUserData();
     userData.records.splice(index, 1);
     saveUserData(userData);
     loadRecords();
-    
+
     showAlert('记录已删除', 'success');
 }
 
 // 更新统计信息
 function updateStatistics(records) {
-    const totalPeople = records.reduce((sum, record) => sum + record.peopleCount, 0);
-    const totalParking = records.reduce((sum, record) => sum + record.parkingFee, 0);
-    const totalHighway = records.reduce((sum, record) => sum + record.highwayFee, 0);
+    const totalPeople = records.reduce((sum, record) => sum + record.people_count, 0);
+    const totalParking = records.reduce((sum, record) => sum + record.parking_fee, 0);
+    const totalHighway = records.reduce((sum, record) => sum + record.highway_fee, 0);
     const totalFee = totalParking + totalHighway;
-    
+
     document.getElementById('totalPeople').textContent = totalPeople;
-    document.getElementById('totalParking').textContent = totalParking + '円';
-    document.getElementById('totalHighway').textContent = totalHighway + '円';
-    document.getElementById('totalFee').textContent = totalFee + '円';
+    document.getElementById('totalParking').textContent = totalParking.toFixed(2) + '円';
+    document.getElementById('totalHighway').textContent = totalHighway.toFixed(2) + '円';
+    document.getElementById('totalFee').textContent = totalFee.toFixed(2) + '円';
 }
 
 // 更新分页信息

@@ -299,6 +299,11 @@
         function displayRecords(records) {
             const tbody = document.getElementById('recordsBody');
             tbody.innerHTML = '';
+            
+            // 初始化统计数据
+            let totalPeople = 0;
+            let totalParking = 0;
+            let totalHighway = 0;
 
             records.forEach(record => {
                 const row = document.createElement('tr');
@@ -310,12 +315,23 @@
                     <td>${record.parking_fee.toFixed(2)}</td>
                     <td>${record.highway_fee.toFixed(2)}</td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${record.id}">编辑</button>
-                        <button class="action-btn delete-btn" data-id="${record.id}">删除</button>
+                        <button class="action-btn edit-btn" data-id="${record.id}" style="background-color: blue; color: white;">编辑</button>
+                        <button class="action-btn delete-btn" data-id="${record.id}" style="background-color: red; color: white;">删除</button>
                     </td>
                 `;
                 tbody.appendChild(row);
+                
+                // 累加统计数据
+                totalPeople += record.people_count;
+                totalParking += record.parking_fee;
+                totalHighway += record.highway_fee;
             });
+            
+            // 更新统计显示
+            document.getElementById('totalPeople').textContent = totalPeople;
+            document.getElementById('totalParking').textContent = `${totalParking.toFixed(2)}円`;
+            document.getElementById('totalHighway').textContent = `${totalHighway.toFixed(2)}円`;
+            document.getElementById('totalFee').textContent = `${(totalParking + totalHighway).toFixed(2)}円`;
 
             // 绑定删除按钮事件
             document.querySelectorAll('.delete-btn').forEach(button => {
