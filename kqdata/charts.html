@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考勤数据统计图表</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 引入 Supabase 客户端库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <!-- Chart.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1>考勤数据统计图表</h1>
+            <div class="user-info">
+                <span id="currentUser"></span>
+                <button id="backToDashboard" class="secondary-btn">返回仪表盘</button>
+                <button id="logoutBtn" class="secondary-btn">退出登录</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2>数据可视化</h2>
+        
+        <div class="chart-container">
+            <canvas id="attendanceChart" width="400" height="150"></canvas>
+        </div>
+
+        <div class="chart-options">
+            <div class="form-group">
+                <label for="chartType">图表类型：</label>
+                <select id="chartType">
+                    <option value="bar">柱状图</option>
+                    <option value="line">折线图</option>
+                    <option value="pie">饼图</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="timeRange">时间范围：</label>
+                <select id="timeRange">
+                    <option value="all">全部</option>
+                    <option value="7days">最近7天</option>
+                    <option value="30days" selected>最近30天</option>
+                    <option value="90days">最近90天</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="dataType">统计类型：</label>
+                <select id="dataType">
+                    <option value="people" selected>人数</option>
+                    <option value="parkingFee">停车费</option>
+                    <option value="highwayFee">高速费</option>
+                    <option value="totalFee">总费用</option>
+                </select>
+            </div>
+            
+            <button id="refreshChart" class="primary-btn">刷新图表</button>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="charts.js"></script>
+    <script>
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            if (!JSON.parse(sessionStorage.getItem('currentUser'))) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 初始化用户数据（设置用户名）
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            document.getElementById('currentUser').textContent = `欢迎，${currentUser.username}`;
+            
+            // 返回仪表盘按钮事件
+            document.getElementById('backToDashboard')?.addEventListener('click', function() {
+                window.location.href = 'dashboard.html';
+            });
+            
+            // 退出登录按钮事件
+            document.getElementById('logoutBtn')?.addEventListener('click', function() {
+                sessionStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>

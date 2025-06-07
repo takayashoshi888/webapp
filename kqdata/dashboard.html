@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>每日考勤记录系统</title>
+    <!-- 引入 Supabase 客户端库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <!-- 样式表 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -126,6 +129,7 @@
                     <button id="exportBtn" class="primary-btn">导出为CSV</button>
                     <button id="backupBtn" class="secondary-btn">备份数据</button>
                     <button id="restoreBtn" class="secondary-btn">恢复数据</button>
+                    <button id="viewChartBtn" class="primary-btn">查看图表</button>
                 </div>
             </div>
             <div class="table-container">
@@ -185,7 +189,7 @@
             <span class="close-modal">&times;</span>
             <h2 id="backupModalTitle">备份数据</h2>
             <div id="backupContent">
-                <textarea id="backupData" rows="10" readonly></textarea>
+                <textarea id="backupData" rows="10" readonly placeholder="在此处粘贴备份数据以进行恢复"></textarea>
                 <button id="copyBackup" class="primary-btn">复制到剪贴板</button>
             </div>
             <div id="restoreContent" style="display: none;">
@@ -197,5 +201,135 @@
 
     <script src="auth.js"></script>
     <script src="app.js"></script>
+    <script>
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', async function() {
+            // 检查登录状态
+            if (!JSON.parse(sessionStorage.getItem('currentUser'))) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 初始化用户数据（设置用户名）
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            document.getElementById('currentUser').textContent = `欢迎，${currentUser.username}`;
+            
+            // 加载考勤记录
+            await loadRecords();
+
+            // 表单提交事件
+            document.getElementById('recordForm')?.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const record = {
+                    date: document.getElementById('recordDate').value,
+                    name: document.getElementById('name').value,
+                    people_count: parseInt(document.getElementById('peopleCount').value),
+                    site_name: document.getElementById('siteName').value,
+                    parking_fee: parseFloat(document.getElementById('parkingFee').value) || 0,
+                    highway_fee: parseFloat(document.getElementById('highwayFee').value) || 0
+                };
+
+                const result = await addAttendanceRecord(record);
+                if (result) {
+                    alert('记录保存成功');
+                    document.getElementById('recordForm').reset();
+                    await loadRecords();
+                }
+            });
+
+            // 查询按钮点击事件
+            document.getElementById('queryBtn')?.addEventListener('click', async function() {
+                const filters = {
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    name: document.getElementById('filterName').value,
+                    site: document.getElementById('filterSite').value
+                };
+
+                const records = await queryAttendanceRecords(filters);
+                displayRecords(records);
+            });
+
+            // 重置查询
+            document.getElementById('resetQuery')?.addEventListener('click', async function() {
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+                document.getElementById('filterName').value = '';
+                document.getElementById('filterSite').value = '';
+                await loadRecords();
+            });
+
+            // 返回仪表盘按钮事件
+            document.getElementById('backToDashboard')?.addEventListener('click', function() {
+                window.location.href = 'dashboard.html';
+            });
+
+            // 退出登录按钮事件
+            document.getElementById('logoutBtn')?.addEventListener('click', function() {
+                sessionStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            });
+        });
+
+        // 加载所有记录
+        async function loadRecords() {
+            const records = await getAllAttendanceRecords();
+            displayRecords(records);
+        }
+
+        // 显示记录
+        function displayRecords(records) {
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = '';
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.name}</td>
+                    <td>${record.people_count}</td>
+                    <td>${record.site_name}</td>
+                    <td>${record.parking_fee.toFixed(2)}</td>
+                    <td>${record.highway_fee.toFixed(2)}</td>
+                    <td>
+                        <button class="action-btn edit-btn" data-id="${record.id}">编辑</button>
+                        <button class="action-btn delete-btn" data-id="${record.id}">删除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+    <script>
+        // 查看图表按钮点击事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const viewChartBtn = document.getElementById('viewChartBtn');
+            if (viewChartBtn) {
+                viewChartBtn.addEventListener('click', function() {
+                    window.location.href = 'charts.html';
+                });
+            }
+        });
+    </script>
+    <!-- 可选：Supabase 初始化脚本 -->
+    <script>
+        // 这里可以放置与 Supabase 相关的初始化代码
+    </script>
 </body>
 </html>
+```
+
+```
+document.getElementById('recordsBody').addEventListener('click', async function(event) {
+    if (event.target.classList.contains('delete-btn')) {
+        const id = event.target.getAttribute('data-id');
+        if (confirm('确定要删除这条记录吗？')) {
+            const success = await deleteAttendanceRecord(id);
+            if (success) {
+                alert('记录删除成功');
+                await loadRecords();
+            }
+        }
+    }
+});

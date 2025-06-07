@@ -1,3 +1,9 @@
+// 初始化 Supabase
+const { createClient } = supabase;
+const supabaseUrl = 'https://bibgpghgjbmkylunzaud.supabase.co';
+const supabaseKey = 'YOUR_API_KEYeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpYmdwZ2hnamJta3lsdW56YXVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNDQ5ODUsImV4cCI6MjA1OTkyMDk4NX0.8SifggoCT_pa9Hn7-b_KnYi4ZzjHYrlCHHRJ0LOiDks';
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
 // 主应用逻辑
 document.addEventListener('DOMContentLoaded', function() {
     // 检查登录状态
@@ -87,6 +93,75 @@ function saveUserData(data) {
 // 分页变量
 let currentPage = 1;
 const recordsPerPage = 10;
+
+// 插入新的考勤记录
+async function addAttendanceRecord(record) {
+    const { data, error } = await supabaseClient
+        .from('attendance_records')
+        .insert([record]);
+
+    if (error) {
+        console.error('插入记录失败:', error);
+        return null;
+    }
+
+    return data;
+}
+
+// 删除考勤记录
+async function deleteAttendanceRecord(id) {
+    const { error } = await supabaseClient
+        .from('attendance_records')
+        .delete()
+        .match({ id: id });
+
+    if (error) {
+        console.error('删除记录失败:', error);
+        return false;
+    }
+
+    return true;
+}
+
+// 获取所有考勤记录
+async function getAllAttendanceRecords() {
+    const { data, error } = await supabaseClient
+        .from('attendance_records')
+        .select('*');
+
+    if (error) {
+        console.error('获取记录失败:', error);
+        return [];
+    }
+
+    return data;
+}
+
+// 根据条件查询考勤记录
+async function queryAttendanceRecords(filters) {
+    let query = supabaseClient.from('attendance_records').select('*');
+
+    if (filters.startDate && filters.endDate) {
+        query = query.between('date', filters.startDate, filters.endDate);
+    }
+
+    if (filters.name) {
+        query = query.ilike('name', `%${filters.name}%`);
+    }
+
+    if (filters.site) {
+        query = query.ilike('siteName', `%${filters.site}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error('查询记录失败:', error);
+        return [];
+    }
+
+    return data;
+}
 
 // 保存记录
 function saveRecord() {

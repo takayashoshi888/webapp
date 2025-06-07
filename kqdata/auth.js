@@ -2,13 +2,12 @@
 const backgrounds = ['login-background-1', 'login-background-2', 'login-background-3'];
 const randomBackground = backgrounds[Math.floor(Math.random() * backgrounds.length)];
 document.addEventListener('DOMContentLoaded', function() {
-    const loginBackground = document.getElementById('loginBackground');
-    if (loginBackground) {
-        console.log('尝试应用背景:', randomBackground);
-        loginBackground.className = 'login-background ' + randomBackground;
-        console.log('当前类名:', loginBackground.className);
-    } else {
-        console.error('未找到ID为loginBackground的元素');
+    // 设置随机登录背景
+    if (window.location.pathname.includes('index.html')) {
+        const loginBackground = document.getElementById('loginBackground');
+        if (loginBackground) {
+            loginBackground.className = 'login-background ' + randomBackground;
+        }
     }
 });
 
@@ -153,6 +152,38 @@ function checkLoginStatus() {
 function logoutUser() {
     sessionStorage.removeItem('currentUser');
     window.location.href = 'index.html';
+}
+
+// 登录函数
+async function login(username, password) {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: username,
+        password: password,
+    });
+
+    if (error) {
+        alert('登录失败: ' + error.message);
+        return false;
+    }
+
+    sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+    return true;
+}
+
+// 注册函数
+async function register(username, password) {
+    const { data, error } = await supabaseClient.auth.signUp({
+        email: username,
+        password: password,
+    });
+
+    if (error) {
+        alert('注册失败: ' + error.message);
+        return false;
+    }
+
+    alert('注册成功，请登录');
+    return true;
 }
 
 // 登录功能
