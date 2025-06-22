@@ -68,13 +68,26 @@ function initUserData() {
 function getUserData() {
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     const userId = currentUser.username;
-    return JSON.parse(localStorage.getItem('attendanceData_' + userId));
+    
+    let userData = localStorage.getItem('attendanceData_' + userId);
+    if (!userData) {
+        userData = {
+            records: [],
+            settings: {}
+        };
+        localStorage.setItem('attendanceData_' + userId, JSON.stringify(userData));
+    } else {
+        userData = JSON.parse(userData);
+    }
+    
+    return userData;
 }
 
 // 保存用户数据
 function saveUserData(data) {
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
     const userId = currentUser.username;
+    
     localStorage.setItem('attendanceData_' + userId, JSON.stringify(data));
 }
 
@@ -82,141 +95,110 @@ function saveUserData(data) {
 let currentPage = 1;
 const recordsPerPage = 10;
 
-// 获取所有考勤记录
-async function getAllAttendanceRecords() {
-    const { data, error } = await supabase
-        .from('attendance_records')
-        .select('*');
-
-    if (error) {
-        console.error('获取记录失败:', error);
+// 获取所有考勤记录（根据用户ID）
+function getAllAttendanceRecords(userId) {
+    if (!userId) {
+        console.error('缺少用户ID参数');
         return [];
     }
 
-    return data;
+    const userData = getUserData();
+    return userData.records.filter(record => record.userId === userId);
 }
 
 // 根据条件查询考勤记录
-async function queryAttendanceRecords(filters) {
-    let query = supabase.from('attendance_records').select('*');
-
-    if (filters.startDate && filters.endDate) {
-        query = query.between('date', filters.startDate, filters.endDate);
-    }
-
-    if (filters.name) {
-        query = query.ilike('name', `%${filters.name}%`);
-    }
-
-    if (filters.site) {
-        query = query.ilike('site_name', `%${filters.site}%`);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-        console.error('查询记录失败:', error);
+function queryAttendanceRecords(filters) {
+    if (!filters.userId) {
+        console.error('缺少用户ID参数');
         return [];
     }
 
-    return data;
+    const userData = getUserData();
+    let records = userData.records.filter(record => record.userId === filters.userId);
+
+    if (filters.startDate && filters.endDate) {
+        records = records.filter(record => record.date >= filters.startDate && record.date <= filters.endDate);
+    }
+
+    if (filters.name) {
+        records = records.filter(record => record.name.toLowerCase().includes(filters.name.toLowerCase()));
+    }
+
+    if (filters.site) {
+        records = records.filter(record => record.siteName.toLowerCase().includes(filters.site.toLowerCase()));
+    }
+
+    return records;
 }
 
 // 删除考勤记录
-async function deleteAttendanceRecord(id) {
-    const { error } = await supabase
-        .from('attendance_records')
-        .delete()
-        .match({ id: id });
-
-    if (error) {
-        console.error('删除记录失败:', error);
+function deleteAttendanceRecord(id) {
+    const userData = getUserData();
+    const recordIndex = userData.records.findIndex(record => record.id === id);
+    
+    if (recordIndex === -1) {
+        console.error('记录不存在');
         return false;
     }
 
+    userData.records.splice(recordIndex, 1);
+    saveUserData(userData);
     return true;
 }
 
 // 插入新的考勤记录
-async function addAttendanceRecord(record) {
-    console.log("Attempting to insert record with Supabase:", record);
-    const { data, error: supabaseError } = await supabase // Renamed to avoid confusion
-        .from('attendance_records')
-        .insert([record]);
-
-    if (supabaseError) {
-        console.error('Supabase insert operation failed. Raw error object:', supabaseError);
-        let message = supabaseError.message || '未知 Supabase 错误';
-        let details = supabaseError.details || '';
-        let hint = supabaseError.hint || '';
-        let fullErrorMessage = `Supabase 错误: ${message}`;
-        if (details) fullErrorMessage += ` | 详情: ${details}`;
-        if (hint) fullErrorMessage += ` | 提示: ${hint}`;
-        
-        console.error('Constructed error message to be thrown:', fullErrorMessage);
-        throw new Error(fullErrorMessage);
-    }
-
-    console.log("Supabase insert operation successful. Data:", data);
-    return data;
+function addAttendanceRecord(record) {
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const userId = currentUser.username;
+    
+    // 添加 user_id 字段到记录中
+    record.userId = userId;
+    record.id = Date.now(); // 使用时间戳作为简单ID
+    
+    const userData = getUserData();
+    userData.records.push(record);
+    saveUserData(userData);
+    
+    return record;
 }
 
 // 保存记录
-function saveRecord() {
-    const record = {
-        date: document.getElementById('recordDate').value,
-        name: document.getElementById('name').value.trim(),
-        people_count: parseInt(document.getElementById('peopleCount').value),
-        site_name: document.getElementById('siteName').value.trim(),
-        parking_fee: parseFloat(document.getElementById('parkingFee').value) || 0,
-        highway_fee: parseFloat(document.getElementById('highwayFee').value) || 0
-        // 移除 created_at 字段 - Supabase 会自动管理时间戳
-    };
+async function saveRecord(record) {
+    try {
+        // 获取当前用户信息
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (!currentUser) {
+            throw new Error('用户未登录');
+        }
 
-    // 验证数据
-    if (!record.name || !record.site_name || isNaN(record.people_count)) {
-        showAlert('请填写完整的姓名、人数和现场名称', 'error');
-        return;
+        // 验证记录数据
+        if (!record || typeof record !== 'object') {
+            throw new Error('无效的记录数据');
+        }
+
+        // 添加唯一ID和用户信息
+        record.id = Date.now(); // 使用时间戳作为简单ID
+        record.userId = currentUser.username;
+        
+        // 获取用户数据并添加新记录
+        const userData = getUserData();
+        userData.records.push(record);
+        saveUserData(userData);
+
+        // 返回成功结果
+        return { 
+            success: true,
+            data: record,
+            message: '记录保存成功'
+        };
+    } catch (error) {
+        console.error('保存记录失败:', error);
+        return { 
+            success: false, 
+            error: error.message || '保存记录失败',
+            rawError: error // 添加原始错误信息用于调试
+        };
     }
-
-    // 调用 Supabase 插入方法
-    addAttendanceRecord(record).then(data => {
-        if (data) {
-            // 获取现有数据
-            const userData = getUserData();
-
-            // 添加新记录 - 使用 Supabase 返回的完整记录数据
-            userData.records.push(data[0]);
-
-            // 保存数据
-            saveUserData(userData);
-
-            // 重新加载记录
-            loadRecords();
-
-            // 清空表单
-            clearForm();
-
-            showAlert('记录已保存！', 'success');
-        }
-    }).catch(error => {
-        console.error('保存操作遇到错误:', error); // Log the full error object first
-        let finalErrorMessage = '保存记录失败，请稍后重试。'; // Default message
-
-        if (error && typeof error.message === 'string' && error.message.trim() !== '') {
-            // If error.message is useful (e.g., "Supabase 错误: actual details")
-            finalErrorMessage = `保存记录失败: ${error.message.trim()}`;
-        } else if (error && typeof error.toString === 'function') {
-            // Fallback to error.toString() if message is not good
-            const errorString = error.toString();
-            if (errorString !== '[object Object]' && errorString.trim() !== '') {
-                 finalErrorMessage = `保存记录失败: ${errorString.trim()}`;
-            }
-        }
-        // For debugging, log what message is being sent to showAlert
-        console.log('传递给 showAlert 的消息:', finalErrorMessage);
-        showAlert(finalErrorMessage + " 请检查浏览器控制台获取详细错误信息。", 'error');
-    });
 }
 
 // 显示提示信息
@@ -242,11 +224,21 @@ function clearForm() {
 }
 
 // 加载记录
-function loadRecords() {
-    const userData = getUserData();
-    displayRecords(userData.records);
-    updateStatistics(userData.records); // 确保统计信息基于完整数据更新
-    updatePagination(userData.records.length);
+async function loadRecords() {
+    // 获取当前用户ID
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const userId = currentUser.username;
+    
+    // 调用API查询数据
+    try {
+        const records = await getAllAttendanceRecords(userId);
+        displayRecords(records);
+        updateStatistics(records);
+        updatePagination(records.length);
+    } catch (error) {
+        console.error('加载记录失败:', error);
+        showAlert('加载记录失败: ' + (error.message || '请稍后重试'), 'error');
+    }
 }
 
 // 查询记录
@@ -256,27 +248,28 @@ function queryRecords() {
     const filterName = document.getElementById('filterName').value.trim().toLowerCase();
     const filterSite = document.getElementById('filterSite').value.trim().toLowerCase();
     
-    const userData = getUserData();
-    let records = userData.records;
+    // 获取当前用户ID
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    const userId = currentUser.username;
     
-    // 过滤记录
-    let filteredRecords = records.filter(record => {
-        // 日期过滤
-        if (startDate && record.date < startDate) return false;
-        if (endDate && record.date > endDate) return false;
-        
-        // 姓名过滤
-        if (filterName && !record.name.toLowerCase().includes(filterName)) return false;
-        
-        // 现场过滤
-        if (filterSite && !record.site_name.toLowerCase().includes(filterSite)) return false;
-        
-        return true;
+    // 构建过滤条件
+    const filters = {
+        startDate,
+        endDate,
+        name: filterName,
+        site: filterSite,
+        userId
+    };
+    
+    // 调用API查询数据
+    queryAttendanceRecords(filters).then(records => {
+        displayRecords(records);
+        updateStatistics(records);
+        updatePagination(records.length);
+    }).catch(error => {
+        console.error('查询记录失败:', error);
+        showAlert('查询记录失败: ' + (error.message || '请稍后重试'), 'error');
     });
-    
-    displayRecords(filteredRecords);
-    updateStatistics(filteredRecords); // 使用过滤后的记录更新统计信息
-    updatePagination(filteredRecords.length);
 }
 
 // 显示记录
@@ -334,15 +327,16 @@ function displayRecords(records) {
 }
 
 // 删除记录
-function deleteRecord(index) {
+async function deleteRecord(recordId) {
     if (!confirm('确定要删除这条记录吗？')) return;
 
-    const userData = getUserData();
-    userData.records.splice(index, 1);
-    saveUserData(userData);
-    loadRecords();
-
-    showAlert('记录已删除', 'success');
+    const success = await deleteAttendanceRecord(recordId);
+    if (success) {
+        alert('记录删除成功');
+        await loadRecords();
+    } else {
+        alert('删除记录失败，请稍后重试');
+    }
 }
 
 // 更新统计信息

@@ -4,14 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>每日考勤记录系统</title>
-    <!-- 引入 Supabase 客户端库 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <!-- Supabase 初始化脚本 -->
-    <script>
-        // 使用 CDN 加载的 Supabase 全局变量
-        const supabase = window.supabase.createClient('https://bibgpghgjbmkylunzaud.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpYmdwZ2hnamJta3lsdW56YXVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDM0NDk4NSwiZXhwIjoyMDU5OTIwOTg1fQ.7-Xp-8vfrvi6J9QfVo0xcP4s132cdv9Xcy0HlNx_6J8');
-    </script>
-    <!-- 样式表 -->
+    <!-- 引入本地样式表 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -243,9 +236,32 @@
                     };
 
                     // 调用 app.js 中的 saveRecord 函数，而不是直接调用 addAttendanceRecord
-                    saveRecord();
+                    const result = await saveRecord(record);
                     
-                    // 不需要额外的处理，因为 saveRecord 函数会处理成功和失败的情况
+                    // 验证返回结果是否包含 success 属性
+                    if (result && typeof result === 'object') {
+                        if ('success' in result) {
+                            if (result.success) {
+                                // 清空表单
+                                clearForm();
+                                // 显示成功提示
+                                showAlert('记录已保存！', 'success');
+                                await loadRecords();
+                            } else {
+                                // 显示错误提示，优先使用 result.error，其次使用通用消息
+                                const errorMessage = result.error || '保存记录失败，请稍后重试';
+                                showAlert(`记录保存失败: ${errorMessage}`, 'error');
+                            }
+                        } else {
+                            // 处理不符合预期格式的响应
+                            console.error('服务器响应中缺少 success 属性:', result);
+                            showAlert('服务器响应格式不正确，请检查控制台日志', 'error');
+                        }
+                    } else {
+                        // 处理非对象响应
+                        console.error('收到非对象类型的响应:', result);
+                        showAlert('收到非对象类型的响应，请检查控制台日志', 'error');
+                    }
                 } catch (error) {
                     console.error('保存记录时出错:', error);
                     alert('保存记录失败: ' + (error.message || '请稍后重试'));
@@ -263,6 +279,13 @@
                     name: document.getElementById('filterName').value,
                     site: document.getElementById('filterSite').value
                 };
+
+                // 获取当前用户ID
+                const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+                const userId = currentUser.username;
+                
+                // 添加用户ID到过滤条件中
+                filters.userId = userId;
 
                 const records = await queryAttendanceRecords(filters);
                 displayRecords(records);
@@ -291,8 +314,20 @@
 
         // 加载所有记录
         async function loadRecords() {
-            const records = await getAllAttendanceRecords();
-            displayRecords(records);
+            // 获取当前用户ID
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            const userId = currentUser.username;
+            
+            // 调用API查询数据
+            try {
+                const records = await getAllAttendanceRecords(userId);
+                displayRecords(records);
+                updateStatistics(records);
+                updatePagination(records.length);
+            } catch (error) {
+                console.error('加载记录失败:', error);
+                showAlert('加载记录失败: ' + (error.message || '请稍后重试'), 'error');
+            }
         }
 
         // 显示记录
