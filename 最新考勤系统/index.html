@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线考勤记录管理系统</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="loginPage" class="page active">
+        <div class="container">
+            <div class="form-container">
+                <h1>考勤记录管理系统</h1>
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="loginUsername">用户名:</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="loginPassword">密码:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit">登录</button>
+                    <div class="links">
+                        <a href="#" onclick="showPage('registerPage')">注册账户</a>
+                        <a href="#" onclick="showPage('forgotPasswordPage')">忘记密码</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册页面 -->
+    <div id="registerPage" class="page">
+        <div class="container">
+            <div class="form-container">
+                <h1>用户注册</h1>
+                <form id="registerForm">
+                    <div class="input-group">
+                        <label for="registerUsername">用户名:</label>
+                        <input type="text" id="registerUsername" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="registerEmail">邮箱:</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="registerPassword">密码:</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirmPassword">确认密码:</label>
+                        <input type="password" id="confirmPassword" required>
+                    </div>
+                    <button type="submit">注册</button>
+                    <div class="links">
+                        <a href="#" onclick="showPage('loginPage')">返回登录</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 忘记密码页面 -->
+    <div id="forgotPasswordPage" class="page">
+        <div class="container">
+            <div class="form-container">
+                <h1>密码修改</h1>
+                <form id="forgotPasswordForm">
+                    <div class="input-group">
+                        <label for="forgotUsername">用户名:</label>
+                        <input type="text" id="forgotUsername" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="forgotEmail">邮箱:</label>
+                        <input type="email" id="forgotEmail" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="newPassword">新密码:</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirmNewPassword">确认新密码:</label>
+                        <input type="password" id="confirmNewPassword" required>
+                    </div>
+                    <button type="submit">修改密码</button>
+                    <div class="links">
+                        <a href="#" onclick="showPage('loginPage')">返回登录</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div id="mainPage" class="page">
+        <nav class="navbar">
+            <div class="nav-brand">考勤记录管理系统</div>
+            <div class="nav-user">
+                <span id="currentUser"></span>
+                <button onclick="logout()">退出登录</button>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="tab-container">
+                <button class="tab-button active" onclick="showTab('recordTab')">考勤记录</button>
+                <button class="tab-button" onclick="showTab('statisticsTab')">月末统计</button>
+            </div>
+
+            <!-- 考勤记录标签 -->
+            <div id="recordTab" class="tab-content active">
+                <div class="record-form">
+                    <h2>新增考勤记录</h2>
+                    <form id="attendanceForm">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="recordDate">日期:</label>
+                                <input type="date" id="recordDate" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="employeeName">姓名:</label>
+                                <input type="text" id="employeeName" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="employeeCount">人数:</label>
+                                <input type="number" id="employeeCount" min="1" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="siteName">现场名称:</label>
+                                <input type="text" id="siteName" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="parkingFee">停车费 (日元):</label>
+                                <input type="number" id="parkingFee" min="0" step="10">
+                            </div>
+                            <div class="input-group">
+                                <label for="highwayFee">高速费 (日元):</label>
+                                <input type="number" id="highwayFee" min="0" step="10">
+                            </div>
+                        </div>
+                        <button type="submit">添加记录</button>
+                    </form>
+                </div>
+
+                <div class="records-list">
+                    <h2>考勤记录列表</h2>
+                    <div class="filter-section">
+                        <input type="month" id="filterMonth" onchange="filterRecords()">
+                        <input type="text" id="filterName" placeholder="按姓名搜索" onkeyup="filterRecords()">
+                    </div>
+                    <div class="table-container">
+                        <table id="recordsTable">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>姓名</th>
+                                    <th>人数</th>
+                                    <th>现场名称</th>
+                                    <th>停车费 (¥)</th>
+                                    <th>高速费 (¥)</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsTableBody">
+                                <!-- 记录将在这里动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 月末统计标签 -->
+            <div id="statisticsTab" class="tab-content">
+                <div class="statistics-section">
+                    <h2>月末统计</h2>
+                    <div class="stats-controls">
+                        <input type="month" id="statsMonth" onchange="generateStatistics()">
+                        <button onclick="generateStatistics()">生成统计</button>
+                        <button onclick="exportToPDF()">导出PDF</button>
+                        <button onclick="exportToCSV()">导出CSV</button>
+                    </div>
+                    
+                    <div id="statisticsResults" class="statistics-results">
+                        <!-- 统计结果将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
