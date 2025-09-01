@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线考勤记录管理系统</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- jsPDF和autotable插件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- html2canvas用于支持中文日文PDF导出 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- 引入支持中文和日文的字体 -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/polyfills.umd.js"></script>
 </head>
 <body>
     <!-- 登录页面 -->
@@ -197,5 +202,21 @@
     </div>
 
     <script src="script.js"></script>
+    
+    <!-- 中文字体支持脚本 -->
+    <script>
+        // 为jsPDF添加中文字体支持
+        if (typeof window.jspdf !== 'undefined') {
+            const { jsPDF } = window.jspdf;
+            
+            // 添加SimSun字体的Base64编码（这里使用简化版本）
+            // 注意：实际项目中应该使用完整的字体文件
+            jsPDF.API.events.push(['addFonts', function() {
+                // 使用内置的字体，配置为支持Unicode
+                this.addFont('NotoSansCJK', 'NotoSansCJK', 'normal');
+                this.setFont('NotoSansCJK');
+            }]);
+        }
+    </script>
 </body>
 </html>

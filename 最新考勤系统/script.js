@@ -501,7 +501,7 @@ function generateStatistics() {
     document.getElementById('statisticsResults').innerHTML = html;
 }
 
-// 导出PDF
+// 导出PDF - 支持中文和日文
 function exportToPDF() {
     const month = document.getElementById('statsMonth').value;
     if (!month) {
@@ -518,30 +518,66 @@ function exportToPDF() {
         return;
     }
     
+    // 显示加载提示
+    showMessage('正在生成PDF，请稍候...', 'info');
+    
+    try {
+        // 先尝试使用html2canvas方法，完美支持中文日文
+        if (typeof html2canvas !== 'undefined') {
+            exportToPDFWithCanvas();
+        } else {
+            // 如果html2canvas未加载，使用传统方法
+            exportToPDFTraditional();
+        }
+        
+    } catch (error) {
+        console.error('PDF导出错误:', error);
+        showMessage('PDF导出失败：' + error.message, 'error');
+    }
+}
+
+// 传统PDF导出方法
+function exportToPDFTraditional() {
+    const month = document.getElementById('statsMonth').value;
+    const userRecords = attendanceRecords.filter(record => 
+        record.userId === currentUser.id && record.date.startsWith(month)
+    );
+    
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // 设置中文字体（需要额外的字体库支持）
+    // 获取年月信息
+    const [year, monthNum] = month.split('-');
+    
     doc.setFont('helvetica');
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
     
-    // 标题
-    doc.setFontSize(16);
-    doc.text(`${month} Attendance Report`, 20, 20);
+    // 使用英文显示标题
+    doc.text(`Attendance Report ${year}-${monthNum}`, 20, 25);
+    doc.text(`(Kaoqin Baobiao)`, 20, 35);
     
-    // 统计概览
+    // 统计数据
+    const totalRecords = userRecords.length;
     const totalPeople = userRecords.reduce((sum, record) => sum + record.count, 0);
     const totalParkingFee = userRecords.reduce((sum, record) => sum + record.parkingFee, 0);
     const totalHighwayFee = userRecords.reduce((sum, record) => sum + record.highwayFee, 0);
+    const totalFees = totalParkingFee + totalHighwayFee;
     
     doc.setFontSize(12);
-    doc.text(`Total Records: ${userRecords.length}`, 20, 40);
-    doc.text(`Total People: ${totalPeople}`, 20, 50);
-    doc.text(`Total Parking Fee: ¥${totalParkingFee.toLocaleString()}`, 20, 60);
-    doc.text(`Total Highway Fee: ¥${totalHighwayFee.toLocaleString()}`, 20, 70);
-    doc.text(`Total Fees: ¥${(totalParkingFee + totalHighwayFee).toLocaleString()}`, 20, 80);
+    let yPos = 55;
+    doc.text(`Total Records: ${totalRecords}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Total People: ${totalPeople}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Total Parking Fee: ¥${totalParkingFee.toLocaleString()}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Total Highway Fee: ¥${totalHighwayFee.toLocaleString()}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Total Fees: ¥${totalFees.toLocaleString()}`, 20, yPos);
     
-    // 详细记录表格
-    const tableData = userRecords.map(record => [
+    // 表格数据
+    const tableData = userRecords.sort((a, b) => new Date(a.date) - new Date(b.date)).map(record => [
         record.date,
         record.name,
         record.count.toString(),
@@ -551,15 +587,123 @@ function exportToPDF() {
     ]);
     
     doc.autoTable({
-        startY: 100,
+        startY: yPos + 20,
         head: [['Date', 'Name', 'Count', 'Site', 'Parking Fee', 'Highway Fee']],
         body: tableData,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [102, 126, 234] }
+        styles: { fontSize: 9, cellPadding: 3, halign: 'center' },
+        headStyles: { fillColor: [102, 126, 234], textColor: [255, 255, 255] },
+        columnStyles: {
+            0: { cellWidth: 25 }, 1: { cellWidth: 30 }, 2: { cellWidth: 20 },
+            3: { cellWidth: 35 }, 4: { cellWidth: 25 }, 5: { cellWidth: 25 }
+        }
     });
     
     doc.save(`attendance-report-${month}.pdf`);
-    showMessage('PDF文件已下载', 'success');
+    showMessage('PDF文件已成功导出！', 'success');
+}
+
+// 使用Canvas方法导出PDF - 完美支持中文日文
+async function exportToPDFWithCanvas() {
+    const month = document.getElementById('statsMonth').value;
+    const userRecords = attendanceRecords.filter(record => 
+        record.userId === currentUser.id && record.date.startsWith(month)
+    );
+    
+    try {
+        // 创建临时HTML元素
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `position: fixed; top: -10000px; left: -10000px; width: 800px; 
+            background: white; padding: 20px; font-family: 'Microsoft YaHei', 'SimHei', sans-serif; 
+            font-size: 14px; line-height: 1.6;`;
+        
+        const [year, monthNum] = month.split('-');
+        const totalRecords = userRecords.length;
+        const totalPeople = userRecords.reduce((sum, record) => sum + record.count, 0);
+        const totalParkingFee = userRecords.reduce((sum, record) => sum + record.parkingFee, 0);
+        const totalHighwayFee = userRecords.reduce((sum, record) => sum + record.highwayFee, 0);
+        const totalFees = totalParkingFee + totalHighwayFee;
+        
+        // 生成表格
+        let tableHTML = `<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead><tr style="background-color: #666EEA; color: white;">
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">日期</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">姓名</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">人数</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">现场名称</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">停车费</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">高速费</th>
+            </tr></thead><tbody>`;
+        
+        userRecords.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((record, index) => {
+            const bgColor = index % 2 === 0 ? '#f8fafc' : 'white';
+            tableHTML += `<tr style="background-color: ${bgColor};">
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.date}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.name}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.count}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.site}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.parkingFee.toLocaleString()}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.highwayFee.toLocaleString()}</td>
+            </tr>`;
+        });
+        tableHTML += '</tbody></table>';
+        
+        tempContainer.innerHTML = `
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #333; margin: 0 0 10px 0; font-size: 24px;">${year}年${monthNum}月考勤报表</h1>
+                <h2 style="color: #666; margin: 0; font-size: 18px;">Attendance Report</h2>
+            </div>
+            <div style="margin-bottom: 30px; padding: 20px; background-color: #f0f8ff; border-radius: 8px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">统计概览</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总记录数：</strong> ${totalRecords}</div>
+                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总人数：</strong> ${totalPeople}</div>
+                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>停车费总计：</strong> ¥${totalParkingFee.toLocaleString()}</div>
+                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>高速费总计：</strong> ¥${totalHighwayFee.toLocaleString()}</div>
+                    <div style="padding: 10px; background: white; border-radius: 5px; grid-column: span 2; text-align: center; font-weight: bold; font-size: 16px;"><strong>费用总计：</strong> ¥${totalFees.toLocaleString()}</div>
+                </div>
+            </div>
+            <div><h3 style="margin: 0 0 15px 0; color: #333;">详细记录</h3>${tableHTML}</div>
+            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">生成时间：${new Date().toLocaleString('zh-CN')}</div>`;
+        
+        document.body.appendChild(tempContainer);
+        
+        // 使用html2canvas生成图片
+        const canvas = await html2canvas(tempContainer, {
+            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff',
+            width: 800, height: tempContainer.scrollHeight
+        });
+        
+        document.body.removeChild(tempContainer);
+        
+        // 创建PDF
+        const { jsPDF } = window.jspdf;
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 190;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+        
+        pdf.save(`考勤报表-${month}.pdf`);
+        showMessage('PDF文件已成功导出！完美支持中文和日文显示', 'success');
+        
+    } catch (error) {
+        console.error('Canvas PDF导出错误:', error);
+        showMessage('正在使用备用方法导出PDF...', 'info');
+        exportToPDFTraditional();
+    }
 }
 
 // 导出CSV
