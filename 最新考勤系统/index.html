@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线考勤记录管理系统</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Supabase 客户端库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <!-- jsPDF和autotable插件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -103,9 +106,13 @@
     <!-- 主页面 -->
     <div id="mainPage" class="page">
         <nav class="navbar">
-            <div class="nav-brand">考勤记录管理系统</div>
+            <div class="nav-brand">
+                考勤记录管理系统
+                <span id="connectionStatus" class="connection-status">本地模式</span>
+            </div>
             <div class="nav-user">
                 <span id="currentUser"></span>
+                <button id="syncButton" onclick="syncLocalDataToSupabase()" style="display: none;">同步数据</button>
                 <button onclick="logout()">退出登录</button>
             </div>
         </nav>
@@ -202,6 +209,7 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="supabase-config.js"></script>
     
     <!-- 中文字体支持脚本 -->
     <script>

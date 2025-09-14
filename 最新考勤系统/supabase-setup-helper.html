@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase 配置助手</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .step h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #68d391;
+        }
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #fc8181;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .copy-btn {
+            background: #38b2ac;
+            font-size: 12px;
+            padding: 5px 10px;
+            float: right;
+            margin-top: -10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Supabase 配置助手</h1>
+        
+        <div class="step">
+            <h3>步骤 1: 输入 Supabase 连接信息</h3>
+            <p>请从你的 Supabase 项目中获取以下信息：</p>
+            
+            <div class="input-group">
+                <label for="supabaseUrl">Project URL:</label>
+                <input type="text" id="supabaseUrl" placeholder="https://your-project.supabase.co">
+            </div>
+            
+            <div class="input-group">
+                <label for="supabaseKey">Anon Public Key:</label>
+                <input type="text" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            </div>
+            
+            <button onclick="generateConfig()">生成配置代码</button>
+            <button onclick="testConnection()">测试连接</button>
+        </div>
+        
+        <div class="step" id="configStep" style="display: none;">
+            <h3>步骤 2: 复制配置代码</h3>
+            <p>将以下代码复制到 <code>supabase-config.js</code> 文件的开头：</p>
+            <div class="code-block" id="configCode">
+                <!-- 配置代码将在这里生成 -->
+            </div>
+            <button class="copy-btn" onclick="copyConfig()">复制代码</button>
+        </div>
+        
+        <div class="step">
+            <h3>步骤 3: 创建数据库表</h3>
+            <p>在 Supabase SQL Editor 中执行以下 SQL 命令：</p>
+            <div class="code-block" id="sqlCode">
+-- 创建用户表
+CREATE TABLE users (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 创建考勤记录表
+CREATE TABLE attendance_records (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    name TEXT NOT NULL,
+    count INTEGER NOT NULL,
+    site TEXT NOT NULL,
+    parking_fee DECIMAL(10,2) DEFAULT 0,
+    highway_fee DECIMAL(10,2) DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 创建索引
+CREATE INDEX idx_attendance_records_user_id ON attendance_records(user_id);
+CREATE INDEX idx_attendance_records_date ON attendance_records(date);
+
+-- 启用行级安全
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance_records ENABLE ROW LEVEL SECURITY;
+
+-- 设置安全策略
+CREATE POLICY "Enable all operations for users" ON users FOR ALL USING (true);
+CREATE POLICY "Enable all operations for attendance_records" ON attendance_records FOR ALL USING (true);
+            </div>
+            <button class="copy-btn" onclick="copySQL()">复制 SQL</button>
+        </div>
+        
+        <div class="step">
+            <h3>步骤 4: 完成设置</h3>
+            <p>完成以上步骤后，刷新你的考勤系统页面。如果配置正确，你应该看到状态显示为"云端模式"。</p>
+            <div id="statusMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        function generateConfig() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+            
+            if (!url || !key) {
+                showMessage('请填写完整的 URL 和 API Key', 'error');
+                return;
+            }
+            
+            const configCode = `const SUPABASE_URL = '${url}';
+const SUPABASE_ANON_KEY = '${key}';`;
+            
+            document.getElementById('configCode').textContent = configCode;
+            document.getElementById('configStep').style.display = 'block';
+            
+            showMessage('配置代码已生成！请复制到 supabase-config.js 文件中', 'success');
+        }
+        
+        function copyConfig() {
+            const code = document.getElementById('configCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showMessage('配置代码已复制到剪贴板', 'success');
+            });
+        }
+        
+        function copySQL() {
+            const code = document.getElementById('sqlCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showMessage('SQL 代码已复制到剪贴板', 'success');
+            });
+        }
+        
+        async function testConnection() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+            
+            if (!url || !key) {
+                showMessage('请先填写 URL 和 API Key', 'error');
+                return;
+            }
+            
+            showMessage('正在测试连接...', 'info');
+            
+            try {
+                // 这里只是一个简单的测试，实际应用中会更复杂
+                const response = await fetch(`${url}/rest/v1/`, {
+                    headers: {
+                        'apikey': key,
+                        'Authorization': `Bearer ${key}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showMessage('连接测试成功！', 'success');
+                } else {
+                    showMessage('连接测试失败，请检查 URL 和 API Key 是否正确', 'error');
+                }
+            } catch (error) {
+                showMessage('连接测试失败: ' + error.message, 'error');
+            }
+        }
+        
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

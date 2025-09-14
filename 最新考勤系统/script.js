@@ -2,11 +2,23 @@
 let currentUser = null;
 let attendanceRecords = [];
 let users = [];
+let isSupabaseEnabled = false; // Supabase连接状态
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', function() {
     // 从本地存储加载数据
     loadFromStorage();
+    
+    // 检查Supabase连接状态
+    setTimeout(async () => {
+        if (typeof SupabaseDB !== 'undefined' && checkSupabaseConfig()) {
+            isSupabaseEnabled = true;
+            // 如果有当前用户，重新加载他们的数据
+            if (currentUser && currentUser.id) {
+                await loadUserRecordsFromSupabase();
+            }
+        }
+    }, 2000);
     
     // 设置默认日期
     const today = new Date();
@@ -87,7 +99,7 @@ function showMessage(message, type = 'info') {
 }
 
 // 处理登录
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     
     const username = document.getElementById('loginUsername').value.trim();
@@ -98,21 +110,46 @@ function handleLogin(event) {
         return;
     }
     
-    // 查找用户
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-        currentUser = user;
-        saveToStorage();
-        showMainPage();
-        showMessage('登录成功！', 'success');
-    } else {
-        showMessage('用户名或密码错误', 'error');
+    try {
+        if (isSupabaseEnabled) {
+            // 使用Supabase登录
+            const result = await SupabaseDB.getUserByCredentials(username, password);
+            
+            if (result.success) {
+                currentUser = {
+                    id: result.data.id,
+                    username: result.data.username,
+                    email: result.data.email
+                };
+                
+                saveToStorage();
+                await loadUserRecordsFromSupabase();
+                showMainPage();
+                showMessage('登录成功！', 'success');
+            } else {
+                showMessage('用户名或密码错误', 'error');
+            }
+        } else {
+            // 使用本地存储登录
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                saveToStorage();
+                showMainPage();
+                showMessage('登录成功！', 'success');
+            } else {
+                showMessage('用户名或密码错误', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('登录失败:', error);
+        showMessage('登录失败，请稍后重试', 'error');
     }
 }
 
 // 处理注册
-function handleRegister(event) {
+async function handleRegister(event) {
     event.preventDefault();
     
     const username = document.getElementById('registerUsername').value.trim();
@@ -135,43 +172,88 @@ function handleRegister(event) {
         return;
     }
     
-    // 检查用户名是否已存在
-    if (users.some(u => u.username === username)) {
-        showMessage('用户名已存在', 'error');
-        return;
+    try {
+        if (isSupabaseEnabled) {
+            // 使用Supabase注册
+            // 先检查用户是否已存在
+            const checkResult = await SupabaseDB.checkUserExists(username, email);
+            
+            if (checkResult.success && checkResult.data.length > 0) {
+                const existingUser = checkResult.data[0];
+                if (existingUser.username === username) {
+                    showMessage('用户名已存在', 'error');
+                    return;
+                }
+                if (existingUser.email === email) {
+                    showMessage('邮箱已被注册', 'error');
+                    return;
+                }
+            }
+            
+            // 创建新用户
+            const result = await SupabaseDB.createUser({
+                username: username,
+                email: email,
+                password: password
+            });
+            
+            if (result.success) {
+                showMessage('注册成功！请登录', 'success');
+                
+                // 清空表单
+                document.getElementById('registerForm').reset();
+                
+                // 跳转到登录页面
+                setTimeout(() => {
+                    showPage('loginPage');
+                }, 1500);
+            } else {
+                showMessage('注册失败: ' + result.error, 'error');
+            }
+        } else {
+            // 使用本地存储注册
+            // 检查用户名是否已存在
+            if (users.some(u => u.username === username)) {
+                showMessage('用户名已存在', 'error');
+                return;
+            }
+            
+            // 检查邮箱是否已存在
+            if (users.some(u => u.email === email)) {
+                showMessage('邮箱已被注册', 'error');
+                return;
+            }
+            
+            // 创建新用户
+            const newUser = {
+                id: Date.now().toString(),
+                username: username,
+                email: email,
+                password: password,
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            saveToStorage();
+            
+            showMessage('注册成功！请登录', 'success');
+            
+            // 清空表单
+            document.getElementById('registerForm').reset();
+            
+            // 跳转到登录页面
+            setTimeout(() => {
+                showPage('loginPage');
+            }, 1500);
+        }
+    } catch (error) {
+        console.error('注册失败:', error);
+        showMessage('注册失败，请稍后重试', 'error');
     }
-    
-    // 检查邮箱是否已存在
-    if (users.some(u => u.email === email)) {
-        showMessage('邮箱已被注册', 'error');
-        return;
-    }
-    
-    // 创建新用户
-    const newUser = {
-        id: Date.now().toString(),
-        username: username,
-        email: email,
-        password: password,
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    saveToStorage();
-    
-    showMessage('注册成功！请登录', 'success');
-    
-    // 清空表单
-    document.getElementById('registerForm').reset();
-    
-    // 跳转到登录页面
-    setTimeout(() => {
-        showPage('loginPage');
-    }, 1500);
 }
 
 // 处理密码修改
-function handlePasswordChange(event) {
+async function handlePasswordChange(event) {
     event.preventDefault();
     
     const username = document.getElementById('forgotUsername').value.trim();
@@ -194,27 +276,57 @@ function handlePasswordChange(event) {
         return;
     }
     
-    // 查找用户
-    const userIndex = users.findIndex(u => u.username === username && u.email === email);
-    
-    if (userIndex === -1) {
-        showMessage('用户名或邮箱不正确', 'error');
-        return;
+    try {
+        if (isSupabaseEnabled) {
+            // 使用Supabase修改密码
+            const result = await SupabaseDB.getUserByUsernameAndEmail(username, email);
+            
+            if (result.success) {
+                const updateResult = await SupabaseDB.updateUserPassword(result.data.id, newPassword);
+                
+                if (updateResult.success) {
+                    showMessage('密码修改成功！请使用新密码登录', 'success');
+                    
+                    // 清空表单
+                    document.getElementById('forgotPasswordForm').reset();
+                    
+                    // 跳转到登录页面
+                    setTimeout(() => {
+                        showPage('loginPage');
+                    }, 1500);
+                } else {
+                    showMessage('密码修改失败: ' + updateResult.error, 'error');
+                }
+            } else {
+                showMessage('用户名或邮箱不正确', 'error');
+            }
+        } else {
+            // 使用本地存储修改密码
+            const userIndex = users.findIndex(u => u.username === username && u.email === email);
+            
+            if (userIndex === -1) {
+                showMessage('用户名或邮箱不正确', 'error');
+                return;
+            }
+            
+            // 更新密码
+            users[userIndex].password = newPassword;
+            saveToStorage();
+            
+            showMessage('密码修改成功！请使用新密码登录', 'success');
+            
+            // 清空表单
+            document.getElementById('forgotPasswordForm').reset();
+            
+            // 跳转到登录页面
+            setTimeout(() => {
+                showPage('loginPage');
+            }, 1500);
+        }
+    } catch (error) {
+        console.error('密码修改失败:', error);
+        showMessage('密码修改失败，请稍后重试', 'error');
     }
-    
-    // 更新密码
-    users[userIndex].password = newPassword;
-    saveToStorage();
-    
-    showMessage('密码修改成功！请使用新密码登录', 'success');
-    
-    // 清空表单
-    document.getElementById('forgotPasswordForm').reset();
-    
-    // 跳转到登录页面
-    setTimeout(() => {
-        showPage('loginPage');
-    }, 1500);
 }
 
 // 显示主页面
@@ -222,6 +334,27 @@ function showMainPage() {
     showPage('mainPage');
     document.getElementById('currentUser').textContent = currentUser.username;
     refreshRecordsTable();
+    updateConnectionStatus();
+}
+
+// 更新连接状态
+function updateConnectionStatus() {
+    const statusElement = document.getElementById('connectionStatus');
+    const syncButton = document.getElementById('syncButton');
+    
+    if (isSupabaseEnabled) {
+        statusElement.textContent = '云端模式';
+        statusElement.className = 'connection-status online';
+        if (syncButton) {
+            syncButton.style.display = 'inline-block';
+        }
+    } else {
+        statusElement.textContent = '本地模式';
+        statusElement.className = 'connection-status offline';
+        if (syncButton) {
+            syncButton.style.display = 'none';
+        }
+    }
 }
 
 // 退出登录
@@ -237,7 +370,7 @@ function logout() {
 }
 
 // 处理添加记录
-function handleAddRecord(event) {
+async function handleAddRecord(event) {
     event.preventDefault();
     
     const date = document.getElementById('recordDate').value;
@@ -252,30 +385,73 @@ function handleAddRecord(event) {
         return;
     }
     
-    const record = {
-        id: Date.now().toString(),
-        date: date,
-        name: name,
-        count: count,
-        site: site,
-        parkingFee: parkingFee,
-        highwayFee: highwayFee,
-        userId: currentUser.id,
-        createdAt: new Date().toISOString()
-    };
-    
-    attendanceRecords.push(record);
-    saveToStorage();
-    refreshRecordsTable();
-    
-    showMessage('考勤记录添加成功！', 'success');
-    
-    // 清空表单（保留日期）
-    document.getElementById('employeeName').value = '';
-    document.getElementById('employeeCount').value = '';
-    document.getElementById('siteName').value = '';
-    document.getElementById('parkingFee').value = '';
-    document.getElementById('highwayFee').value = '';
+    try {
+        if (isSupabaseEnabled) {
+            // 使用Supabase保存记录
+            const result = await SupabaseDB.createRecord({
+                userId: currentUser.id,
+                date: date,
+                name: name,
+                count: count,
+                site: site,
+                parkingFee: parkingFee,
+                highwayFee: highwayFee
+            });
+            
+            if (result.success) {
+                // 将新记录添加到本地数组
+                const newRecord = {
+                    id: result.data.id,
+                    date: result.data.date,
+                    name: result.data.name,
+                    count: result.data.count,
+                    site: result.data.site,
+                    parkingFee: result.data.parking_fee,
+                    highwayFee: result.data.highway_fee,
+                    userId: result.data.user_id,
+                    createdAt: result.data.created_at
+                };
+                
+                attendanceRecords.push(newRecord);
+                saveToStorage();
+                refreshRecordsTable();
+                
+                showMessage('考勤记录添加成功！', 'success');
+            } else {
+                showMessage('添加记录失败: ' + result.error, 'error');
+            }
+        } else {
+            // 使用本地存储
+            const record = {
+                id: Date.now().toString(),
+                date: date,
+                name: name,
+                count: count,
+                site: site,
+                parkingFee: parkingFee,
+                highwayFee: highwayFee,
+                userId: currentUser.id,
+                createdAt: new Date().toISOString()
+            };
+            
+            attendanceRecords.push(record);
+            saveToStorage();
+            refreshRecordsTable();
+            
+            showMessage('考勤记录添加成功！', 'success');
+        }
+        
+        // 清空表单（保留日期）
+        document.getElementById('employeeName').value = '';
+        document.getElementById('employeeCount').value = '';
+        document.getElementById('siteName').value = '';
+        document.getElementById('parkingFee').value = '';
+        document.getElementById('highwayFee').value = '';
+        
+    } catch (error) {
+        console.error('添加记录失败:', error);
+        showMessage('添加记录失败，请稍后重试', 'error');
+    }
 }
 
 // 刷新记录表格
@@ -302,14 +478,38 @@ function refreshRecordsTable() {
 }
 
 // 删除记录
-function deleteRecord(recordId) {
+async function deleteRecord(recordId) {
     if (confirm('确定要删除这条记录吗？')) {
-        const index = attendanceRecords.findIndex(record => record.id === recordId);
-        if (index !== -1) {
-            attendanceRecords.splice(index, 1);
-            saveToStorage();
-            refreshRecordsTable();
-            showMessage('记录已删除', 'success');
+        try {
+            if (isSupabaseEnabled) {
+                // 使用Supabase删除记录
+                const result = await SupabaseDB.deleteRecord(recordId);
+                
+                if (result.success) {
+                    // 从本地数组中删除
+                    const index = attendanceRecords.findIndex(record => record.id === recordId);
+                    if (index !== -1) {
+                        attendanceRecords.splice(index, 1);
+                        saveToStorage();
+                        refreshRecordsTable();
+                        showMessage('记录已删除', 'success');
+                    }
+                } else {
+                    showMessage('删除失败: ' + result.error, 'error');
+                }
+            } else {
+                // 使用本地存储删除
+                const index = attendanceRecords.findIndex(record => record.id === recordId);
+                if (index !== -1) {
+                    attendanceRecords.splice(index, 1);
+                    saveToStorage();
+                    refreshRecordsTable();
+                    showMessage('记录已删除', 'success');
+                }
+            }
+        } catch (error) {
+            console.error('删除记录失败:', error);
+            showMessage('删除失败，请稍后重试', 'error');
         }
     }
 }
@@ -765,6 +965,75 @@ function loadFromStorage() {
     } catch (error) {
         console.error('Error loading data from storage:', error);
         showMessage('数据加载失败', 'error');
+    }
+}
+
+// 从 Supabase 加载用户记录
+async function loadUserRecordsFromSupabase() {
+    if (!isSupabaseEnabled || !currentUser || !currentUser.id) {
+        return;
+    }
+    
+    try {
+        const result = await SupabaseDB.getRecordsByUserId(currentUser.id);
+        
+        if (result.success) {
+            // 转换数据格式以匹配本地结构
+            attendanceRecords = result.data.map(record => ({
+                id: record.id,
+                date: record.date,
+                name: record.name,
+                count: record.count,
+                site: record.site,
+                parkingFee: parseFloat(record.parking_fee) || 0,
+                highwayFee: parseFloat(record.highway_fee) || 0,
+                userId: record.user_id,
+                createdAt: record.created_at
+            }));
+            
+            saveToStorage();
+            refreshRecordsTable();
+        }
+    } catch (error) {
+        console.error('加载用户记录失败:', error);
+        showMessage('加载云端数据失败', 'error');
+    }
+}
+
+// 同步本地数据到 Supabase
+async function syncLocalDataToSupabase() {
+    if (!isSupabaseEnabled || !currentUser) {
+        return;
+    }
+    
+    try {
+        // 同步考勤记录
+        const localRecords = attendanceRecords.filter(record => record.userId === currentUser.id);
+        
+        for (const record of localRecords) {
+            // 检查记录是否已存在于Supabase中
+            if (typeof record.id === 'string' && record.id.length < 20) {
+                // 这是本地生成的ID，需要上传
+                await SupabaseDB.createRecord({
+                    userId: currentUser.id,
+                    date: record.date,
+                    name: record.name,
+                    count: record.count,
+                    site: record.site,
+                    parkingFee: record.parkingFee,
+                    highwayFee: record.highwayFee
+                });
+            }
+        }
+        
+        // 重新加载云端数据
+        await loadUserRecordsFromSupabase();
+        
+        showMessage('数据同步完成', 'success');
+        
+    } catch (error) {
+        console.error('同步数据失败:', error);
+        showMessage('数据同步失败', 'error');
     }
 }
 
