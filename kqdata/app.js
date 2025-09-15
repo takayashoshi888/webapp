@@ -14,7 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('recordDate').value = today;
     
     // 清空表单
-    document.getElementById('clearForm').addEventListener('click', clearForm);
+    document.getElementById('clearForm').addEventListener('click', function() {
+        clearForm();
+        showAlert('表单已清空', 'success');
+    });
     
     // 查询按钮
     document.getElementById('queryBtn').addEventListener('click', queryRecords);
@@ -30,18 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 导出CSV
     document.getElementById('exportBtn').addEventListener('click', exportToCSV);
-    
-    // 备份数据
-    document.getElementById('backupBtn').addEventListener('click', showBackupModal);
-    
-    // 恢复数据
-    document.getElementById('restoreBtn').addEventListener('click', showRestoreModal);
-    
-    // 复制备份
-    document.getElementById('copyBackup')?.addEventListener('click', copyBackupData);
-    
-    // 确认恢复
-    document.getElementById('confirmRestore')?.addEventListener('click', confirmRestoreData);
     
     // 分页按钮
     document.getElementById('prevPage')?.addEventListener('click', goToPrevPage);
@@ -134,10 +125,12 @@ function queryAttendanceRecords(filters) {
 // 删除考勤记录
 function deleteAttendanceRecord(id) {
     const userData = getUserData();
-    const recordIndex = userData.records.findIndex(record => record.id === id);
+    // 转换ID为数字类型进行比较，因为HTML属性获取的是字符串
+    const recordIndex = userData.records.findIndex(record => record.id == id);
     
     if (recordIndex === -1) {
-        console.error('记录不存在');
+        console.error('记录不存在，ID:', id, '类型:', typeof id);
+        console.log('现有记录:', userData.records.map(r => ({ id: r.id, type: typeof r.id })));
         return false;
     }
 
@@ -201,6 +194,57 @@ async function saveRecord(record) {
     }
 }
 
+// 更新记录
+async function updateRecord(recordId, updatedData) {
+    try {
+        // 获取当前用户信息
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (!currentUser) {
+            throw new Error('用户未登录');
+        }
+
+        // 验证数据
+        if (!updatedData || typeof updatedData !== 'object') {
+            throw new Error('无效的更新数据');
+        }
+
+        // 获取用户数据
+        const userData = getUserData();
+        // 使用宽松比较解决ID类型不匹配问题
+        const recordIndex = userData.records.findIndex(record => 
+            record.id == recordId && record.userId === currentUser.username
+        );
+        
+        if (recordIndex === -1) {
+            throw new Error('记录不存在或无权限编辑');
+        }
+
+        // 更新记录（保留原有的id和userId）
+        const originalRecord = userData.records[recordIndex];
+        userData.records[recordIndex] = {
+            ...updatedData,
+            id: originalRecord.id,
+            userId: originalRecord.userId
+        };
+        
+        saveUserData(userData);
+
+        // 返回成功结果
+        return { 
+            success: true,
+            data: userData.records[recordIndex],
+            message: '记录更新成功'
+        };
+    } catch (error) {
+        console.error('更新记录失败:', error);
+        return { 
+            success: false, 
+            error: error.message || '更新记录失败',
+            rawError: error
+        };
+    }
+}
+
 // 显示提示信息
 function showAlert(message, type) {
     const alertBox = document.createElement('div');
@@ -221,6 +265,13 @@ function showAlert(message, type) {
 function clearForm() {
     document.getElementById('recordForm').reset();
     document.getElementById('recordDate').value = new Date().toISOString().split('T')[0];
+    
+    // 重置表单为新增模式
+    const submitBtn = document.querySelector('#recordForm .primary-btn');
+    if (submitBtn) {
+        submitBtn.textContent = '保存记录';
+        submitBtn.removeAttribute('data-edit-id');
+    }
 }
 
 // 加载记录
@@ -399,7 +450,7 @@ function exportToCSV() {
     
     // 添加数据行
     records.forEach(record => {
-        csv += `${formatDate(record.date)},${record.name},${record.peopleCount},${record.siteName},${record.parkingFee},${record.highwayFee}\n`;
+    csv += `${formatDate(record.date)},${record.name},${record.people_count},${record.site_name},${record.parking_fee},${record.highway_fee}\n`;
     });
     
     // 创建下载链接
@@ -415,59 +466,7 @@ function exportToCSV() {
     showAlert('导出成功', 'success');
 }
 
-// 显示备份模态框
-function showBackupModal() {
-    const userData = getUserData();
-    document.getElementById('backupModalTitle').textContent = '备份数据';
-    document.getElementById('backupData').value = JSON.stringify(userData, null, 2);
-    document.getElementById('backupContent').style.display = 'block';
-    document.getElementById('restoreContent').style.display = 'none';
-    document.getElementById('backupModal').style.display = 'block';
-}
 
-// 显示恢复模态框
-function showRestoreModal() {
-    document.getElementById('backupModalTitle').textContent = '恢复数据';
-    document.getElementById('backupContent').style.display = 'none';
-    document.getElementById('restoreContent').style.display = 'block';
-    document.getElementById('restoreData').value = '';
-    document.getElementById('backupModal').style.display = 'block';
-}
-
-// 复制备份数据
-function copyBackupData() {
-    const backupData = document.getElementById('backupData');
-    backupData.select();
-    document.execCommand('copy');
-    showAlert('已复制到剪贴板', 'success');
-}
-
-// 确认恢复数据
-function confirmRestoreData() {
-    const restoreData = document.getElementById('restoreData').value.trim();
-    
-    if (!restoreData) {
-        showAlert('请输入备份数据', 'error');
-        return;
-    }
-    
-    try {
-        const parsedData = JSON.parse(restoreData);
-        
-        if (!parsedData.records || !Array.isArray(parsedData.records)) {
-            throw new Error('无效的备份数据格式');
-        }
-        
-        if (confirm('确定要恢复数据吗？这将覆盖当前所有数据！')) {
-            saveUserData(parsedData);
-            loadRecords();
-            document.getElementById('backupModal').style.display = 'none';
-            showAlert('数据恢复成功', 'success');
-        }
-    } catch (e) {
-        showAlert('备份数据格式错误: ' + e.message, 'error');
-    }
-}
 
 // 格式化日期显示
 function formatDate(dateString) {

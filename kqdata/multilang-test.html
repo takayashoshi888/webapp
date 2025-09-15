@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多语言PDF导出测试</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .language-btn { background-color: #3498db; color: white; border: none; border-radius: 4px; }
+        .language-btn:hover { background-color: #2980b9; }
+    </style>
+</head>
+<body>
+    <h1>多语言PDF导出功能测试</h1>
+    <p>选择语言并测试PDF导出：</p>
+    
+    <button class="language-btn" onclick="testPDFExport('zh')">中文导出</button>
+    <button class="language-btn" onclick="testPDFExport('en')">English Export</button>
+    <button class="language-btn" onclick="testPDFExport('ja')">日本語エクスポート</button>
+    
+    <script>
+        // 多语言配置
+        const languageConfig = {
+            zh: {
+                title: '每日考勤记录',
+                exportDate: '导出时间',
+                user: '用户',
+                summary: '统计摘要',
+                totalPeople: '总人数',
+                totalParkingFee: '总停车费',
+                totalHighwayFee: '总高速费',
+                totalCost: '总费用',
+                tableHeaders: ['日期', '姓名', '人数', '现场名称', '停车费(円)', '高速费(円)'],
+                currency: '円'
+            },
+            en: {
+                title: 'Daily Attendance Records',
+                exportDate: 'Export Date',
+                user: 'User',
+                summary: 'Summary',
+                totalPeople: 'Total People',
+                totalParkingFee: 'Total Parking Fee',
+                totalHighwayFee: 'Total Highway Fee',
+                totalCost: 'Total Cost',
+                tableHeaders: ['Date', 'Name', 'People', 'Site Name', 'Parking(JPY)', 'Highway(JPY)'],
+                currency: 'JPY'
+            },
+            ja: {
+                title: '日次勤怠記録',
+                exportDate: 'エクスポート日時',
+                user: 'ユーザー',
+                summary: '集計',
+                totalPeople: '総人数',
+                totalParkingFee: '総駐車料金',
+                totalHighwayFee: '総高速料金',
+                totalCost: '総費用',
+                tableHeaders: ['日付', '氏名', '人数', '現場名', '駐車料金(円)', '高速料金(円)'],
+                currency: '円'
+            }
+        };
+        
+        function testPDFExport(language) {
+            try {
+                const lang = languageConfig[language];
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // 使用默认字体
+                doc.setFont('helvetica', 'normal');
+                
+                // 添加标题
+                doc.setFontSize(18);
+                doc.text(lang.title, 105, 20, { align: 'center' });
+                
+                // 添加导出信息
+                doc.setFontSize(10);
+                const exportTime = new Date().toLocaleDateString();
+                const exportTimeStr = new Date().toLocaleTimeString();
+                doc.text(`${lang.exportDate}: ${exportTime} ${exportTimeStr}`, 20, 35);
+                doc.text(`${lang.user}: TestUser`, 20, 45);
+                
+                // 模拟统计数据
+                const totalPeople = 15;
+                const totalParking = 1500.50;
+                const totalHighway = 2300.75;
+                const totalFee = totalParking + totalHighway;
+                
+                // 添加统计摘要
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text(lang.summary + ':', 20, 60);
+                
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`${lang.totalPeople}: ${totalPeople}`, 30, 72);
+                doc.text(`${lang.totalParkingFee}: ${totalParking.toFixed(2)} ${lang.currency}`, 30, 82);
+                doc.text(`${lang.totalHighwayFee}: ${totalHighway.toFixed(2)} ${lang.currency}`, 30, 92);
+                doc.text(`${lang.totalCost}: ${totalFee.toFixed(2)} ${lang.currency}`, 30, 102);
+                
+                // 测试数据
+                const testData = [
+                    ['2023-12-01', '张三', '5', '项目A', '500.00', '300.00'],
+                    ['2023-12-02', '李四', '3', '项目B', '200.50', '150.25'],
+                    ['2023-12-03', '王五', '7', '项目C', '800.00', '850.50']
+                ];
+                
+                // 创建表格
+                doc.autoTable({
+                    head: [lang.tableHeaders],
+                    body: testData,
+                    startY: 115,
+                    styles: {
+                        fontSize: 8,
+                        cellPadding: 3,
+                        font: 'helvetica'
+                    },
+                    headStyles: {
+                        fillColor: [52, 152, 219],
+                        textColor: [255, 255, 255],
+                        fontSize: 9
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    }
+                });
+                
+                // 生成文件名
+                const dateStr = new Date().toISOString().slice(0, 10);
+                const fileName = `test_attendance_${language}_${dateStr}.pdf`;
+                
+                // 保存PDF文件
+                doc.save(fileName);
+                
+                alert(`${language.toUpperCase()} PDF导出成功！`);
+                
+            } catch (error) {
+                console.error('PDF导出失败:', error);
+                alert('PDF导出失败: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

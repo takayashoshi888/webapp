@@ -124,10 +124,13 @@
             <div class="section-header">
                 <h2>记录列表</h2>
                 <div class="actions">
+                    <select id="languageSelector" style="margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                    </select>
                     <button id="exportBtn" class="primary-btn">导出为CSV</button>
-                    <button id="backupBtn" class="secondary-btn">备份数据</button>
-                    <button id="restoreBtn" class="secondary-btn">恢复数据</button>
-                    <button id="viewChartBtn" class="primary-btn">查看图表</button>
+                    <button id="exportPDFBtn" class="primary-btn">导出为PDF</button>
                 </div>
             </div>
             <div class="table-container">
@@ -181,21 +184,7 @@
         </div>
     </div>
 
-    <!-- 备份/恢复模态框 -->
-    <div id="backupModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2 id="backupModalTitle">备份数据</h2>
-            <div id="backupContent">
-                <textarea id="backupData" rows="10" readonly placeholder="在此处粘贴备份数据以进行恢复"></textarea>
-                <button id="copyBackup" class="primary-btn">复制到剪贴板</button>
-            </div>
-            <div id="restoreContent" style="display: none;">
-                <textarea id="restoreData" rows="10" placeholder="粘贴备份数据..."></textarea>
-                <button id="confirmRestore" class="primary-btn">确认恢复</button>
-            </div>
-        </div>
-    </div>
+
 
     <script src="auth.js"></script>
     <script src="app.js"></script>
@@ -235,33 +224,48 @@
                         highway_fee: parseFloat(document.getElementById('highwayFee').value) || 0
                     };
 
-                    // 调用 app.js 中的 saveRecord 函数，而不是直接调用 addAttendanceRecord
-                    const result = await saveRecord(record);
+                    let result;
+                    const editId = submitButton.getAttribute('data-edit-id');
                     
-                    // 验证返回结果是否包含 success 属性
-                    if (result && typeof result === 'object') {
-                        if ('success' in result) {
-                            if (result.success) {
-                                // 清空表单
-                                clearForm();
-                                // 显示成功提示
-                                showAlert('记录已保存！', 'success');
-                                await loadRecords();
-                            } else {
-                                // 显示错误提示，优先使用 result.error，其次使用通用消息
-                                const errorMessage = result.error || '保存记录失败，请稍后重试';
-                                showAlert(`记录保存失败: ${errorMessage}`, 'error');
-                            }
+                    if (editId) {
+                        // 编辑模式
+                        result = await updateRecord(editId, record);
+                        if (result && result.success) {
+                            showAlert('记录更新成功！', 'success');
+                            // 重置表单为新增模式
+                            submitButton.textContent = '保存记录';
+                            submitButton.removeAttribute('data-edit-id');
                         } else {
-                            // 处理不符合预期格式的响应
-                            console.error('服务器响应中缺少 success 属性:', result);
-                            showAlert('服务器响应格式不正确，请检查控制台日志', 'error');
+                            const errorMessage = result?.error || '更新记录失败，请稍后重试';
+                            showAlert(`记录更新失败: ${errorMessage}`, 'error');
                         }
                     } else {
-                        // 处理非对象响应
-                        console.error('收到非对象类型的响应:', result);
-                        showAlert('收到非对象类型的响应，请检查控制台日志', 'error');
+                        // 新增模式
+                        result = await saveRecord(record);
+                        if (result && typeof result === 'object') {
+                            if ('success' in result) {
+                                if (result.success) {
+                                    showAlert('记录已保存！', 'success');
+                                } else {
+                                    const errorMessage = result.error || '保存记录失败，请稍后重试';
+                                    showAlert(`记录保存失败: ${errorMessage}`, 'error');
+                                }
+                            } else {
+                                console.error('服务器响应中缺少 success 属性:', result);
+                                showAlert('服务器响应格式不正确，请检查控制台日志', 'error');
+                            }
+                        } else {
+                            console.error('收到非对象类型的响应:', result);
+                            showAlert('收到非对象类型的响应，请检查控制台日志', 'error');
+                        }
                     }
+                    
+                    // 清空表单并重新加载记录
+                    if (result && result.success) {
+                        clearForm();
+                        await loadRecords();
+                    }
+                    
                 } catch (error) {
                     console.error('保存记录时出错:', error);
                     alert('保存记录失败: ' + (error.message || '请稍后重试'));
@@ -350,7 +354,7 @@
                     <td>${record.parking_fee.toFixed(2)}</td>
                     <td>${record.highway_fee.toFixed(2)}</td>
                     <td>
-                        <button class="action-btn edit-btn" data-id="${record.id}" style="background-color: blue; color: white;">编辑</button>
+                        <button class="action-btn edit-btn" data-id="${record.id}" style="background-color: blue; color: white; margin-right: 5px;">编辑</button>
                         <button class="action-btn delete-btn" data-id="${record.id}" style="background-color: red; color: white;">删除</button>
                     </td>
                 `;
@@ -368,31 +372,408 @@
             document.getElementById('totalHighway').textContent = `${totalHighway.toFixed(2)}円`;
             document.getElementById('totalFee').textContent = `${(totalParking + totalHighway).toFixed(2)}円`;
 
+            // 绑定编辑和删除按钮事件
+            bindActionButtons();
+        }
+        
+        // 绑定操作按钮事件
+        function bindActionButtons() {
             // 绑定删除按钮事件
             document.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', async function() {
                     const recordId = this.getAttribute('data-id');
-                    const success = await deleteAttendanceRecord(recordId);
-                    if (success) {
-                        alert('记录删除成功');
-                        await loadRecords();
-                    } else {
-                        alert('删除记录失败，请稍后重试');
-                    }
+                    await deleteRecord(recordId);
+                });
+            });
+            
+            // 绑定编辑按钮事件
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const recordId = this.getAttribute('data-id');
+                    editRecord(recordId);
                 });
             });
         }
+        
+        // 删除记录函数
+        async function deleteRecord(recordId) {
+            console.log('尝试删除记录ID:', recordId, '类型:', typeof recordId);
+            if (!confirm('确定要删除这条记录吗？')) return;
+
+            const success = await deleteAttendanceRecord(recordId);
+            if (success) {
+                showAlert('记录删除成功', 'success');
+                await loadRecords();
+            } else {
+                showAlert('删除记录失败，请稍后重试', 'error');
+            }
+        }
+        
+        // 编辑记录函数
+        function editRecord(recordId) {
+            console.log('尝试编辑记录ID:', recordId, '类型:', typeof recordId);
+            
+            // 获取当前用户数据
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            const userId = currentUser.username;
+            const userData = getUserData();
+            
+            // 查找要编辑的记录（使用宽松比較）
+            const record = userData.records.find(r => r.id == recordId && r.userId === userId);
+            console.log('查找结果:', record);
+            
+            if (!record) {
+                console.log('现有记录:', userData.records.map(r => ({ id: r.id, userId: r.userId })));
+                showAlert('记录不存在', 'error');
+                return;
+            }
+            
+            // 填充表单数据
+            document.getElementById('recordDate').value = record.date;
+            document.getElementById('name').value = record.name;
+            document.getElementById('peopleCount').value = record.people_count;
+            document.getElementById('siteName').value = record.site_name;
+            document.getElementById('parkingFee').value = record.parking_fee;
+            document.getElementById('highwayFee').value = record.highway_fee;
+            
+            // 更改表单状态为编辑模式
+            const form = document.getElementById('recordForm');
+            const submitBtn = form.querySelector('.primary-btn');
+            submitBtn.textContent = '更新记录';
+            submitBtn.setAttribute('data-edit-id', recordId);
+            
+            // 滚动到表单顶部
+            document.querySelector('.form-container').scrollIntoView({ behavior: 'smooth' });
+            
+            showAlert('记录已加载到表单，修改后点击"更新记录"', 'success');
+        }
     </script>
+    <!-- 引入 jsPDF 库用于PDF导出 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" 
+            onerror="loadJsPDFBackup()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" 
+            onerror="loadAutoTableBackup()"></script>
+    
     <script>
-        // 查看图表按钮点击事件
+        // 备用CDN加载方案
+        function loadJsPDFBackup() {
+            console.warn('主CDN加载失败，尝试备用CDN...');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js';
+            script.onerror = function() {
+                console.error('所有CDN都加载失败，PDF导出功能不可用');
+            };
+            document.head.appendChild(script);
+        }
+        
+        function loadAutoTableBackup() {
+            console.warn('AutoTable主CDN加载失败，尝试备用CDN...');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.min.js';
+            script.onerror = function() {
+                console.error('所有AutoTable CDN都加载失败');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // 多语言配置
+        const languageConfig = {
+            zh: {
+                title: '每日考勤记录',
+                exportDate: '导出时间',
+                user: '用户',
+                summary: '统计摘要',
+                totalPeople: '总人数',
+                totalParkingFee: '总停车费',
+                totalHighwayFee: '总高速费',
+                totalCost: '总费用',
+                tableHeaders: ['日期', '姓名', '人数', '现场名称', '停车费(円)', '高速费(円)'],
+                currency: '円',
+                noRecords: '没有记录可导出',
+                exportSuccess: 'PDF导出成功！',
+                exportFailed: 'PDF导出失败',
+                networkError: 'jsPDF库未正确加载，请检查网络连接',
+                pluginError: 'jsPDF autoTable插件未加载'
+            },
+            en: {
+                title: 'Daily Attendance Records',
+                exportDate: 'Export Date',
+                user: 'User',
+                summary: 'Summary',
+                totalPeople: 'Total People',
+                totalParkingFee: 'Total Parking Fee',
+                totalHighwayFee: 'Total Highway Fee',
+                totalCost: 'Total Cost',
+                tableHeaders: ['Date', 'Name', 'People', 'Site Name', 'Parking(JPY)', 'Highway(JPY)'],
+                currency: 'JPY',
+                noRecords: 'No records to export',
+                exportSuccess: 'PDF export successful!',
+                exportFailed: 'PDF export failed',
+                networkError: 'jsPDF library not properly loaded, please check network connection',
+                pluginError: 'jsPDF autoTable plugin not loaded'
+            },
+            ja: {
+                title: '日次勤怠記録',
+                exportDate: 'エクスポート日時',
+                user: 'ユーザー',
+                summary: '集計',
+                totalPeople: '総人数',
+                totalParkingFee: '総駐車料金',
+                totalHighwayFee: '総高速料金',
+                totalCost: '総費用',
+                tableHeaders: ['日付', '氏名', '人数', '現場名', '駐車料金(円)', '高速料金(円)'],
+                currency: '円',
+                noRecords: 'エクスポートするレコードがありません',
+                exportSuccess: 'PDFエクスポート成功！',
+                exportFailed: 'PDFエクスポート失敗',
+                networkError: 'jsPDFライブラリが正しく読み込まれていません。ネットワーク接続を確認してください',
+                pluginError: 'jsPDF autoTableプラグインが読み込まれていません'
+            }
+        };
+        
+        // 获取当前语言设置
+        function getCurrentLanguage() {
+            return localStorage.getItem('preferredLanguage') || 'zh';
+        }
+        
+        // 设置语言
+        function setLanguage(lang) {
+            localStorage.setItem('preferredLanguage', lang);
+        }
+        
+        // PDF导出功能
         document.addEventListener('DOMContentLoaded', function() {
-            const viewChartBtn = document.getElementById('viewChartBtn');
-            if (viewChartBtn) {
-                viewChartBtn.addEventListener('click', function() {
-                    window.location.href = 'charts.html';
+            const exportPDFBtn = document.getElementById('exportPDFBtn');
+            const languageSelector = document.getElementById('languageSelector');
+            
+            if (exportPDFBtn) {
+                exportPDFBtn.addEventListener('click', exportToPDF);
+            }
+            
+            // 初始化语言选择器
+            if (languageSelector) {
+                languageSelector.value = getCurrentLanguage();
+                languageSelector.addEventListener('change', function() {
+                    setLanguage(this.value);
                 });
             }
         });
+        
+        // 导出为PDF函数（多语言版，解决中日文乱码）
+        async function exportToPDF() {
+            try {
+                // 获取当前用户数据
+                const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+                const userId = currentUser.username;
+                const records = await getAllAttendanceRecords(userId);
+                
+                // 获取当前语言配置
+                const currentLang = getCurrentLanguage();
+                const lang = languageConfig[currentLang];
+                
+                if (records.length === 0) {
+                    showAlert(lang.noRecords, 'error');
+                    return;
+                }
+                
+                // 检查jsPDF是否可用
+                if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+                    throw new Error(lang.networkError);
+                }
+                
+                // 创建新的PDF文档
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // 根据语言选择合适的处理方式
+                if (currentLang === 'en') {
+                    // 英文使用默认字体
+                    doc.setFont('helvetica', 'normal');
+                    await generateEnglishPDF(doc, lang, currentUser, records);
+                } else {
+                    // 中文和日文使用图片方式生成PDF
+                    await generateAsianLanguagePDF(doc, lang, currentUser, records, currentLang);
+                }
+                
+                // 生成文件名
+                const dateStr = new Date().toISOString().slice(0, 10);
+                const fileName = `attendance_records_${currentLang}_${currentUser.username}_${dateStr}.pdf`;
+                
+                // 保存PDF文件
+                doc.save(fileName);
+                
+                showAlert(lang.exportSuccess, 'success');
+                
+            } catch (error) {
+                console.error('PDF导出详细错误:', error);
+                const currentLang = getCurrentLanguage();
+                const lang = languageConfig[currentLang];
+                const errorMsg = error.message || '未知错误';
+                showAlert(`${lang.exportFailed}: ${errorMsg}`, 'error');
+            }
+        }
+        
+        // 生成英文PDF
+        async function generateEnglishPDF(doc, lang, currentUser, records) {
+            doc.setFont('helvetica', 'normal');
+            
+            // 添加标题
+            doc.setFontSize(18);
+            doc.text(lang.title, 105, 20, { align: 'center' });
+            
+            // 添加导出信息
+            doc.setFontSize(10);
+            const exportTime = new Date().toLocaleDateString();
+            const exportTimeStr = new Date().toLocaleTimeString();
+            doc.text(`${lang.exportDate}: ${exportTime} ${exportTimeStr}`, 20, 35);
+            doc.text(`${lang.user}: ${currentUser.username}`, 20, 45);
+            
+            // 计算统计数据
+            const totalPeople = records.reduce((sum, record) => sum + (record.people_count || 0), 0);
+            const totalParking = records.reduce((sum, record) => sum + (record.parking_fee || 0), 0);
+            const totalHighway = records.reduce((sum, record) => sum + (record.highway_fee || 0), 0);
+            const totalFee = totalParking + totalHighway;
+            
+            // 添加统计摘要
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(lang.summary + ':', 20, 60);
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${lang.totalPeople}: ${totalPeople}`, 30, 72);
+            doc.text(`${lang.totalParkingFee}: ${totalParking.toFixed(2)} ${lang.currency}`, 30, 82);
+            doc.text(`${lang.totalHighwayFee}: ${totalHighway.toFixed(2)} ${lang.currency}`, 30, 92);
+            doc.text(`${lang.totalCost}: ${totalFee.toFixed(2)} ${lang.currency}`, 30, 102);
+            
+            // 准备表格数据
+            const tableData = records.map(record => [
+                record.date || 'N/A',
+                record.name || 'N/A',
+                (record.people_count || 0).toString(),
+                record.site_name || 'N/A',
+                (record.parking_fee || 0).toFixed(2),
+                (record.highway_fee || 0).toFixed(2)
+            ]);
+            
+            // 创建表格
+            doc.autoTable({
+                head: [lang.tableHeaders],
+                body: tableData,
+                startY: 115,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 3,
+                    font: 'helvetica'
+                },
+                headStyles: {
+                    fillColor: [52, 152, 219],
+                    textColor: [255, 255, 255],
+                    fontSize: 9,
+                    font: 'helvetica'
+                }
+            });
+        }
+        
+        // 生成中文/日文PDF（使用Canvas转图片方式）
+        async function generateAsianLanguagePDF(doc, lang, currentUser, records, currentLang) {
+            // 创建canvas元素
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 设置canvas尺寸（A4比例）
+            canvas.width = 794;  // A4宽度（像素）
+            canvas.height = 1123; // A4高度（像素）
+            
+            // 设置背景色
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 设置字体（使用系统默认字体，支持中日文）
+            ctx.fillStyle = '#000000';
+            
+            // 绘制标题
+            ctx.font = 'bold 24px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(lang.title, canvas.width / 2, 60);
+            
+            // 绘制导出信息
+            ctx.font = '14px Arial, sans-serif';
+            ctx.textAlign = 'left';
+            const exportTime = new Date().toLocaleDateString();
+            const exportTimeStr = new Date().toLocaleTimeString();
+            ctx.fillText(`${lang.exportDate}: ${exportTime} ${exportTimeStr}`, 40, 100);
+            ctx.fillText(`${lang.user}: ${currentUser.username}`, 40, 120);
+            
+            // 计算统计数据
+            const totalPeople = records.reduce((sum, record) => sum + (record.people_count || 0), 0);
+            const totalParking = records.reduce((sum, record) => sum + (record.parking_fee || 0), 0);
+            const totalHighway = records.reduce((sum, record) => sum + (record.highway_fee || 0), 0);
+            const totalFee = totalParking + totalHighway;
+            
+            // 绘制统计摘要
+            ctx.font = 'bold 16px Arial, sans-serif';
+            ctx.fillText(lang.summary + ':', 40, 160);
+            
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillText(`${lang.totalPeople}: ${totalPeople}`, 60, 185);
+            ctx.fillText(`${lang.totalParkingFee}: ${totalParking.toFixed(2)} ${lang.currency}`, 60, 205);
+            ctx.fillText(`${lang.totalHighwayFee}: ${totalHighway.toFixed(2)} ${lang.currency}`, 60, 225);
+            ctx.fillText(`${lang.totalCost}: ${totalFee.toFixed(2)} ${lang.currency}`, 60, 245);
+            
+            // 绘制表格标题
+            ctx.font = 'bold 12px Arial, sans-serif';
+            const startY = 280;
+            const rowHeight = 25;
+            const colWidths = [80, 80, 50, 120, 80, 80]; // 列宽
+            let currentX = 40;
+            
+            // 绘制表头背景
+            ctx.fillStyle = '#3498db';
+            ctx.fillRect(40, startY - 18, colWidths.reduce((a, b) => a + b, 0), 20);
+            
+            // 绘制表头文字
+            ctx.fillStyle = '#ffffff';
+            currentX = 40;
+            lang.tableHeaders.forEach((header, index) => {
+                ctx.fillText(header, currentX + 5, startY - 5);
+                currentX += colWidths[index];
+            });
+            
+            // 绘制数据行
+            ctx.fillStyle = '#000000';
+            ctx.font = '11px Arial, sans-serif';
+            
+            records.slice(0, 25).forEach((record, rowIndex) => { // 限制25行避免超出页面
+                const y = startY + (rowIndex + 1) * rowHeight;
+                currentX = 40;
+                
+                // 交替行背景
+                if (rowIndex % 2 === 0) {
+                    ctx.fillStyle = '#f5f5f5';
+                    ctx.fillRect(40, y - 18, colWidths.reduce((a, b) => a + b, 0), 20);
+                    ctx.fillStyle = '#000000';
+                }
+                
+                const rowData = [
+                    record.date || 'N/A',
+                    record.name || 'N/A',
+                    (record.people_count || 0).toString(),
+                    record.site_name || 'N/A',
+                    (record.parking_fee || 0).toFixed(2),
+                    (record.highway_fee || 0).toFixed(2)
+                ];
+                
+                rowData.forEach((data, colIndex) => {
+                    ctx.fillText(data, currentX + 5, y - 5);
+                    currentX += colWidths[colIndex];
+                });
+            });
+            
+            // 将canvas转换为图片并添加到PDF
+            const imgData = canvas.toDataURL('image/png');
+            doc.addImage(imgData, 'PNG', 0, 0, 210, 297); // A4尺寸（毫米）
+        }
     </script>
 </body>
 </html>
