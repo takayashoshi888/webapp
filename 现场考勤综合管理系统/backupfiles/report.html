@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统计报表 - 现场考勤综合管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>现场考勤综合管理系统</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">出勤登记</a></li>
+                    <li><a href="admin.html">管理中心</a></li>
+                    <li><a href="report.html" class="active">统计报表</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="report-section">
+                <h2>月度统计报表</h2>
+                
+                <div class="form-group">
+                    <label for="reportMonth">选择月份:</label>
+                    <input type="month" id="reportMonth">
+                    <button id="generateReport">生成报表</button>
+                    <button id="exportReport">导出报表</button>
+                </div>
+                
+                <div class="report-content">
+                    <h3>详细出勤记录</h3>
+                    <table id="attendanceReport">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>现场</th>
+                                <th>日期</th>
+                                <th>高速费</th>
+                                <th>停车费</th>
+                                <th>费用总计</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025TKYS 现场考勤综合管理系统</p>
+        </footer>
+    </div>
+    
+    <script src="js/report.js"></script>
+</body>
+</html>

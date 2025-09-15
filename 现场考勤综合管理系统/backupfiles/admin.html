@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理中心 - 现场考勤综合管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>现场考勤综合管理系统</h1>
+            <div class="admin-status">
+                <span>管理员已登录</span>
+                <button id="logoutBtn" class="logout-btn">退出</button>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">出勤登记</a></li>
+                    <li><a href="admin.html" class="active">管理中心</a></li>
+                    <li><a href="report.html">统计报表</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="admin-section">
+                <h2>现场管理</h2>
+                <div class="management-form">
+                    <form id="siteForm">
+                        <div class="form-group">
+                            <label for="siteName">现场名称:</label>
+                            <input type="text" id="siteName" placeholder="请输入现场名称" required>
+                        </div>
+                        <button type="submit">添加现场</button>
+                        <button type="button" id="updateSiteBtn" style="display: none;">更新现场</button>
+                        <button type="button" id="cancelSiteBtn" style="display: none;">取消</button>
+                    </form>
+                </div>
+                
+                <div class="management-list">
+                    <h3>现场列表</h3>
+                    <table id="siteTable">
+                        <thead>
+                            <tr>
+                                <th>现场名称</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="admin-section">
+                <h2>人员管理</h2>
+                <div class="management-form">
+                    <form id="employeeForm">
+                        <div class="form-group">
+                            <label for="employeeName">人员姓名:</label>
+                            <input type="text" id="employeeName" placeholder="请输入人员姓名" required>
+                        </div>
+                        <button type="submit">添加人员</button>
+                        <button type="button" id="updateEmployeeBtn" style="display: none;">更新人员</button>
+                        <button type="button" id="cancelEmployeeBtn" style="display: none;">取消</button>
+                    </form>
+                </div>
+                
+                <div class="management-list">
+                    <h3>人员列表</h3>
+                    <table id="employeeTable">
+                        <thead>
+                            <tr>
+                                <th>人员姓名</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2023 现场考勤综合管理系统</p>
+        </footer>
+    </div>
+    
+    <script src="js/admin.js"></script>
+</body>
+</html>

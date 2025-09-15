@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现场考勤综合管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="home-page">
+    <div class="container">
+        <header>
+            <h1>TKYS现场考勤登录系统</h1>
+        </header>
+        
+        <main>
+            <div class="attendance-form">
+                <h2>出勤登记</h2>
+                <form id="attendanceForm">
+                    <div class="form-group">
+                        <label for="siteSelect">现场名称:</label>
+                        <select id="siteSelect" required>
+                            <option value="">请选择现场</option>
+                            <!-- 选项将通过JavaScript动态加载 -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="nameSelect">姓名:</label>
+                        <select id="nameSelect" required>
+                            <option value="">请选择姓名</option>
+                            <!-- 选项将通过JavaScript动态加载 -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tollFee">高速费:</label>
+                        <input type="number" id="tollFee" placeholder="请输入高速费" min="0" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="parkingFee">停车费:</label>
+                        <input type="number" id="parkingFee" placeholder="请输入停车费" min="0" step="0.01">
+                    </div>
+                    
+                    <button type="submit">出勤</button>
+                </form>
+            </div>
+        </main>
+        
+        <!-- 管理员登录入口 -->
+        <div class="admin-login-container">
+            <button id="adminLoginBtn" class="admin-login-btn">管理员登录</button>
+        </div>
+        
+        <!-- 管理员登录模态框 -->
+        <div id="adminLoginModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>管理员登录</h2>
+                <form id="adminLoginForm">
+                    <div class="form-group">
+                        <label for="adminPassword">密码:</label>
+                        <input type="password" id="adminPassword" placeholder="请输入管理员密码" required>
+                    </div>
+                    <button type="submit">登录</button>
+                </form>
+            </div>
+        </div>
+        
+        <footer>
+            <p>&copy; 2025TKYS 现场考勤综合管理系统</p>
+        </footer>
+    </div>
+    
+    <script src="js/main.js"></script>
+</body>
+</html>
