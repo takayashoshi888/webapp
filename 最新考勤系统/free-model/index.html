@@ -151,6 +151,20 @@
                                 <input type="number" id="highwayFee" min="0" step="10">
                             </div>
                         </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="roomType">部屋タイプ:</label>
+                                <select id="roomType" required>
+                                    <option value="">请选择部屋タイプ</option>
+                                    <option value="A">Aタイプ</option>
+                                    <option value="B">Bタイプ</option>
+                                    <option value="C">Cタイプ</option>
+                                    <option value="D">Dタイプ</option>
+                                    <option value="E">Eタイプ</option>
+                                    <option value="F">Fタイプ</option>
+                                </select>
+                            </div>
+                        </div>
                         <button type="submit">添加记录</button>
                     </form>
                 </div>
@@ -169,6 +183,7 @@
                                     <th>姓名</th>
                                     <th>人数</th>
                                     <th>现场名称</th>
+                                    <th>部屋タイプ</th>
                                     <th>停车费 (¥)</th>
                                     <th>高速费 (¥)</th>
                                     <th>操作</th>
@@ -194,7 +209,7 @@
                     </div>
                     
                     <div id="statisticsResults" class="statistics-results">
-                        <!-- 统计结果将在这里显示 -->
+                        <!-- 统計結果将在这里显示 -->
                     </div>
                 </div>
             </div>
