@@ -80,10 +80,19 @@ async function createDatabaseTables() {
                 name TEXT NOT NULL,
                 count INTEGER NOT NULL,
                 site TEXT NOT NULL,
+                room_type TEXT NOT NULL,
                 parking_fee DECIMAL(10,2) DEFAULT 0,
                 highway_fee DECIMAL(10,2) DEFAULT 0,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
+        `;
+        
+        // 创建索引的SQL
+        const createIndexesSQL = `
+            CREATE INDEX IF NOT EXISTS idx_attendance_records_user_id ON attendance_records(user_id);
+            CREATE INDEX IF NOT EXISTS idx_attendance_records_date ON attendance_records(date);
+            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+            CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
         `;
         
         // 执行SQL创建表
@@ -95,6 +104,11 @@ async function createDatabaseTables() {
         const { error: recordsError } = await supabase.rpc('exec_sql', { sql: createRecordsTableSQL });
         if (recordsError) {
             console.error('创建考勤记录表失败:', recordsError);
+        }
+        
+        const { error: indexesError } = await supabase.rpc('exec_sql', { sql: createIndexesSQL });
+        if (indexesError) {
+            console.error('创建索引失败:', indexesError);
         }
         
         console.log('数据库表结构创建完成');
@@ -206,7 +220,8 @@ class SupabaseDB {
                     count: recordData.count,
                     site: recordData.site,
                     parking_fee: recordData.parkingFee,
-                    highway_fee: recordData.highwayFee
+                    highway_fee: recordData.highwayFee,
+                    room_type: recordData.roomType
                 }])
                 .select()
                 .single();
@@ -215,6 +230,46 @@ class SupabaseDB {
             return { success: true, data };
         } catch (error) {
             console.error('创建考勤记录失败:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    static async deleteRecord(recordId) {
+        try {
+            const { error } = await supabase
+                .from('attendance_records')
+                .delete()
+                .eq('id', recordId);
+            
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('删除考勤记录失败:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    static async updateRecord(recordId, recordData) {
+        try {
+            const { data, error } = await supabase
+                .from('attendance_records')
+                .update({
+                    date: recordData.date,
+                    name: recordData.name,
+                    count: recordData.count,
+                    site: recordData.site,
+                    parking_fee: recordData.parkingFee,
+                    highway_fee: recordData.highwayFee,
+                    room_type: recordData.roomType
+                })
+                .eq('id', recordId)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return { success: true, data };
+        } catch (error) {
+            console.error('更新考勤记录失败:', error);
             return { success: false, error: error.message };
         }
     }
@@ -231,21 +286,6 @@ class SupabaseDB {
             return { success: true, data };
         } catch (error) {
             console.error('获取考勤记录失败:', error);
-            return { success: false, error: error.message };
-        }
-    }
-    
-    static async deleteRecord(recordId) {
-        try {
-            const { error } = await supabase
-                .from('attendance_records')
-                .delete()
-                .eq('id', recordId);
-            
-            if (error) throw error;
-            return { success: true };
-        } catch (error) {
-            console.error('删除考勤记录失败:', error);
             return { success: false, error: error.message };
         }
     }

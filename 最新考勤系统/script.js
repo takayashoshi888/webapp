@@ -379,8 +379,9 @@ async function handleAddRecord(event) {
     const site = document.getElementById('siteName').value.trim();
     const parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
     const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
+    const roomType = document.getElementById('roomType').value;
     
-    if (!date || !name || !count || !site) {
+    if (!date || !name || !count || !site || !roomType) {
         showMessage('请填写所有必填字段', 'error');
         return;
     }
@@ -395,7 +396,8 @@ async function handleAddRecord(event) {
                 count: count,
                 site: site,
                 parkingFee: parkingFee,
-                highwayFee: highwayFee
+                highwayFee: highwayFee,
+                roomType: roomType
             });
             
             if (result.success) {
@@ -408,6 +410,7 @@ async function handleAddRecord(event) {
                     site: result.data.site,
                     parkingFee: result.data.parking_fee,
                     highwayFee: result.data.highway_fee,
+                    roomType: result.data.room_type,
                     userId: result.data.user_id,
                     createdAt: result.data.created_at
                 };
@@ -430,6 +433,7 @@ async function handleAddRecord(event) {
                 site: site,
                 parkingFee: parkingFee,
                 highwayFee: highwayFee,
+                roomType: roomType,
                 userId: currentUser.id,
                 createdAt: new Date().toISOString()
             };
@@ -445,6 +449,7 @@ async function handleAddRecord(event) {
         document.getElementById('employeeName').value = '';
         document.getElementById('employeeCount').value = '';
         document.getElementById('siteName').value = '';
+        document.getElementById('roomType').value = '';
         document.getElementById('parkingFee').value = '';
         document.getElementById('highwayFee').value = '';
         
@@ -468,13 +473,143 @@ function refreshRecordsTable() {
             <td>${record.name}</td>
             <td>${record.count}</td>
             <td>${record.site}</td>
+            <td>${getRoomTypeLabel(record.roomType)}</td>
             <td>¥${record.parkingFee.toLocaleString()}</td>
             <td>¥${record.highwayFee.toLocaleString()}</td>
             <td>
+                <button class="edit-btn" onclick="editRecord('${record.id}')">编辑</button>
                 <button class="delete-btn" onclick="deleteRecord('${record.id}')">删除</button>
             </td>
         `;
     });
+}
+
+// 获取部屋タイプの表示标签
+function getRoomTypeLabel(type) {
+    const typeMap = {
+        'A': 'Aタイプ',
+        'B': 'Bタイプ',
+        'C': 'Cタイプ',
+        'D': 'Dタイプ',
+        'E': 'Eタイプ',
+        'F': 'Fタイプ'
+    };
+    return typeMap[type] || type;
+}
+
+// 编辑记录
+function editRecord(recordId) {
+    const record = attendanceRecords.find(r => r.id === recordId);
+    if (!record) return;
+    
+    // 填充表单数据
+    document.getElementById('recordDate').value = record.date;
+    document.getElementById('employeeName').value = record.name;
+    document.getElementById('employeeCount').value = record.count;
+    document.getElementById('siteName').value = record.site;
+    document.getElementById('roomType').value = record.roomType;
+    document.getElementById('parkingFee').value = record.parkingFee;
+    document.getElementById('highwayFee').value = record.highwayFee;
+    
+    // 更改表单提交处理函数
+    document.getElementById('attendanceForm').removeEventListener('submit', handleAddRecord);
+    document.getElementById('attendanceForm').addEventListener('submit', function editHandler(e) {
+        e.preventDefault();
+        updateRecord(recordId);
+        // 恢复原始提交处理函数
+        document.getElementById('attendanceForm').removeEventListener('submit', editHandler);
+        document.getElementById('attendanceForm').addEventListener('submit', handleAddRecord);
+    });
+    
+    // 滚动到表单顶部
+    document.querySelector('.record-form').scrollIntoView({ behavior: 'smooth' });
+    
+    showMessage('正在编辑记录，请修改后重新提交', 'info');
+}
+
+// 更新记录
+async function updateRecord(recordId) {
+    const date = document.getElementById('recordDate').value;
+    const name = document.getElementById('employeeName').value.trim();
+    const count = parseInt(document.getElementById('employeeCount').value);
+    const site = document.getElementById('siteName').value.trim();
+    const parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
+    const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
+    const roomType = document.getElementById('roomType').value;
+    
+    if (!date || !name || !count || !site || !roomType) {
+        showMessage('请填写所有必填字段', 'error');
+        return;
+    }
+    
+    try {
+        // 查找要更新的记录
+        const recordIndex = attendanceRecords.findIndex(r => r.id === recordId);
+        if (recordIndex === -1) {
+            showMessage('未找到要更新的记录', 'error');
+            return;
+        }
+        
+        if (isSupabaseEnabled) {
+            // 使用Supabase更新记录
+            const result = await SupabaseDB.updateRecord(recordId, {
+                date: date,
+                name: name,
+                count: count,
+                site: site,
+                parkingFee: parkingFee,
+                highwayFee: highwayFee,
+                roomType: roomType
+            });
+            
+            if (result.success) {
+                // 更新本地数组
+                attendanceRecords[recordIndex] = {
+                    ...attendanceRecords[recordIndex],
+                    date: date,
+                    name: name,
+                    count: count,
+                    site: site,
+                    parkingFee: parkingFee,
+                    highwayFee: highwayFee,
+                    roomType: roomType
+                };
+                
+                saveToStorage();
+                refreshRecordsTable();
+                
+                showMessage('考勤记录更新成功！', 'success');
+            } else {
+                showMessage('更新记录失败: ' + result.error, 'error');
+            }
+        } else {
+            // 使用本地存储更新
+            attendanceRecords[recordIndex] = {
+                ...attendanceRecords[recordIndex],
+                date: date,
+                name: name,
+                count: count,
+                site: site,
+                parkingFee: parkingFee,
+                highwayFee: highwayFee,
+                roomType: roomType
+            };
+            
+            saveToStorage();
+            refreshRecordsTable();
+            
+            showMessage('考勤记录更新成功！', 'success');
+        }
+        
+        // 清空表单
+        document.getElementById('attendanceForm').reset();
+        const today = new Date();
+        document.getElementById('recordDate').value = today.toISOString().split('T')[0];
+        
+    } catch (error) {
+        console.error('更新记录失败:', error);
+        showMessage('更新记录失败，请稍后重试', 'error');
+    }
 }
 
 // 删除记录
@@ -595,6 +730,24 @@ function generateStatistics() {
         siteStats[record.site].totalHighwayFee += record.highwayFee;
     });
     
+    // 按部屋タイプ分组统计
+    const roomTypeStats = {};
+    userRecords.forEach(record => {
+        const roomTypeLabel = getRoomTypeLabel(record.roomType);
+        if (!roomTypeStats[roomTypeLabel]) {
+            roomTypeStats[roomTypeLabel] = {
+                records: 0,
+                totalPeople: 0,
+                totalParkingFee: 0,
+                totalHighwayFee: 0
+            };
+        }
+        roomTypeStats[roomTypeLabel].records++;
+        roomTypeStats[roomTypeLabel].totalPeople += record.count;
+        roomTypeStats[roomTypeLabel].totalParkingFee += record.parkingFee;
+        roomTypeStats[roomTypeLabel].totalHighwayFee += record.highwayFee;
+    });
+    
     // 生成统计结果HTML
     let html = `
         <div class="stats-card">
@@ -671,7 +824,7 @@ function generateStatistics() {
                             <th>总人数</th>
                             <th>停车费</th>
                             <th>高速费</th>
-                            <th>费用小计</th>
+                            <th>費用小計</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -682,6 +835,43 @@ function generateStatistics() {
         html += `
             <tr>
                 <td>${site}</td>
+                <td>${stats.records}</td>
+                <td>${stats.totalPeople}</td>
+                <td>¥${stats.totalParkingFee.toLocaleString()}</td>
+                <td>¥${stats.totalHighwayFee.toLocaleString()}</td>
+                <td>¥${subtotal.toLocaleString()}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="stats-card">
+            <h3>按部屋タイプ统计</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>部屋タイプ</th>
+                            <th>记录数</th>
+                            <th>总人数</th>
+                            <th>停车费</th>
+                            <th>高速费</th>
+                            <th>費用小計</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    Object.entries(roomTypeStats).forEach(([roomType, stats]) => {
+        const subtotal = stats.totalParkingFee + stats.totalHighwayFee;
+        html += `
+            <tr>
+                <td>${roomType}</td>
                 <td>${stats.records}</td>
                 <td>${stats.totalPeople}</td>
                 <td>¥${stats.totalParkingFee.toLocaleString()}</td>
@@ -782,19 +972,20 @@ function exportToPDFTraditional() {
         record.name,
         record.count.toString(),
         record.site,
+        getRoomTypeLabel(record.roomType),
         `¥${record.parkingFee.toLocaleString()}`,
         `¥${record.highwayFee.toLocaleString()}`
     ]);
     
     doc.autoTable({
         startY: yPos + 20,
-        head: [['Date', 'Name', 'Count', 'Site', 'Parking Fee', 'Highway Fee']],
+        head: [['Date', 'Name', 'Count', 'Site', 'Room Type', 'Parking Fee', 'Highway Fee']],
         body: tableData,
         styles: { fontSize: 9, cellPadding: 3, halign: 'center' },
         headStyles: { fillColor: [102, 126, 234], textColor: [255, 255, 255] },
         columnStyles: {
-            0: { cellWidth: 25 }, 1: { cellWidth: 30 }, 2: { cellWidth: 20 },
-            3: { cellWidth: 35 }, 4: { cellWidth: 25 }, 5: { cellWidth: 25 }
+            0: { cellWidth: 20 }, 1: { cellWidth: 25 }, 2: { cellWidth: 15 },
+            3: { cellWidth: 30 }, 4: { cellWidth: 25 }, 5: { cellWidth: 25 }, 6: { cellWidth: 25 }
         }
     });
     
@@ -830,6 +1021,7 @@ async function exportToPDFWithCanvas() {
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">姓名</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">人数</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">现场名称</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">部屋タイプ</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">停车费</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">高速费</th>
             </tr></thead><tbody>`;
@@ -841,6 +1033,7 @@ async function exportToPDFWithCanvas() {
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.name}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.count}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.site}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${getRoomTypeLabel(record.roomType)}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.parkingFee.toLocaleString()}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.highwayFee.toLocaleString()}</td>
             </tr>`;
@@ -853,7 +1046,7 @@ async function exportToPDFWithCanvas() {
                 <h2 style="color: #666; margin: 0; font-size: 18px;">Attendance Report</h2>
             </div>
             <div style="margin-bottom: 30px; padding: 20px; background-color: #f0f8ff; border-radius: 8px;">
-                <h3 style="margin: 0 0 15px 0; color: #333;">统计概览</h3>
+                <h3 style="margin: 0 0 15px 0; color: #333;">统计概覧</h3>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                     <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总记录数：</strong> ${totalRecords}</div>
                     <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总人数：</strong> ${totalPeople}</div>
@@ -862,8 +1055,8 @@ async function exportToPDFWithCanvas() {
                     <div style="padding: 10px; background: white; border-radius: 5px; grid-column: span 2; text-align: center; font-weight: bold; font-size: 16px;"><strong>费用总计：</strong> ¥${totalFees.toLocaleString()}</div>
                 </div>
             </div>
-            <div><h3 style="margin: 0 0 15px 0; color: #333;">详细记录</h3>${tableHTML}</div>
-            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">生成时间：${new Date().toLocaleString('zh-CN')}</div>`;
+            <div><h3 style="margin: 0 0 15px 0; color: #333;">詳細記錄</h3>${tableHTML}</div>
+            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">生成時間：${new Date().toLocaleString('zh-CN')}</div>`;
         
         document.body.appendChild(tempContainer);
         
@@ -925,10 +1118,10 @@ function exportToCSV() {
     
     // 创建CSV内容
     let csvContent = '\uFEFF'; // BOM for UTF-8
-    csvContent += '日期,姓名,人数,现场名称,停车费,高速费\n';
+    csvContent += '日期,姓名,人数,现场名称,部屋タイプ,停车费,高速费\n';
     
     userRecords.forEach(record => {
-        csvContent += `${record.date},${record.name},${record.count},${record.site},${record.parkingFee},${record.highwayFee}\n`;
+        csvContent += `${record.date},${record.name},${record.count},${record.site},${getRoomTypeLabel(record.roomType)},${record.parkingFee},${record.highwayFee}\n`;
     });
     
     // 创建下载链接

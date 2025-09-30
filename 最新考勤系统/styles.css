@@ -562,11 +562,31 @@ tr:hover {
     transition: all 0.3s ease;
     width: auto;
     margin: 0;
+    margin-left: 5px;
 }
 
 .delete-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 5px 15px rgba(229, 62, 62, 0.3);
+}
+
+/* 编辑按钮样式 */
+.edit-btn {
+    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: auto;
+    margin: 0;
+}
+
+.edit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(49, 130, 206, 0.3);
 }
 
 /* 响应式设计 */
