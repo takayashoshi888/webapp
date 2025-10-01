@@ -54,6 +54,7 @@ CREATE TABLE attendance_records (
     name TEXT NOT NULL,
     count INTEGER NOT NULL,
     site TEXT NOT NULL,
+    room_type TEXT NOT NULL,  -- 新添加的部屋タイプ字段
     parking_fee DECIMAL(10,2) DEFAULT 0,
     highway_fee DECIMAL(10,2) DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -62,13 +63,32 @@ CREATE TABLE attendance_records (
 -- 创建索引以提高查询性能
 CREATE INDEX idx_attendance_records_user_id ON attendance_records(user_id);
 CREATE INDEX idx_attendance_records_date ON attendance_records(date);
+CREATE INDEX idx_attendance_records_room_type ON attendance_records(room_type);  -- 新添加的索引
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
 ```
 
 4. 点击 "Run" 执行 SQL
 
-## 第五步：设置行级安全策略 (RLS)
+## 第五步：更新现有数据库表（如果已存在考勤记录表）
+
+如果您已经创建了考勤记录表但缺少部屋タイプ字段，请执行以下 SQL 代码：
+
+1. 在 Supabase 仪表板中，点击左侧菜单的 "SQL Editor"
+2. 点击 "New query"
+3. 复制粘贴以下 SQL 代码并执行：
+
+```sql
+-- 添加部屋タイプ字段到现有的考勤记录表
+ALTER TABLE attendance_records 
+ADD COLUMN IF NOT EXISTS room_type TEXT NOT NULL DEFAULT '';
+
+-- 创建索引以提高查询性能
+CREATE INDEX IF NOT EXISTS idx_attendance_records_room_type 
+ON attendance_records(room_type);
+```
+
+## 第六步：设置行级安全策略 (RLS)
 
 为了数据安全，需要设置行级安全策略：
 
@@ -103,7 +123,7 @@ CREATE POLICY "Users can delete own records" ON attendance_records
     FOR DELETE USING (true);
 ```
 
-## 第六步：测试连接
+## 第七步：测试连接
 
 1. 保存配置文件
 2. 在浏览器中打开你的考勤系统

@@ -221,7 +221,7 @@ class SupabaseDB {
                     site: recordData.site,
                     parking_fee: recordData.parkingFee,
                     highway_fee: recordData.highwayFee,
-                    room_type: recordData.roomType
+                    room_type: recordData.roomType || ''
                 }])
                 .select()
                 .single();
@@ -260,7 +260,7 @@ class SupabaseDB {
                     site: recordData.site,
                     parking_fee: recordData.parkingFee,
                     highway_fee: recordData.highwayFee,
-                    room_type: recordData.roomType
+                    room_type: recordData.roomType || ''
                 })
                 .eq('id', recordId)
                 .select()

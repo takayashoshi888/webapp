@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库更新助手</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-left: 4px solid #4CAF50;
+            background-color: #f9f9f9;
+        }
+        .step h2 {
+            color: #4CAF50;
+            margin-top: 0;
+        }
+        code {
+            display: block;
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 15px;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .note {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>数据库更新助手</h1>
+        
+        <div class="note">
+            <p><strong>注意：</strong>此工具仅用于帮助您了解如何更新数据库。请在Supabase控制台中手动执行以下SQL命令。</p>
+        </div>
+        
+        <div class="step">
+            <h2>步骤1：登录Supabase控制台</h2>
+            <p>访问 <a href="https://supabase.com" target="_blank">https://supabase.com</a> 并登录您的账户。</p>
+        </div>
+        
+        <div class="step">
+            <h2>步骤2：打开SQL编辑器</h2>
+            <p>在左侧菜单中选择您的项目，然后点击 "SQL Editor"。</p>
+        </div>
+        
+        <div class="step">
+            <h2>步骤3：创建新查询</h2>
+            <p>点击 "New query" 按钮创建一个新的查询窗口。</p>
+        </div>
+        
+        <div class="step">
+            <h2>步骤4：添加部屋タイプ字段</h2>
+            <p>将以下SQL代码复制并粘贴到查询窗口中：</p>
+            <code>-- 添加部屋タイプ字段到考勤记录表
+ALTER TABLE attendance_records 
+ADD COLUMN IF NOT EXISTS room_type TEXT NOT NULL DEFAULT '';
+
+-- 创建索引以提高查询性能
+CREATE INDEX IF NOT EXISTS idx_attendance_records_room_type 
+ON attendance_records(room_type);</code>
+        </div>
+        
+        <div class="step">
+            <h2>步骤5：执行查询</h2>
+            <p>点击 "Run" 按钮执行SQL命令。</p>
+        </div>
+        
+        <div class="step">
+            <h2>步骤6：验证更新</h2>
+            <p>您可以运行以下查询来验证字段是否已成功添加：</p>
+            <code>-- 验证字段是否已添加
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'attendance_records' 
+AND column_name = 'room_type';</code>
+        </div>
+        
+        <div class="note">
+            <p><strong>重要提示：</strong>更新数据库表结构后，请确保您的应用程序代码与新的表结构兼容。</p>
+        </div>
+    </div>
+</body>
+</html>

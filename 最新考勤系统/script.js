@@ -381,7 +381,7 @@ async function handleAddRecord(event) {
     const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
     const roomType = document.getElementById('roomType').value;
     
-    if (!date || !name || !count || !site || !roomType) {
+    if (!date || !name || !count || !site) {
         showMessage('请填写所有必填字段', 'error');
         return;
     }
@@ -537,7 +537,7 @@ async function updateRecord(recordId) {
     const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
     const roomType = document.getElementById('roomType').value;
     
-    if (!date || !name || !count || !site || !roomType) {
+    if (!date || !name || !count || !site) {
         showMessage('请填写所有必填字段', 'error');
         return;
     }
@@ -751,7 +751,7 @@ function generateStatistics() {
     // 生成统计结果HTML
     let html = `
         <div class="stats-card">
-            <h3>${month} 月统计概览</h3>
+            <h3>${month} 月统计概覧</h3>
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="label">总记录数</div>
