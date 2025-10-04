@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>在线考勤记录管理系统</title>
+    <title>OrangeHRM风格考勤管理系统</title>
     <link rel="stylesheet" href="styles.css">
     <!-- jsPDF和autotable插件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -12,207 +12,251 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- 引入支持中文和日文的字体 -->
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/polyfills.umd.js"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <!-- 登录页面 -->
     <div id="loginPage" class="page active">
-        <div class="container">
-            <div class="form-container">
-                <h1>考勤记录管理系统</h1>
-                <form id="loginForm">
-                    <div class="input-group">
-                        <label for="loginUsername">用户名:</label>
-                        <input type="text" id="loginUsername" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="loginPassword">密码:</label>
-                        <input type="password" id="loginPassword" required>
-                    </div>
-                    <button type="submit">登录</button>
-                    <div class="links">
-                        <a href="#" onclick="showPage('registerPage')">注册账户</a>
-                        <a href="#" onclick="showPage('forgotPasswordPage')">忘记密码</a>
-                    </div>
-                </form>
-            </div>
+        <div class="login-container">
+            <h1>WORKBANKHRM考勤管理系统</h1>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="loginUsername">用户名:</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="input-group">
+                    <label for="loginPassword">密码:</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit">登录</button>
+                <div class="links">
+                    <a href="#" onclick="showPage('registerPage')">注册账户</a>
+                    <a href="#" onclick="showPage('forgotPasswordPage')">忘记密码</a>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- 注册页面 -->
     <div id="registerPage" class="page">
-        <div class="container">
-            <div class="form-container">
-                <h1>用户注册</h1>
-                <form id="registerForm">
-                    <div class="input-group">
-                        <label for="registerUsername">用户名:</label>
-                        <input type="text" id="registerUsername" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="registerEmail">邮箱:</label>
-                        <input type="email" id="registerEmail" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="registerPassword">密码:</label>
-                        <input type="password" id="registerPassword" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="confirmPassword">确认密码:</label>
-                        <input type="password" id="confirmPassword" required>
-                    </div>
-                    <button type="submit">注册</button>
-                    <div class="links">
-                        <a href="#" onclick="showPage('loginPage')">返回登录</a>
-                    </div>
-                </form>
-            </div>
+        <div class="login-container">
+            <h1>用户注册</h1>
+            <form id="registerForm">
+                <div class="input-group">
+                    <label for="registerUsername">用户名:</label>
+                    <input type="text" id="registerUsername" required>
+                </div>
+                <div class="input-group">
+                    <label for="registerEmail">邮箱:</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="input-group">
+                    <label for="registerPassword">密码:</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <div class="input-group">
+                    <label for="confirmPassword">确认密码:</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+                <button type="submit">注册</button>
+                <div class="links">
+                    <a href="#" onclick="showPage('loginPage')">返回登录</a>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- 忘记密码页面 -->
     <div id="forgotPasswordPage" class="page">
-        <div class="container">
-            <div class="form-container">
-                <h1>密码修改</h1>
-                <form id="forgotPasswordForm">
-                    <div class="input-group">
-                        <label for="forgotUsername">用户名:</label>
-                        <input type="text" id="forgotUsername" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="forgotEmail">邮箱:</label>
-                        <input type="email" id="forgotEmail" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="newPassword">新密码:</label>
-                        <input type="password" id="newPassword" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="confirmNewPassword">确认新密码:</label>
-                        <input type="password" id="confirmNewPassword" required>
-                    </div>
-                    <button type="submit">修改密码</button>
-                    <div class="links">
-                        <a href="#" onclick="showPage('loginPage')">返回登录</a>
-                    </div>
-                </form>
-            </div>
+        <div class="login-container">
+            <h1>密码修改</h1>
+            <form id="forgotPasswordForm">
+                <div class="input-group">
+                    <label for="forgotUsername">用户名:</label>
+                    <input type="text" id="forgotUsername" required>
+                </div>
+                <div class="input-group">
+                    <label for="forgotEmail">邮箱:</label>
+                    <input type="email" id="forgotEmail" required>
+                </div>
+                <div class="input-group">
+                    <label for="newPassword">新密码:</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <div class="input-group">
+                    <label for="confirmNewPassword">确认新密码:</label>
+                    <input type="password" id="confirmNewPassword" required>
+                </div>
+                <button type="submit">修改密码</button>
+                <div class="links">
+                    <a href="#" onclick="showPage('loginPage')">返回登录</a>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- 主页面 -->
     <div id="mainPage" class="page">
-        <nav class="navbar">
-            <div class="nav-brand">考勤记录管理系统</div>
-            <div class="nav-user">
+        <!-- 顶部导航栏 -->
+        <nav class="top-navbar">
+            <div class="brand">WORKBANKHRM考勤管理系统</div>
+            <div class="user-info">
                 <span id="currentUser"></span>
-                <button onclick="logout()">退出登录</button>
+                <button class="btn btn-danger" onclick="logout()">退出登录</button>
             </div>
         </nav>
+        
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#" class="active" onclick="showTab('recordTab'); setActiveMenu(this);">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>考勤记录</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showTab('statisticsTab'); setActiveMenu(this);">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>月末统计</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showTab('requestTab'); setActiveMenu(this);">
+                        <i class="fas fa-file-alt"></i>
+                        <span>请求书生成</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="showTab('stampTab'); setActiveMenu(this);">
+                        <i class="fas fa-stamp"></i>
+                        <span>印章生成</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="openPDFEditor(); return false;">
+                        <i class="fas fa-edit"></i>
+                        <span>PDF编辑</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="container">
+                <!-- 考勤记录标签 -->
+                <div id="recordTab" class="tab-content active">
+                    <div class="record-form">
+                        <h2>新增考勤记录</h2>
+                        <form id="attendanceForm">
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="recordDate">日期:</label>
+                                    <input type="date" id="recordDate" required>
+                                </div>
+                                <div class="input-group">
+                                    <label for="employeeName">姓名:</label>
+                                    <input type="text" id="employeeName" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="employeeCount">人数:</label>
+                                    <input type="number" id="employeeCount" min="1" required>
+                                </div>
+                                <div class="input-group">
+                                    <label for="siteName">现场名称:</label>
+                                    <input type="text" id="siteName" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="parkingFee">停车费 (日元):</label>
+                                    <input type="number" id="parkingFee" min="0" step="10">
+                                </div>
+                                <div class="input-group">
+                                    <label for="highwayFee">高速费 (日元):</label>
+                                    <input type="number" id="highwayFee" min="0" step="10">
+                                </div>
+                            </div>
+                            <button type="submit">添加记录</button>
+                        </form>
+                    </div>
 
-        <div class="container">
-            <div class="tab-container">
-                <button class="tab-button active" onclick="showTab('recordTab')">考勤记录</button>
-                <button class="tab-button" onclick="showTab('statisticsTab')">月末统计</button>
-            </div>
-
-            <!-- 考勤记录标签 -->
-            <div id="recordTab" class="tab-content active">
-                <div class="record-form">
-                    <h2>新增考勤记录</h2>
-                    <form id="attendanceForm">
-                        <div class="form-row">
-                            <div class="input-group">
-                                <label for="recordDate">日期:</label>
-                                <input type="date" id="recordDate" required>
-                            </div>
-                            <div class="input-group">
-                                <label for="employeeName">姓名:</label>
-                                <input type="text" id="employeeName" required>
-                            </div>
+                    <div class="records-list">
+                        <h2>考勤记录列表</h2>
+                        <div class="filter-section">
+                            <input type="month" id="filterMonth" onchange="filterRecords()">
+                            <input type="text" id="filterName" placeholder="按姓名搜索" onkeyup="filterRecords()">
                         </div>
-                        <div class="form-row">
-                            <div class="input-group">
-                                <label for="employeeCount">人数:</label>
-                                <input type="number" id="employeeCount" min="1" required>
-                            </div>
-                            <div class="input-group">
-                                <label for="siteName">现场名称:</label>
-                                <input type="text" id="siteName" required>
-                            </div>
+                        <div class="table-container">
+                            <table id="recordsTable">
+                                <thead>
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>姓名</th>
+                                        <th>人数</th>
+                                        <th>现场名称</th>
+                                        <th>停车费 (¥)</th>
+                                        <th>高速费 (¥)</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordsTableBody">
+                                    <!-- 记录将在这里动态生成 -->
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="form-row">
-                            <div class="input-group">
-                                <label for="parkingFee">停车费 (日元):</label>
-                                <input type="number" id="parkingFee" min="0" step="10">
-                            </div>
-                            <div class="input-group">
-                                <label for="highwayFee">高速费 (日元):</label>
-                                <input type="number" id="highwayFee" min="0" step="10">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="input-group">
-                                <label for="roomType">部屋タイプ:</label>
-                                <select id="roomType" required>
-                                    <option value="">请选择部屋タイプ</option>
-                                    <option value="常用">常用</option>
-                                    <option value="A">Aタイプ</option>
-                                    <option value="B">Bタイプ</option>
-                                    <option value="C">Cタイプ</option>
-                                    <option value="D">Dタイプ</option>
-                                    <option value="E">Eタイプ</option>
-                                    <option value="F">Fタイプ</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button type="submit">添加记录</button>
-                    </form>
+                    </div>
                 </div>
 
-                <div class="records-list">
-                    <h2>考勤记录列表</h2>
-                    <div class="filter-section">
-                        <input type="month" id="filterMonth" onchange="filterRecords()">
-                        <input type="text" id="filterName" placeholder="按姓名搜索" onkeyup="filterRecords()">
-                    </div>
-                    <div class="table-container">
-                        <table id="recordsTable">
-                            <thead>
-                                <tr>
-                                    <th>日期</th>
-                                    <th>姓名</th>
-                                    <th>人数</th>
-                                    <th>现场名称</th>
-                                    <th>部屋タイプ</th>
-                                    <th>停车费 (¥)</th>
-                                    <th>高速费 (¥)</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recordsTableBody">
-                                <!-- 记录将在这里动态生成 -->
-                            </tbody>
-                        </table>
+                <!-- 月末统计标签 -->
+                <div id="statisticsTab" class="tab-content">
+                    <div class="statistics-section">
+                        <h2>月末统计</h2>
+                        <div class="stats-controls">
+                            <input type="month" id="statsMonth" onchange="generateStatistics()">
+                            <button class="btn btn-primary" onclick="generateStatistics()">生成统计</button>
+                            <button class="btn btn-secondary" onclick="exportToPDF()">导出PDF</button>
+                            <button class="btn btn-secondary" onclick="exportToCSV()">导出CSV</button>
+                        </div>
+                        
+                        <div id="statisticsResults" class="statistics-results">
+                            <!-- 统计结果将在这里显示 -->
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 月末统计标签 -->
-            <div id="statisticsTab" class="tab-content">
-                <div class="statistics-section">
-                    <h2>月末统计</h2>
-                    <div class="stats-controls">
-                        <input type="month" id="statsMonth" onchange="generateStatistics()">
-                        <button onclick="generateStatistics()">生成统计</button>
-                        <button onclick="exportToPDF()">导出PDF</button>
-                        <button onclick="exportToCSV()">导出CSV</button>
-                    </div>
-                    
-                    <div id="statisticsResults" class="statistics-results">
-                        <!-- 统計結果将在这里显示 -->
+                <!-- 请求书生成标签 -->
+                <div id="requestTab" class="tab-content">
+                    <div class="statistics-section">
+                        <h2>请求书生成</h2>
+                        <div class="stats-card">
+                            <h3>请求书生成工具</h3>
+                            <p>使用外部工具生成各种请求书</p>
+                            <div class="iframe-container">
+                                <iframe src="https://takayashoshi888.github.io/webapp/" frameborder="0" width="100%" height="600px"></iframe>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 印章生成标签 -->
+                <div id="stampTab" class="tab-content">
+                    <div class="statistics-section">
+                        <h2>印章生成</h2>
+                        <div class="stats-card">
+                            <h3>印章生成工具</h3>
+                            <p>使用外部工具生成印章</p>
+                            <div class="iframe-container">
+                                <iframe src="https://stamp.onl.jp/" frameborder="0" width="100%" height="600px"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentUser) {
         showMainPage();
     }
+    
+    // 绑定侧边栏菜单事件
+    bindSidebarEvents();
 });
 
 // 绑定事件
@@ -38,6 +41,31 @@ function bindEvents() {
     
     // 考勤记录表单
     document.getElementById('attendanceForm').addEventListener('submit', handleAddRecord);
+}
+
+// 绑定侧边栏事件
+function bindSidebarEvents() {
+    // 为侧边栏菜单项绑定点击事件
+    const menuItems = document.querySelectorAll('.sidebar-menu a');
+    menuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            // 阻止默认行为
+            e.preventDefault();
+            
+            // 设置活动菜单项
+            setActiveMenu(this);
+        });
+    });
+}
+
+// 设置活动菜单项
+function setActiveMenu(element) {
+    // 移除所有活动状态
+    document.querySelectorAll('.sidebar-menu a').forEach(item => {
+        item.classList.remove('active');
+    });
+    // 添加当前项为活动状态
+    element.classList.add('active');
 }
 
 // 显示页面
@@ -56,15 +84,8 @@ function showTab(tabId) {
     const tabs = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => tab.classList.remove('active'));
     
-    // 移除所有标签按钮的活动状态
-    const buttons = document.querySelectorAll('.tab-button');
-    buttons.forEach(button => button.classList.remove('active'));
-    
     // 显示指定标签内容
     document.getElementById(tabId).classList.add('active');
-    
-    // 激活对应的标签按钮
-    event.target.classList.add('active');
 }
 
 // 显示消息
@@ -75,8 +96,24 @@ function showMessage(message, type = 'info') {
     
     // 插入到当前活动页面的顶部
     const activePage = document.querySelector('.page.active');
-    const container = activePage.querySelector('.container') || activePage.querySelector('.form-container');
-    container.insertBefore(messageDiv, container.firstChild);
+    if (activePage) {
+        // 对于主页面，使用主内容区域
+        if (activePage.id === 'mainPage') {
+            const mainContent = activePage.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.insertBefore(messageDiv, mainContent.firstChild);
+            }
+        } else {
+            // 对于登录、注册、忘记密码页面
+            const container = activePage.querySelector('.container') || activePage.querySelector('.login-container') || activePage;
+            if (container) {
+                container.insertBefore(messageDiv, container.firstChild);
+            }
+        }
+    } else {
+        // 如果找不到活动页面，添加到body
+        document.body.appendChild(messageDiv);
+    }
     
     // 3秒后自动移除消息
     setTimeout(() => {
@@ -246,9 +283,8 @@ function handleAddRecord(event) {
     const site = document.getElementById('siteName').value.trim();
     const parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
     const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
-    const roomType = document.getElementById('roomType').value;
     
-    if (!date || !name || !count || !site || !roomType) {
+    if (!date || !name || !count || !site) {
         showMessage('请填写所有必填字段', 'error');
         return;
     }
@@ -261,7 +297,6 @@ function handleAddRecord(event) {
         site: site,
         parkingFee: parkingFee,
         highwayFee: highwayFee,
-        roomType: roomType,
         userId: currentUser.id,
         createdAt: new Date().toISOString()
     };
@@ -278,7 +313,6 @@ function handleAddRecord(event) {
     document.getElementById('siteName').value = '';
     document.getElementById('parkingFee').value = '';
     document.getElementById('highwayFee').value = '';
-    document.getElementById('roomType').value = '';
 }
 
 // 刷新记录表格
@@ -295,15 +329,61 @@ function refreshRecordsTable() {
             <td>${record.name}</td>
             <td>${record.count}</td>
             <td>${record.site}</td>
-            <td>${record.roomType}タイプ</td>
             <td>¥${record.parkingFee.toLocaleString()}</td>
             <td>¥${record.highwayFee.toLocaleString()}</td>
             <td>
-                <button class="edit-btn" onclick="editRecord('${record.id}')">編集</button>
-                <button class="delete-btn" onclick="deleteRecord('${record.id}')">削除</button>
+                <button class="btn btn-primary edit-btn" onclick="editRecord('${record.id}')">编辑</button>
+                <button class="btn btn-danger delete-btn" onclick="deleteRecord('${record.id}')">删除</button>
             </td>
         `;
     });
+}
+
+// 编辑记录
+function editRecord(recordId) {
+    const record = attendanceRecords.find(record => record.id === recordId);
+    if (record) {
+        // 填充表单字段
+        document.getElementById('recordDate').value = record.date;
+        document.getElementById('employeeName').value = record.name;
+        document.getElementById('employeeCount').value = record.count;
+        document.getElementById('siteName').value = record.site;
+        document.getElementById('parkingFee').value = record.parkingFee;
+        document.getElementById('highwayFee').value = record.highwayFee;
+        
+        // 更改表单提交处理函数
+        const form = document.getElementById('attendanceForm');
+        form.removeEventListener('submit', handleAddRecord);
+        form.addEventListener('submit', function editEventHandler(event) {
+            event.preventDefault();
+            
+            // 更新记录
+            record.date = document.getElementById('recordDate').value;
+            record.name = document.getElementById('employeeName').value.trim();
+            record.count = parseInt(document.getElementById('employeeCount').value);
+            record.site = document.getElementById('siteName').value.trim();
+            record.parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
+            record.highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
+            
+            saveToStorage();
+            refreshRecordsTable();
+            
+            // 恢复原始表单提交处理函数
+            form.removeEventListener('submit', editEventHandler);
+            form.addEventListener('submit', handleAddRecord);
+            
+            // 清空表单
+            form.reset();
+            
+            // 设置默认日期
+            const today = new Date();
+            document.getElementById('recordDate').value = today.toISOString().split('T')[0];
+            
+            showMessage('记录已更新', 'success');
+        });
+        
+        showMessage('请修改记录信息，然后提交表单以保存更改', 'info');
+    }
 }
 
 // 删除记录
@@ -317,52 +397,6 @@ function deleteRecord(recordId) {
             showMessage('记录已删除', 'success');
         }
     }
-}
-
-// 编辑记录
-function editRecord(recordId) {
-    const record = attendanceRecords.find(record => record.id === recordId);
-    if (!record) return;
-    
-    // 填充表单数据
-    document.getElementById('recordDate').value = record.date;
-    document.getElementById('employeeName').value = record.name;
-    document.getElementById('employeeCount').value = record.count;
-    document.getElementById('siteName').value = record.site;
-    document.getElementById('parkingFee').value = record.parkingFee;
-    document.getElementById('highwayFee').value = record.highwayFee;
-    document.getElementById('roomType').value = record.roomType;
-    
-    // 修改表单提交事件为更新记录
-    const form = document.getElementById('attendanceForm');
-    form.removeEventListener('submit', handleAddRecord);
-    form.addEventListener('submit', function updateRecord(event) {
-        event.preventDefault();
-        
-        // 更新记录数据
-        record.date = document.getElementById('recordDate').value;
-        record.name = document.getElementById('employeeName').value.trim();
-        record.count = parseInt(document.getElementById('employeeCount').value);
-        record.site = document.getElementById('siteName').value.trim();
-        record.parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
-        record.highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
-        record.roomType = document.getElementById('roomType').value;
-        
-        // 保存并刷新
-        saveToStorage();
-        refreshRecordsTable();
-        
-        // 重置表单事件回添加记录
-        form.removeEventListener('submit', updateRecord);
-        form.addEventListener('submit', handleAddRecord);
-        
-        // 清空表单
-        form.reset();
-        
-        showMessage('记录更新成功！', 'success');
-    });
-    
-    showMessage('请修改记录信息后点击添加记录按钮保存', 'info');
 }
 
 // 过滤记录
@@ -381,6 +415,11 @@ function filterRecords() {
         
         row.style.display = (matchMonth && matchName) ? '' : 'none';
     });
+}
+
+// 打开PDF编辑器
+function openPDFEditor() {
+    window.open('https://tools.pdf24.org/zh/', '_blank');
 }
 
 // 生成统计
@@ -446,27 +485,10 @@ function generateStatistics() {
         siteStats[record.site].totalHighwayFee += record.highwayFee;
     });
     
-    // 按部屋タイプ分组统计
-    const roomTypeStats = {};
-    userRecords.forEach(record => {
-        if (!roomTypeStats[record.roomType]) {
-            roomTypeStats[record.roomType] = {
-                records: 0,
-                totalPeople: 0,
-                totalParkingFee: 0,
-                totalHighwayFee: 0
-            };
-        }
-        roomTypeStats[record.roomType].records++;
-        roomTypeStats[record.roomType].totalPeople += record.count;
-        roomTypeStats[record.roomType].totalParkingFee += record.parkingFee;
-        roomTypeStats[record.roomType].totalHighwayFee += record.highwayFee;
-    });
-    
     // 生成统计结果HTML
     let html = `
         <div class="stats-card">
-            <h3>${month} 月统计概覧</h3>
+            <h3>${month} 月统计概览</h3>
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="label">总记录数</div>
@@ -502,7 +524,7 @@ function generateStatistics() {
                             <th>总人数</th>
                             <th>停车费</th>
                             <th>高速费</th>
-                            <th>费用小計</th>
+                            <th>费用小计</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -539,7 +561,7 @@ function generateStatistics() {
                             <th>总人数</th>
                             <th>停车费</th>
                             <th>高速费</th>
-                            <th>費用小計</th>
+                            <th>费用小计</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -550,43 +572,6 @@ function generateStatistics() {
         html += `
             <tr>
                 <td>${site}</td>
-                <td>${stats.records}</td>
-                <td>${stats.totalPeople}</td>
-                <td>¥${stats.totalParkingFee.toLocaleString()}</td>
-                <td>¥${stats.totalHighwayFee.toLocaleString()}</td>
-                <td>¥${subtotal.toLocaleString()}</td>
-            </tr>
-        `;
-    });
-    
-    html += `
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div class="stats-card">
-            <h3>按部屋タイプ统计</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>部屋タイプ</th>
-                            <th>记录数</th>
-                            <th>总人数</th>
-                            <th>停车费</th>
-                            <th>高速费</th>
-                            <th>費用小計</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-    `;
-    
-    Object.entries(roomTypeStats).forEach(([roomType, stats]) => {
-        const subtotal = stats.totalParkingFee + stats.totalHighwayFee;
-        html += `
-            <tr>
-                <td>${roomType}タイプ</td>
                 <td>${stats.records}</td>
                 <td>${stats.totalPeople}</td>
                 <td>¥${stats.totalParkingFee.toLocaleString()}</td>
@@ -687,25 +672,24 @@ function exportToPDFTraditional() {
         record.name,
         record.count.toString(),
         record.site,
-        record.roomType + 'タイプ',
         `¥${record.parkingFee.toLocaleString()}`,
         `¥${record.highwayFee.toLocaleString()}`
     ]);
     
     doc.autoTable({
         startY: yPos + 20,
-        head: [['Date', 'Name', 'Count', 'Site', 'Room Type', 'Parking Fee', 'Highway Fee']],
+        head: [['Date', 'Name', 'Count', 'Site', 'Parking Fee', 'Highway Fee']],
         body: tableData,
         styles: { fontSize: 9, cellPadding: 3, halign: 'center' },
         headStyles: { fillColor: [102, 126, 234], textColor: [255, 255, 255] },
         columnStyles: {
-            0: { cellWidth: 20 }, 1: { cellWidth: 25 }, 2: { cellWidth: 15 },
-            3: { cellWidth: 30 }, 4: { cellWidth: 20 }, 5: { cellWidth: 25 }, 6: { cellWidth: 25 }
+            0: { cellWidth: 25 }, 1: { cellWidth: 30 }, 2: { cellWidth: 20 },
+            3: { cellWidth: 35 }, 4: { cellWidth: 25 }, 5: { cellWidth: 25 }
         }
     });
     
     doc.save(`attendance-report-${month}.pdf`);
-    showMessage('PDFファイル已成功导出！', 'success');
+    showMessage('PDF文件已成功导出！', 'success');
 }
 
 // 使用Canvas方法导出PDF - 完美支持中文日文
@@ -736,7 +720,6 @@ async function exportToPDFWithCanvas() {
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">姓名</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">人数</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">现场名称</th>
-                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">部屋タイプ</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">停车费</th>
                 <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">高速费</th>
             </tr></thead><tbody>`;
@@ -748,7 +731,6 @@ async function exportToPDFWithCanvas() {
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.name}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.count}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.site}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.roomType}タイプ</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.parkingFee.toLocaleString()}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.highwayFee.toLocaleString()}</td>
             </tr>`;
@@ -761,7 +743,7 @@ async function exportToPDFWithCanvas() {
                 <h2 style="color: #666; margin: 0; font-size: 18px;">Attendance Report</h2>
             </div>
             <div style="margin-bottom: 30px; padding: 20px; background-color: #f0f8ff; border-radius: 8px;">
-                <h3 style="margin: 0 0 15px 0; color: #333;">统计概覧</h3>
+                <h3 style="margin: 0 0 15px 0; color: #333;">统计概览</h3>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                     <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总记录数：</strong> ${totalRecords}</div>
                     <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总人数：</strong> ${totalPeople}</div>
@@ -770,7 +752,7 @@ async function exportToPDFWithCanvas() {
                     <div style="padding: 10px; background: white; border-radius: 5px; grid-column: span 2; text-align: center; font-weight: bold; font-size: 16px;"><strong>费用总计：</strong> ¥${totalFees.toLocaleString()}</div>
                 </div>
             </div>
-            <div><h3 style="margin: 0 0 15px 0; color: #333;">詳細記錄</h3>${tableHTML}</div>
+            <div><h3 style="margin: 0 0 15px 0; color: #333;">详细记录</h3>${tableHTML}</div>
             <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">生成时间：${new Date().toLocaleString('zh-CN')}</div>`;
         
         document.body.appendChild(tempContainer);
@@ -805,7 +787,7 @@ async function exportToPDFWithCanvas() {
         }
         
         pdf.save(`考勤报表-${month}.pdf`);
-        showMessage('PDFファイル已成功导出！完美支持中文和日文显示', 'success');
+        showMessage('PDF文件已成功导出！完美支持中文和日文显示', 'success');
         
     } catch (error) {
         console.error('Canvas PDF导出错误:', error);
@@ -833,10 +815,10 @@ function exportToCSV() {
     
     // 创建CSV内容
     let csvContent = '\uFEFF'; // BOM for UTF-8
-    csvContent += '日期,姓名,人数,现场名称,部屋タイプ,停车费,高速费\n';
+    csvContent += '日期,姓名,人数,现场名称,停车费,高速费\n';
     
     userRecords.forEach(record => {
-        csvContent += `${record.date},${record.name},${record.count},${record.site},${record.roomType}タイプ,${record.parkingFee},${record.highwayFee}\n`;
+        csvContent += `${record.date},${record.name},${record.count},${record.site},${record.parkingFee},${record.highwayFee}\n`;
     });
     
     // 创建下载链接
@@ -850,7 +832,7 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
     
-    showMessage('CSVファイル已ダウンロード', 'success');
+    showMessage('CSV文件已下载', 'success');
 }
 
 // 从本地存储加载数据
@@ -872,7 +854,7 @@ function loadFromStorage() {
         }
     } catch (error) {
         console.error('Error loading data from storage:', error);
-        showMessage('データ読み込み失敗', 'error');
+        showMessage('数据加载失败', 'error');
     }
 }
 
@@ -884,6 +866,6 @@ function saveToStorage() {
         localStorage.setItem('attendanceSystemCurrentUser', JSON.stringify(currentUser));
     } catch (error) {
         console.error('Error saving data to storage:', error);
-        showMessage('データ保存失敗', 'error');
+        showMessage('数据保存失败', 'error');
     }
 }
