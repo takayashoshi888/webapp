@@ -40,6 +40,12 @@
     --shadow-small: 0 2px 4px rgba(0,0,0,0.1);
     --shadow-medium: 0 4px 8px rgba(0,0,0,0.1);
     --shadow-large: 0 8px 16px rgba(0,0,0,0.1);
+    
+    /* 断点 */
+    --breakpoint-sm: 576px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 992px;
+    --breakpoint-xl: 1200px;
 }
 
 body {
@@ -407,6 +413,8 @@ body {
     border: none;
     text-decoration: none;
     font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    min-height: 40px; /* 提高触摸目标大小 */
+    min-width: 40px;
 }
 
 .btn-primary {
@@ -465,6 +473,7 @@ button {
     font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
     position: relative;
     overflow: hidden;
+    min-height: 44px; /* 符合移动端触摸标准 */
 }
 
 button:hover {
@@ -519,6 +528,8 @@ button:focus:not(:active)::after {
     font-size: 14px;
     transition: color 0.2s;
     position: relative;
+    display: inline-block;
+    padding: 4px 2px;
 }
 
 .links a:hover {
@@ -584,6 +595,7 @@ button:focus:not(:active)::after {
     transition: all 0.2s;
     width: auto;
     margin: 0;
+    min-height: 40px;
 }
 
 .nav-user button:hover {
@@ -613,6 +625,7 @@ button:focus:not(:active)::after {
     width: auto;
     font-weight: 500;
     font-size: 14px;
+    min-height: 44px;
 }
 
 .tab-button.active {
@@ -680,6 +693,7 @@ button:focus:not(:active)::after {
     border-radius: 5px;
     font-size: 14px;
     min-width: 200px;
+    min-height: 40px;
 }
 
 /* 表格样式 */
@@ -687,6 +701,7 @@ button:focus:not(:active)::after {
     overflow-x: auto;
     border-radius: 5px;
     box-shadow: var(--shadow-small);
+    -webkit-overflow-scrolling: touch; /* 提升移动端滚动体验 */
 }
 
 table {
@@ -695,6 +710,7 @@ table {
     background: white;
     border-radius: 5px;
     overflow: hidden;
+    min-width: 600px; /* 确保在小屏幕上可滚动 */
 }
 
 th, td {
@@ -743,6 +759,7 @@ tr:hover {
     border-radius: 5px;
     font-size: 14px;
     min-width: 150px;
+    min-height: 40px;
 }
 
 .stats-controls button {
@@ -757,6 +774,7 @@ tr:hover {
     transition: all 0.2s;
     width: auto;
     margin: 0;
+    min-height: 40px;
 }
 
 .stats-controls button:hover {
@@ -826,10 +844,30 @@ tr:hover {
     transition: all 0.2s;
     width: auto;
     margin: 0;
+    min-height: 36px;
 }
 
 .delete-btn:hover {
     background-color: var(--reject-color);
+}
+
+/* 编辑按钮样式 */
+.edit-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: auto;
+    margin: 0 5px 0 0;
+    min-height: 36px;
+}
+
+.edit-btn:hover {
+    background-color: var(--secondary-color-dark);
 }
 
 /* 响应式设计 */
@@ -1025,6 +1063,11 @@ tr:hover {
     .stat-item .value {
         font-size: 18px;
     }
+    
+    .stats-controls,
+    .filter-section {
+        gap: 10px;
+    }
 }
 
 /* 消息提示样式 */
@@ -1096,24 +1139,6 @@ tr:hover {
     border-radius: 5px;
 }
 
-/* 编辑按钮样式 */
-.edit-btn {
-    background-color: var(--secondary-color);
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 3px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    width: auto;
-    margin: 0 5px 0 0;
-}
-
-.edit-btn:hover {
-    background-color: var(--secondary-color-dark);
-}
-
 /* 移动端优化 - 表格横向滚动 */
 @media (max-width: 768px) {
     .table-container {
@@ -1128,4 +1153,135 @@ tr:hover {
     th, td {
         white-space: nowrap;
     }
+    
+    /* 在小屏幕上增加侧边栏切换按钮 */
+    .sidebar-toggle {
+        display: block;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 18px;
+    }
+}
+
+/* 添加侧边栏切换按钮样式（默认隐藏） */
+.sidebar-toggle {
+    display: none;
+}
+
+/* 优化触摸目标大小 */
+button, .btn, .delete-btn, .edit-btn, .sidebar-menu a {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* 改善输入框在触摸设备上的体验 */
+input, select, textarea {
+    min-height: 44px;
+    padding: 10px 15px;
+}
+
+/* 增加触摸友好的链接 */
+.links a {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 改善表单控件在触摸设备上的间距 */
+.form-row {
+    gap: 15px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+/* 优化移动端表格显示 */
+@media (max-width: 576px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-section input,
+    .stats-controls input {
+        min-width: 100%;
+    }
+    
+    .stats-controls button {
+        width: 100%;
+    }
+    
+    /* 改进移动端表单布局 */
+    .record-form {
+        padding: 15px;
+    }
+    
+    .records-list {
+        padding: 15px;
+    }
+    
+    .statistics-section {
+        padding: 15px;
+    }
+}
+
+/* 优化极小屏幕显示 */
+@media (max-width: 360px) {
+    .top-navbar .brand {
+        font-size: 14px;
+    }
+    
+    .login-container,
+    .register-container,
+    .forgot-container {
+        padding: 10px;
+    }
+    
+    th, td {
+        padding: 4px 2px;
+        font-size: 10px;
+    }
+    
+    .stat-item .value {
+        font-size: 16px;
+    }
+}
+
+/* 添加过渡动画提升用户体验 */
+.sidebar, .main-content, .sidebar-menu a {
+    transition: all 0.3s ease;
+}
+
+/* 改善焦点状态以增强无障碍访问 */
+button:focus, .btn:focus, input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* 优化表单验证错误显示 */
+.input-group.error input,
+.input-group.error select {
+    border-color: var(--danger-color);
+}
+
+.input-group .error-message {
+    color: var(--danger-color);
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+}
+
+.input-group.error .error-message {
+    display: block;
 }

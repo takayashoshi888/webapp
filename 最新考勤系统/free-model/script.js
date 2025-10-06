@@ -36,6 +36,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 绑定侧边栏菜单事件
     bindSidebarEvents();
+    
+    // 添加窗口大小改变事件监听器
+    handleResponsiveDesign();
+    window.addEventListener('resize', handleResponsiveDesign);
+    
+    // 初始化移动端优化
+    initMobileOptimizations();
 });
 
 // 绑定事件
@@ -51,6 +58,9 @@ function bindEvents() {
     
     // 考勤记录表单
     document.getElementById('attendanceForm').addEventListener('submit', handleAddRecord);
+    
+    // 添加移动端触摸支持
+    addTouchSupport();
 }
 
 // 绑定侧边栏事件
@@ -85,7 +95,18 @@ function showPage(pageId) {
     pages.forEach(page => page.classList.remove('active'));
     
     // 显示指定页面
-    document.getElementById(pageId).classList.add('active');
+    const page = document.getElementById(pageId);
+    page.classList.add('active');
+    
+    // 在移动端隐藏侧边栏
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        if (sidebar && mainContent) {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('sidebar-collapsed');
+        }
+    }
 }
 
 // 显示标签
@@ -104,33 +125,72 @@ function showMessage(message, type = 'info') {
     messageDiv.className = `message ${type}`;
     messageDiv.textContent = message;
     
-    // 插入到当前活动页面的顶部
-    const activePage = document.querySelector('.page.active');
-    if (activePage) {
-        // 对于主页面，使用主内容区域
-        if (activePage.id === 'mainPage') {
-            const mainContent = activePage.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.insertBefore(messageDiv, mainContent.firstChild);
-            }
-        } else {
-            // 对于登录、注册、忘记密码页面
-            const container = activePage.querySelector('.container') || activePage.querySelector('.login-container') || activePage;
-            if (container) {
-                container.insertBefore(messageDiv, container.firstChild);
-            }
-        }
-    } else {
-        // 如果找不到活动页面，添加到body
-        document.body.appendChild(messageDiv);
-    }
+    // 在页面顶部固定位置显示消息（适合移动端）
+    document.body.appendChild(messageDiv);
+    
+    // 添加动画效果
+    setTimeout(() => {
+        messageDiv.classList.add('show');
+    }, 100);
     
     // 3秒后自动移除消息
     setTimeout(() => {
-        if (messageDiv.parentNode) {
-            messageDiv.parentNode.removeChild(messageDiv);
-        }
+        messageDiv.classList.remove('show');
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 300);
     }, 3000);
+}
+
+// 初始化移动端优化
+function initMobileOptimizations() {
+    // 为输入框添加自动聚焦优化
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    });
+}
+
+// 处理响应式设计
+function handleResponsiveDesign() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (window.innerWidth <= 768) {
+        // 在小屏幕上默认折叠侧边栏
+        if (sidebar && mainContent) {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('sidebar-collapsed');
+        }
+    } else {
+        // 在大屏幕上展开侧边栏
+        if (sidebar && mainContent) {
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('sidebar-collapsed');
+        }
+    }
+}
+
+// 添加移动端触摸支持
+function addTouchSupport() {
+    const buttons = document.querySelectorAll('button, .btn, .sidebar-toggle');
+    buttons.forEach(button => {
+        button.addEventListener('touchstart', function() {
+            this.classList.add('touch-active');
+        });
+        
+        button.addEventListener('touchend', function() {
+            this.classList.remove('touch-active');
+        });
+        
+        button.addEventListener('touchcancel', function() {
+            this.classList.remove('touch-active');
+        });
+    });
 }
 
 // 处理登录
@@ -392,6 +452,9 @@ function refreshRecordsTable() {
             </td>
         `;
     });
+    
+    // 为新添加的按钮添加触摸支持
+    addTouchSupport();
 }
 
 // 编辑记录

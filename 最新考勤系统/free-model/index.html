@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OrangeHRM风格考勤管理系统</title>
     <link rel="stylesheet" href="styles.css">
     <!-- jsPDF和autotable插件 -->
@@ -115,6 +115,11 @@
 
     <!-- 主页面 -->
     <div id="mainPage" class="page">
+        <!-- 侧边栏切换按钮 (移动端) -->
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        
         <!-- 顶部导航栏 -->
         <nav class="top-navbar">
             <div class="brand">WORKBANKHRM考勤管理系统</div>
@@ -125,7 +130,7 @@
         </nav>
         
         <!-- 侧边栏 -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li>
                     <a href="#" class="active" onclick="showTab('recordTab'); setActiveMenu(this);">
@@ -167,7 +172,7 @@
         </div>
         
         <!-- 主内容区域 -->
-        <div class="main-content">
+        <div class="main-content" id="mainContent">
             <div class="container">
                 <!-- 考勤记录标签 -->
                 <div id="recordTab" class="tab-content active">
@@ -335,6 +340,20 @@
                 this.setFont('NotoSansCJK');
             }]);
         }
+        
+        // 添加移动端侧边栏切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('sidebar-collapsed');
+                });
+            }
+        });
     </script>
 </body>
 </html>
