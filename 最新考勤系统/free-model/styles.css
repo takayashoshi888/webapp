@@ -22,7 +22,7 @@
     --interface-color-1: #38455d; /* Midnight Gray */
     --interface-color-2: #64728c; /* Steel Gray */
     --interface-color-3: #929baa; /* Space Gray */
-    --interface-color-4: #cfd3de; /* Pastel Gray */
+    --interface-color-4: #cfd3de; /* Past尔 Gray */
     --interface-color-5: #e8eaef; /* Moon light */
     
     /* 背景色 */
@@ -35,6 +35,11 @@
     --danger-color: #eb0910;
     --reject-color: #ac0c0c;
     --success-color: #34bc40;
+    
+    /* 阴影 */
+    --shadow-small: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-medium: 0 4px 8px rgba(0,0,0,0.1);
+    --shadow-large: 0 8px 16px rgba(0,0,0,0.1);
 }
 
 body {
@@ -71,7 +76,7 @@ body {
     right: 0;
     height: 60px;
     background-color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-small);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -108,6 +113,7 @@ body {
     padding: 20px 0;
     transition: all 0.3s ease;
     z-index: 999;
+    overflow-y: auto;
 }
 
 .sidebar.collapsed {
@@ -133,6 +139,7 @@ body {
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s;
+    position: relative;
 }
 
 .sidebar-menu a:hover {
@@ -172,7 +179,112 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: var(--background-color-1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 登录页面背景装饰 */
+#loginPage, #registerPage, #forgotPasswordPage {
+    /* 精致的渐变背景 */
+    background: linear-gradient(-45deg, #ff7b1d, #ff6c03, #ff8a36, #ffaa00);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* 背景装饰元素 */
+#loginPage::before,
+#loginPage::after,
+#registerPage::before,
+#registerPage::after,
+#forgotPasswordPage::before,
+#forgotPasswordPage::after {
+    content: "";
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#loginPage::before,
+#registerPage::before,
+#forgotPasswordPage::before {
+    top: -100px;
+    right: -100px;
+    animation: float 6s ease-in-out infinite;
+}
+
+#loginPage::after,
+#registerPage::after,
+#forgotPasswordPage::after {
+    bottom: -150px;
+    left: -80px;
+    animation: float 8s ease-in-out infinite;
+}
+
+/* 浮动动画 */
+@keyframes float {
+    0% {
+        transform: translatey(0px);
+    }
+    50% {
+        transform: translatey(-20px);
+    }
+    100% {
+        transform: translatey(0px);
+    }
+}
+
+/* 添加更多装饰元素 */
+.login-bg-circle,
+.register-bg-circle,
+.forgot-bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    animation: float 10s ease-in-out infinite;
+}
+
+.login-bg-circle:nth-child(1),
+.register-bg-circle:nth-child(1),
+.forgot-bg-circle:nth-child(1) {
+    width: 150px;
+    height: 150px;
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.login-bg-circle:nth-child(2),
+.register-bg-circle:nth-child(2),
+.forgot-bg-circle:nth-child(2) {
+    width: 100px;
+    height: 100px;
+    bottom: 30%;
+    right: 15%;
+    animation-delay: 2s;
+}
+
+.login-bg-circle:nth-child(3),
+.register-bg-circle:nth-child(3),
+.forgot-bg-circle:nth-child(3) {
+    width: 80px;
+    height: 80px;
+    top: 40%;
+    right: 25%;
+    animation-delay: 4s;
 }
 
 #loginPage.active, #registerPage.active, #forgotPasswordPage.active {
@@ -180,20 +292,50 @@ body {
 }
 
 /* 登录表单容器 */
-.login-container {
-    background: white;
+.login-container,
+.register-container,
+.forgot-container {
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
     padding: 40px;
     width: 100%;
     max-width: 400px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 2;
+    transform: translateY(0);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.login-container h1 {
+.login-container:hover,
+.register-container:hover,
+.forgot-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.login-container h1,
+.register-container h1,
+.forgot-container h1 {
     text-align: center;
     color: var(--interface-color-1);
     margin-bottom: 30px;
     font-size: 24px;
+    position: relative;
+}
+
+.login-container h1::after,
+.register-container h1::after,
+.forgot-container h1::after {
+    content: "";
+    display: block;
+    width: 50px;
+    height: 3px;
+    background: var(--primary-color);
+    margin: 10px auto 0;
+    border-radius: 3px;
 }
 
 .container {
@@ -207,7 +349,7 @@ body {
     background: white;
     border-radius: 10px;
     padding: 30px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-medium);
     margin: 20px 0;
 }
 
@@ -222,6 +364,7 @@ body {
 /* 输入组样式 */
 .input-group {
     margin-bottom: 20px;
+    position: relative;
 }
 
 .input-group label {
@@ -232,7 +375,8 @@ body {
     font-size: 14px;
 }
 
-.input-group input {
+.input-group input,
+.input-group select {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid var(--interface-color-4);
@@ -243,7 +387,8 @@ body {
     font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(255, 123, 29, 0.1);
@@ -314,14 +459,51 @@ button {
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s;
     width: 100%;
     margin-top: 15px;
     font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    position: relative;
+    overflow: hidden;
 }
 
 button:hover {
     background-color: var(--primary-color-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 123, 29, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
+}
+
+button:focus:not(:active)::after {
+    animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(50, 50);
+        opacity: 0;
+    }
 }
 
 /* 链接样式 */
@@ -336,18 +518,33 @@ button:hover {
     margin: 0 10px;
     font-size: 14px;
     transition: color 0.2s;
+    position: relative;
 }
 
 .links a:hover {
     color: var(--primary-color-dark);
-    text-decoration: underline;
+}
+
+.links a::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.links a:hover::after {
+    width: 100%;
 }
 
 /* 导航栏样式 */
 .navbar {
     background: white;
     padding: 15px 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-small);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -400,7 +597,7 @@ button:hover {
     border-radius: 5px;
     padding: 5px;
     margin: 20px 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-small);
 }
 
 .tab-button {
@@ -437,7 +634,7 @@ button:hover {
     border-radius: 5px;
     padding: 30px;
     margin-bottom: 30px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-medium);
 }
 
 .record-form h2 {
@@ -459,7 +656,7 @@ button:hover {
     background: white;
     border-radius: 5px;
     padding: 30px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-medium);
 }
 
 .records-list h2 {
@@ -489,7 +686,7 @@ button:hover {
 .table-container {
     overflow-x: auto;
     border-radius: 5px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-small);
 }
 
 table {
@@ -523,7 +720,7 @@ tr:hover {
     background: white;
     border-radius: 5px;
     padding: 30px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-medium);
 }
 
 .statistics-section h2 {
@@ -576,7 +773,7 @@ tr:hover {
     border-radius: 5px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-small);
 }
 
 .stats-card h3 {
@@ -599,6 +796,11 @@ tr:hover {
     padding: 20px;
     border-radius: 5px;
     text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-5px);
 }
 
 .stat-item .label {
@@ -660,21 +862,24 @@ tr:hover {
     
     .form-container {
         padding: 20px;
-        margin: 20px auto;
+        margin: 10px auto;
     }
     
     /* 移动端侧边栏 */
     .sidebar {
         width: 60px;
+        top: 60px;
     }
     
     .sidebar.collapsed {
         width: 0;
         overflow: hidden;
+        padding: 0;
     }
     
     .main-content {
         margin-left: 60px;
+        padding: 10px;
     }
     
     .main-content.sidebar-collapsed {
@@ -688,6 +893,137 @@ tr:hover {
     .sidebar-menu a i {
         margin-right: 0;
         font-size: 20px;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .sidebar-menu a {
+        justify-content: center;
+        padding: 15px 10px;
+    }
+    
+    .record-form, .records-list, .statistics-section {
+        padding: 15px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-item {
+        padding: 15px;
+    }
+    
+    .stat-item .value {
+        font-size: 20px;
+    }
+    
+    .filter-section input {
+        min-width: auto;
+    }
+    
+    .stats-controls input {
+        min-width: auto;
+    }
+    
+    .top-navbar {
+        padding: 0 10px;
+    }
+    
+    .top-navbar .brand {
+        font-size: 16px;
+    }
+    
+    .table-container {
+        font-size: 12px;
+    }
+    
+    th, td {
+        padding: 8px 5px;
+    }
+    
+    .login-container,
+    .register-container,
+    .forgot-container {
+        padding: 20px;
+        margin: 10px;
+        max-width: calc(100% - 20px);
+    }
+    
+    .login-container h1,
+    .register-container h1,
+    .forgot-container h1 {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .input-group {
+        margin-bottom: 15px;
+    }
+    
+    button, .btn {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-navbar {
+        height: 50px;
+        padding: 0 10px;
+    }
+    
+    .sidebar {
+        top: 50px;
+    }
+    
+    .main-content {
+        margin-top: 50px;
+        margin-left: 0;
+        padding: 5px;
+    }
+    
+    .sidebar-menu a {
+        padding: 12px 5px;
+    }
+    
+    .sidebar-menu a i {
+        font-size: 18px;
+    }
+    
+    .record-form, .records-list, .statistics-section {
+        padding: 10px;
+    }
+    
+    .form-container {
+        padding: 15px;
+    }
+    
+    .login-container,
+    .register-container,
+    .forgot-container {
+        padding: 15px;
+    }
+    
+    th, td {
+        padding: 6px 4px;
+        font-size: 11px;
+    }
+    
+    .stats-card h3 {
+        font-size: 16px;
+    }
+    
+    .stat-item {
+        padding: 12px;
+    }
+    
+    .stat-item .label {
+        font-size: 12px;
+    }
+    
+    .stat-item .value {
+        font-size: 18px;
     }
 }
 
@@ -698,6 +1034,18 @@ tr:hover {
     margin: 15px 0;
     font-size: 14px;
     border-left: 4px solid;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 .message.success {
@@ -764,4 +1112,20 @@ tr:hover {
 
 .edit-btn:hover {
     background-color: var(--secondary-color-dark);
+}
+
+/* 移动端优化 - 表格横向滚动 */
+@media (max-width: 768px) {
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 600px;
+    }
+    
+    th, td {
+        white-space: nowrap;
+    }
 }

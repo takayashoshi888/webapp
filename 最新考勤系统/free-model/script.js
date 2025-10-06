@@ -1,12 +1,27 @@
+// Supabase配置
+const SUPABASE_URL = 'https://haemafeqbytkimymgyyp.supabase.co'; // 替换为您的Supabase项目URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZW1hZmVxYnl0a2lteW1neXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTA0NDgsImV4cCI6MjA3NTIyNjQ0OH0.-erJczPVdz0ENGhsQFtpSjUktSoVnkHjH3pmyZNvhf8'; // 替换为您的Supabase匿名密钥
+
+// 初始化Supabase客户端
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // 全局变量
 let currentUser = null;
 let attendanceRecords = [];
 let users = [];
+let authToken = null;
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 从本地存储加载数据
-    loadFromStorage();
+    // 检查是否有存储的认证令牌
+    const storedToken = localStorage.getItem('authToken');
+    const storedUser = localStorage.getItem('currentUser');
+    
+    if (storedToken && storedUser) {
+        authToken = storedToken;
+        currentUser = JSON.parse(storedUser);
+        showMainPage();
+    }
     
     // 设置默认日期
     const today = new Date();
@@ -18,11 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 绑定表单事件
     bindEvents();
-    
-    // 检查是否有已登录用户
-    if (currentUser) {
-        showMainPage();
-    }
     
     // 绑定侧边栏菜单事件
     bindSidebarEvents();
@@ -46,7 +56,7 @@ function bindEvents() {
 // 绑定侧边栏事件
 function bindSidebarEvents() {
     // 为侧边栏菜单项绑定点击事件
-    const menuItems = document.querySelectorAll('.sidebar-menu a');
+    const menuItems = document.querySelectorAll('.sidebar-menu a:not(.external-link)');
     menuItems.forEach(item => {
         item.addEventListener('click', function(e) {
             // 阻止默认行为
@@ -123,33 +133,142 @@ function showMessage(message, type = 'info') {
     }, 3000);
 }
 
+// API请求函数
+async function apiRequest(endpoint, options = {}) {
+    // 构建完整的URL，确保正确添加.php扩展名
+    const url = `${API_BASE_URL}/${endpoint}.php`;
+    console.log('API Request URL:', url); // 调试信息
+    
+    // 设置默认选项
+    const defaultOptions = {
+        credentials: 'omit', // 对于跨域请求，通常需要设置为omit
+        timeout: 15000, // 15秒超时
+        ...options
+    };
+    
+    // 添加认证头
+    if (authToken) {
+        defaultOptions.headers = {
+            ...defaultOptions.headers,
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+    } else {
+        defaultOptions.headers = {
+            ...defaultOptions.headers,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+    }
+    
+    try {
+        console.log('Sending request to:', url, defaultOptions); // 调试信息
+        
+        // 创建一个带有超时的fetch请求
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            controller.abort();
+            console.error('Request timeout after', defaultOptions.timeout, 'ms');
+        }, defaultOptions.timeout);
+        
+        const response = await fetch(url, {
+            ...defaultOptions,
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('Response status:', response.status); // 调试信息
+        console.log('Response headers:', [...response.headers.entries()]); // 调試情報
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log('Error response text:', errorText); // 调試情報
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                throw new Error(`服务器返回错误 (${response.status}): ${errorText || '未知错误'}`);
+            }
+            throw new Error(errorData.error || `请求失败 (${response.status}): ${response.statusText}`);
+        }
+        
+        const text = await response.text();
+        console.log('Response text:', text); // 调試情報
+        
+        if (!text) {
+            return {};
+        }
+        
+        return JSON.parse(text);
+    } catch (error) {
+        console.error('API request error:', error);
+        
+        // 处理不同类型的错误
+        if (error.name === 'AbortError') {
+            throw new Error('请求超时，请检查网络连接或稍后重试');
+        } else if (error instanceof TypeError && error.message.includes('fetch')) {
+            throw new Error('网络连接失败，请检查API地址是否正确或网络是否连通。错误详情: ' + error.message);
+        } else if (error instanceof TypeError) {
+            throw new Error('请求格式错误: ' + error.message);
+        }
+        
+        // 重新抛出其他错误
+        throw error;
+    }
+}
+
 // 处理登录
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
-    
+
     if (!username || !password) {
-        showMessage('请输入用户名和密码', 'error');
+        showMessage('请输入邮箱和密码', 'error');
         return;
     }
-    
-    // 查找用户
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-        currentUser = user;
-        saveToStorage();
+
+    try {
+        // 使用用户输入的邮箱和密码进行登录
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: username, // 登录表单中输入的是邮箱地址
+            password: password
+        });
+
+        if (error) throw error;
+
+        currentUser = {
+            id: data.user.id,
+            username: data.user.email, // 使用邮箱作为用户名显示
+            email: data.user.email
+        };
+
+        // 保存到本地存储
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+        // 获取用户的考勤记录
+        await loadAttendanceRecords();
+
         showMainPage();
         showMessage('登录成功！', 'success');
-    } else {
-        showMessage('用户名或密码错误', 'error');
+    } catch (error) {
+        console.error('Login error:', error);
+        // 根据不同的错误类型提供相应的错误提示
+        if (error.message.includes('Invalid login credentials')) {
+            showMessage('登录失败：邮箱或密码错误', 'error');
+        } else if (error.message.includes('Email not confirmed')) {
+            showMessage('登录失败：请先验证您的邮箱', 'error');
+        } else {
+            showMessage('登录失败: ' + error.message, 'error');
+        }
     }
 }
 
 // 处理注册
-function handleRegister(event) {
+async function handleRegister(event) {
     event.preventDefault();
     
     const username = document.getElementById('registerUsername').value.trim();
@@ -172,99 +291,67 @@ function handleRegister(event) {
         return;
     }
     
-    // 检查用户名是否已存在
-    if (users.some(u => u.username === username)) {
-        showMessage('用户名已存在', 'error');
-        return;
+    try {
+        // 创建用户
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    username: username
+                }
+            }
+        });
+        
+        if (error) throw error;
+        
+        showMessage('注册成功！请检查邮箱进行确认', 'success');
+        
+        // 清空表单
+        document.getElementById('registerForm').reset();
+        
+        // 跳转到登录页面
+        setTimeout(() => {
+            showPage('loginPage');
+        }, 1500);
+    } catch (error) {
+        console.error('注册失败:', error.message || JSON.stringify(error));
+        showMessage('注册失败: ' + (error.message || '未知错误'), 'error');
     }
-    
-    // 检查邮箱是否已存在
-    if (users.some(u => u.email === email)) {
-        showMessage('邮箱已被注册', 'error');
-        return;
-    }
-    
-    // 创建新用户
-    const newUser = {
-        id: Date.now().toString(),
-        username: username,
-        email: email,
-        password: password,
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    saveToStorage();
-    
-    showMessage('注册成功！请登录', 'success');
-    
-    // 清空表单
-    document.getElementById('registerForm').reset();
-    
-    // 跳转到登录页面
-    setTimeout(() => {
-        showPage('loginPage');
-    }, 1500);
 }
 
 // 处理密码修改
-function handlePasswordChange(event) {
+async function handlePasswordChange(event) {
     event.preventDefault();
     
-    const username = document.getElementById('forgotUsername').value.trim();
-    const email = document.getElementById('forgotEmail').value.trim();
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-    
-    if (!username || !email || !newPassword || !confirmNewPassword) {
-        showMessage('请填写所有字段', 'error');
-        return;
-    }
-    
-    if (newPassword !== confirmNewPassword) {
-        showMessage('两次输入的新密码不一致', 'error');
-        return;
-    }
-    
-    if (newPassword.length < 6) {
-        showMessage('密码长度至少6位', 'error');
-        return;
-    }
-    
-    // 查找用户
-    const userIndex = users.findIndex(u => u.username === username && u.email === email);
-    
-    if (userIndex === -1) {
-        showMessage('用户名或邮箱不正确', 'error');
-        return;
-    }
-    
-    // 更新密码
-    users[userIndex].password = newPassword;
-    saveToStorage();
-    
-    showMessage('密码修改成功！请使用新密码登录', 'success');
-    
-    // 清空表单
-    document.getElementById('forgotPasswordForm').reset();
-    
-    // 跳转到登录页面
-    setTimeout(() => {
-        showPage('loginPage');
-    }, 1500);
+    // 注意：在实际应用中，密码修改应该通过更安全的方式处理
+    // 这里为了简化，我们假设用户已经登录并直接更新密码
+    showMessage('密码修改功能需要在登录状态下通过更安全的方式实现', 'error');
 }
 
 // 显示主页面
-function showMainPage() {
+async function showMainPage() {
     showPage('mainPage');
     document.getElementById('currentUser').textContent = currentUser.username;
+    
+    // 如果还没有加载记录，则加载
+    if (attendanceRecords.length === 0) {
+        await loadAttendanceRecords();
+    }
+    
     refreshRecordsTable();
 }
 
 // 退出登录
 function logout() {
     currentUser = null;
-    saveToStorage();
+    authToken = null;
+    attendanceRecords = [];
+    
+    // 清除本地存储
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    
     showPage('loginPage');
     
     // 清空表单
@@ -273,14 +360,47 @@ function logout() {
     showMessage('已成功退出登录', 'info');
 }
 
+// 加载考勤记录
+async function loadAttendanceRecords() {
+    if (!currentUser) return;
+    
+    try {
+        const { data, error } = await supabase
+            .from('attendance_records')
+            .select('*')
+            .eq('user_id', currentUser.id); // currentUser.id 是UUID格式
+        
+        if (error) throw error;
+        
+        attendanceRecords = data.map(record => ({
+            id: record.id.toString(),
+            date: record.record_date,
+            name: record.employee_name,
+            count: record.employee_count,
+            site: record.site_name,
+            roomType: record.room_type,
+            roomNumber: record.room_number,
+            parkingFee: record.parking_fee,
+            highwayFee: record.highway_fee,
+            userId: record.user_id, // 保持UUID格式
+            createdAt: record.created_at
+        }));
+    } catch (error) {
+        console.error('加载考勤记录失败:', error.message || JSON.stringify(error));
+        showMessage('加载考勤记录失败: ' + (error.message || '未知错误'), 'error');
+    }
+}
+
 // 处理添加记录
-function handleAddRecord(event) {
+async function handleAddRecord(event) {
     event.preventDefault();
     
     const date = document.getElementById('recordDate').value;
     const name = document.getElementById('employeeName').value.trim();
     const count = parseInt(document.getElementById('employeeCount').value);
     const site = document.getElementById('siteName').value.trim();
+    const roomType = document.getElementById('roomType').value;
+    const roomNumber = document.getElementById('roomNumber').value.trim();
     const parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
     const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
     
@@ -289,35 +409,54 @@ function handleAddRecord(event) {
         return;
     }
     
-    const record = {
-        id: Date.now().toString(),
-        date: date,
-        name: name,
-        count: count,
-        site: site,
-        parkingFee: parkingFee,
-        highwayFee: highwayFee,
-        userId: currentUser.id,
-        createdAt: new Date().toISOString()
+    // 准备插入的数据
+    const recordData = {
+        user_id: currentUser.id, // UUID字符串
+        record_date: date,
+        employee_name: name,
+        employee_count: count,
+        site_name: site,
+        room_type: roomType,
+        room_number: roomNumber,
+        parking_fee: parkingFee,
+        highway_fee: highwayFee
     };
     
-    attendanceRecords.push(record);
-    saveToStorage();
-    refreshRecordsTable();
+    console.log('准备插入的数据:', recordData);
     
-    showMessage('考勤记录添加成功！', 'success');
-    
-    // 清空表单（保留日期）
-    document.getElementById('employeeName').value = '';
-    document.getElementById('employeeCount').value = '';
-    document.getElementById('siteName').value = '';
-    document.getElementById('parkingFee').value = '';
-    document.getElementById('highwayFee').value = '';
+    try {
+        const { data, error } = await supabase
+            .from('attendance_records')
+            .insert(recordData)
+            .select();
+        
+        if (error) throw error;
+        
+        // 重新加载记录
+        await loadAttendanceRecords();
+        refreshRecordsTable();
+        
+        showMessage('考勤记录添加成功！', 'success');
+        
+        // 清空表单（保留日期）
+        document.getElementById('employeeName').value = '';
+        document.getElementById('employeeCount').value = '';
+        document.getElementById('siteName').value = '';
+        document.getElementById('roomType').value = '';
+        document.getElementById('roomNumber').value = '';
+        document.getElementById('parkingFee').value = '';
+        document.getElementById('highwayFee').value = '';
+    } catch (error) {
+        console.error('添加记录失败:', error.message || JSON.stringify(error));
+        console.error('尝试插入的数据:', recordData);
+        showMessage('添加记录失败: ' + (error.message || '未知错误'), 'error');
+    }
 }
 
 // 刷新记录表格
 function refreshRecordsTable() {
     const tbody = document.getElementById('recordsTableBody');
+    // 确保正确比较UUID字符串
     const userRecords = attendanceRecords.filter(record => record.userId === currentUser.id);
     
     tbody.innerHTML = '';
@@ -329,11 +468,13 @@ function refreshRecordsTable() {
             <td>${record.name}</td>
             <td>${record.count}</td>
             <td>${record.site}</td>
+            <td>${record.roomType || ''}</td>
+            <td>${record.roomNumber || ''}</td>
             <td>¥${record.parkingFee.toLocaleString()}</td>
             <td>¥${record.highwayFee.toLocaleString()}</td>
             <td>
-                <button class="btn btn-primary edit-btn" onclick="editRecord('${record.id}')">编辑</button>
-                <button class="btn btn-danger delete-btn" onclick="deleteRecord('${record.id}')">删除</button>
+                <button class="btn btn-primary edit-btn" onclick="editRecord('${record.id}')">編集</button>
+                <button class="btn btn-danger delete-btn" onclick="deleteRecord('${record.id}')">削除</button>
             </td>
         `;
     });
@@ -348,6 +489,8 @@ function editRecord(recordId) {
         document.getElementById('employeeName').value = record.name;
         document.getElementById('employeeCount').value = record.count;
         document.getElementById('siteName').value = record.site;
+        document.getElementById('roomType').value = record.roomType || '';
+        document.getElementById('roomNumber').value = record.roomNumber || '';
         document.getElementById('parkingFee').value = record.parkingFee;
         document.getElementById('highwayFee').value = record.highwayFee;
         
@@ -358,43 +501,100 @@ function editRecord(recordId) {
             event.preventDefault();
             
             // 更新记录
-            record.date = document.getElementById('recordDate').value;
-            record.name = document.getElementById('employeeName').value.trim();
-            record.count = parseInt(document.getElementById('employeeCount').value);
-            record.site = document.getElementById('siteName').value.trim();
-            record.parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
-            record.highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
-            
-            saveToStorage();
-            refreshRecordsTable();
-            
-            // 恢复原始表单提交处理函数
-            form.removeEventListener('submit', editEventHandler);
-            form.addEventListener('submit', handleAddRecord);
-            
-            // 清空表单
-            form.reset();
-            
-            // 设置默认日期
-            const today = new Date();
-            document.getElementById('recordDate').value = today.toISOString().split('T')[0];
-            
-            showMessage('记录已更新', 'success');
+            updateRecord(recordId);
         });
         
         showMessage('请修改记录信息，然后提交表单以保存更改', 'info');
     }
 }
 
+// 更新记录
+async function updateRecord(recordId) {
+    const date = document.getElementById('recordDate').value;
+    const name = document.getElementById('employeeName').value.trim();
+    const count = parseInt(document.getElementById('employeeCount').value);
+    const site = document.getElementById('siteName').value.trim();
+    const roomType = document.getElementById('roomType').value;
+    const roomNumber = document.getElementById('roomNumber').value.trim();
+    const parkingFee = parseFloat(document.getElementById('parkingFee').value) || 0;
+    const highwayFee = parseFloat(document.getElementById('highwayFee').value) || 0;
+    
+    if (!date || !name || !count || !site) {
+        showMessage('请填写所有必填字段', 'error');
+        return;
+    }
+    
+    // 准备更新的数据
+    const updateData = {
+        record_date: date,
+        employee_name: name,
+        employee_count: count,
+        site_name: site,
+        room_type: roomType,
+        room_number: roomNumber,
+        parking_fee: parkingFee,
+        highway_fee: highwayFee
+    };
+    
+    console.log('准备更新的数据:', updateData);
+    
+    try {
+        const { data, error } = await supabase
+            .from('attendance_records')
+            .update(updateData)
+            .eq('id', recordId)
+            .eq('user_id', currentUser.id)
+            .select();
+        
+        if (error) throw error;
+        
+        // 重新加载记录
+        await loadAttendanceRecords();
+        refreshRecordsTable();
+        
+        // 恢复原始表单提交处理函数
+        const form = document.getElementById('attendanceForm');
+        form.removeEventListener('submit', editEventHandler);
+        form.addEventListener('submit', handleAddRecord);
+        
+        // 清空表单
+        form.reset();
+        
+        // 设置默认日期
+        const today = new Date();
+        document.getElementById('recordDate').value = today.toISOString().split('T')[0];
+        
+        showMessage('记录已更新', 'success');
+    } catch (error) {
+        console.error('更新记录失败:', error.message || JSON.stringify(error));
+        console.error('尝试更新的数据:', updateData);
+        showMessage('更新记录失败: ' + (error.message || '未知错误'), 'error');
+    }
+}
+
 // 删除记录
-function deleteRecord(recordId) {
-    if (confirm('确定要删除这条记录吗？')) {
-        const index = attendanceRecords.findIndex(record => record.id === recordId);
-        if (index !== -1) {
-            attendanceRecords.splice(index, 1);
-            saveToStorage();
+async function deleteRecord(recordId) {
+    if (confirm('この記録を削除しますか？')) {
+        try {
+            console.log('准备删除记录:', { id: recordId, user_id: currentUser.id });
+            
+            const { data, error } = await supabase
+                .from('attendance_records')
+                .delete()
+                .eq('id', recordId)
+                .eq('user_id', currentUser.id);
+            
+            if (error) throw error;
+            
+            // 重新加载记录
+            await loadAttendanceRecords();
             refreshRecordsTable();
-            showMessage('记录已删除', 'success');
+            
+            showMessage('記録が削除されました', 'success');
+        } catch (error) {
+            console.error('删除记录失败:', error.message || JSON.stringify(error));
+            console.error('尝试删除的记录:', { id: recordId, user_id: currentUser.id });
+            showMessage('删除记录失败: ' + (error.message || '未知错误'), 'error');
         }
     }
 }
@@ -426,19 +626,19 @@ function openPDFEditor() {
 function generateStatistics() {
     const month = document.getElementById('statsMonth').value;
     if (!month) {
-        showMessage('请选择要统计的月份', 'error');
+        showMessage('まず統計する月を選択してください', 'error');
         return;
     }
     
     const userRecords = attendanceRecords.filter(record => 
-        record.userId === currentUser.id && record.date.startsWith(month)
+        record.userId === currentUser.id.toString() && record.date.startsWith(month)
     );
     
     if (userRecords.length === 0) {
         document.getElementById('statisticsResults').innerHTML = `
             <div class="stats-card">
-                <h3>${month} 月统计结果</h3>
-                <p>该月份暂无考勤记录</p>
+                <h3>${month} 月統計結果</h3>
+                <p>該月には考勤記録がありません</p>
             </div>
         `;
         return;
@@ -485,10 +685,28 @@ function generateStatistics() {
         siteStats[record.site].totalHighwayFee += record.highwayFee;
     });
     
-    // 生成统计结果HTML
+    // 按部屋タイプ分組统计
+    const roomTypeStats = {};
+    userRecords.forEach(record => {
+        const roomType = record.roomType || '未指定';
+        if (!roomTypeStats[roomType]) {
+            roomTypeStats[roomType] = {
+                records: 0,
+                totalPeople: 0,
+                totalParkingFee: 0,
+                totalHighwayFee: 0
+            };
+        }
+        roomTypeStats[roomType].records++;
+        roomTypeStats[roomType].totalPeople += record.count;
+        roomTypeStats[roomType].totalParkingFee += record.parkingFee;
+        roomTypeStats[roomType].totalHighwayFee += record.highwayFee;
+    });
+    
+    // 生成统计結果HTML
     let html = `
         <div class="stats-card">
-            <h3>${month} 月统计概览</h3>
+            <h3>${month} 月统计概覧</h3>
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="label">总记录数</div>
@@ -524,7 +742,7 @@ function generateStatistics() {
                             <th>总人数</th>
                             <th>停车费</th>
                             <th>高速费</th>
-                            <th>费用小计</th>
+                            <th>费用小計</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -561,7 +779,7 @@ function generateStatistics() {
                             <th>总人数</th>
                             <th>停车费</th>
                             <th>高速费</th>
-                            <th>费用小计</th>
+                            <th>費用小計</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -586,226 +804,58 @@ function generateStatistics() {
                 </table>
             </div>
         </div>
+        
+        <div class="stats-card">
+            <h3>按部屋タイプ统计</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>部屋タイプ</th>
+                            <th>记录数</th>
+                            <th>总人数</th>
+                            <th>停车费</th>
+                            <th>高速費</th>
+                            <th>費用小計</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    Object.entries(roomTypeStats).forEach(([roomType, stats]) => {
+        const subtotal = stats.totalParkingFee + stats.totalHighwayFee;
+        html += `
+            <tr>
+                <td>${roomType}</td>
+                <td>${stats.records}</td>
+                <td>${stats.totalPeople}</td>
+                <td>¥${stats.totalParkingFee.toLocaleString()}</td>
+                <td>¥${stats.totalHighwayFee.toLocaleString()}</td>
+                <td>¥${subtotal.toLocaleString()}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
     `;
     
     document.getElementById('statisticsResults').innerHTML = html;
 }
 
-// 导出PDF - 支持中文和日文
+// 対応中文と日本語のPDFエクスポート
 function exportToPDF() {
     const month = document.getElementById('statsMonth').value;
     if (!month) {
-        showMessage('请先生成统计数据', 'error');
+        showMessage('まず统计データを生成してください', 'error');
         return;
     }
     
     const userRecords = attendanceRecords.filter(record => 
-        record.userId === currentUser.id && record.date.startsWith(month)
-    );
-    
-    if (userRecords.length === 0) {
-        showMessage('该月份暂无数据可导出', 'error');
-        return;
-    }
-    
-    // 显示加载提示
-    showMessage('正在生成PDF，请稍候...', 'info');
-    
-    try {
-        // 先尝试使用html2canvas方法，完美支持中文日文
-        if (typeof html2canvas !== 'undefined') {
-            exportToPDFWithCanvas();
-        } else {
-            // 如果html2canvas未加载，使用传统方法
-            exportToPDFTraditional();
-        }
-        
-    } catch (error) {
-        console.error('PDF导出错误:', error);
-        showMessage('PDF导出失败：' + error.message, 'error');
-    }
-}
-
-// 传统PDF导出方法
-function exportToPDFTraditional() {
-    const month = document.getElementById('statsMonth').value;
-    const userRecords = attendanceRecords.filter(record => 
-        record.userId === currentUser.id && record.date.startsWith(month)
-    );
-    
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // 获取年月信息
-    const [year, monthNum] = month.split('-');
-    
-    doc.setFont('helvetica');
-    doc.setFontSize(18);
-    doc.setTextColor(40, 40, 40);
-    
-    // 使用英文显示标题
-    doc.text(`Attendance Report ${year}-${monthNum}`, 20, 25);
-    doc.text(`(Kaoqin Baobiao)`, 20, 35);
-    
-    // 统计数据
-    const totalRecords = userRecords.length;
-    const totalPeople = userRecords.reduce((sum, record) => sum + record.count, 0);
-    const totalParkingFee = userRecords.reduce((sum, record) => sum + record.parkingFee, 0);
-    const totalHighwayFee = userRecords.reduce((sum, record) => sum + record.highwayFee, 0);
-    const totalFees = totalParkingFee + totalHighwayFee;
-    
-    doc.setFontSize(12);
-    let yPos = 55;
-    doc.text(`Total Records: ${totalRecords}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Total People: ${totalPeople}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Total Parking Fee: ¥${totalParkingFee.toLocaleString()}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Total Highway Fee: ¥${totalHighwayFee.toLocaleString()}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Total Fees: ¥${totalFees.toLocaleString()}`, 20, yPos);
-    
-    // 表格数据
-    const tableData = userRecords.sort((a, b) => new Date(a.date) - new Date(b.date)).map(record => [
-        record.date,
-        record.name,
-        record.count.toString(),
-        record.site,
-        `¥${record.parkingFee.toLocaleString()}`,
-        `¥${record.highwayFee.toLocaleString()}`
-    ]);
-    
-    doc.autoTable({
-        startY: yPos + 20,
-        head: [['Date', 'Name', 'Count', 'Site', 'Parking Fee', 'Highway Fee']],
-        body: tableData,
-        styles: { fontSize: 9, cellPadding: 3, halign: 'center' },
-        headStyles: { fillColor: [102, 126, 234], textColor: [255, 255, 255] },
-        columnStyles: {
-            0: { cellWidth: 25 }, 1: { cellWidth: 30 }, 2: { cellWidth: 20 },
-            3: { cellWidth: 35 }, 4: { cellWidth: 25 }, 5: { cellWidth: 25 }
-        }
-    });
-    
-    doc.save(`attendance-report-${month}.pdf`);
-    showMessage('PDF文件已成功导出！', 'success');
-}
-
-// 使用Canvas方法导出PDF - 完美支持中文日文
-async function exportToPDFWithCanvas() {
-    const month = document.getElementById('statsMonth').value;
-    const userRecords = attendanceRecords.filter(record => 
-        record.userId === currentUser.id && record.date.startsWith(month)
-    );
-    
-    try {
-        // 创建临时HTML元素
-        const tempContainer = document.createElement('div');
-        tempContainer.style.cssText = `position: fixed; top: -10000px; left: -10000px; width: 800px; 
-            background: white; padding: 20px; font-family: 'Microsoft YaHei', 'SimHei', sans-serif; 
-            font-size: 14px; line-height: 1.6;`;
-        
-        const [year, monthNum] = month.split('-');
-        const totalRecords = userRecords.length;
-        const totalPeople = userRecords.reduce((sum, record) => sum + record.count, 0);
-        const totalParkingFee = userRecords.reduce((sum, record) => sum + record.parkingFee, 0);
-        const totalHighwayFee = userRecords.reduce((sum, record) => sum + record.highwayFee, 0);
-        const totalFees = totalParkingFee + totalHighwayFee;
-        
-        // 生成表格
-        let tableHTML = `<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-            <thead><tr style="background-color: #666EEA; color: white;">
-                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">日期</th>
-                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">姓名</th>
-                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">人数</th>
-                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">现场名称</th>
-                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">停车费</th>
-                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">高速费</th>
-            </tr></thead><tbody>`;
-        
-        userRecords.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((record, index) => {
-            const bgColor = index % 2 === 0 ? '#f8fafc' : 'white';
-            tableHTML += `<tr style="background-color: ${bgColor};">
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.date}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.name}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.count}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.site}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.parkingFee.toLocaleString()}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">¥${record.highwayFee.toLocaleString()}</td>
-            </tr>`;
-        });
-        tableHTML += '</tbody></table>';
-        
-        tempContainer.innerHTML = `
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #333; margin: 0 0 10px 0; font-size: 24px;">${year}年${monthNum}月考勤报表</h1>
-                <h2 style="color: #666; margin: 0; font-size: 18px;">Attendance Report</h2>
-            </div>
-            <div style="margin-bottom: 30px; padding: 20px; background-color: #f0f8ff; border-radius: 8px;">
-                <h3 style="margin: 0 0 15px 0; color: #333;">统计概览</h3>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总记录数：</strong> ${totalRecords}</div>
-                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>总人数：</strong> ${totalPeople}</div>
-                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>停车费总计：</strong> ¥${totalParkingFee.toLocaleString()}</div>
-                    <div style="padding: 10px; background: white; border-radius: 5px;"><strong>高速费总计：</strong> ¥${totalHighwayFee.toLocaleString()}</div>
-                    <div style="padding: 10px; background: white; border-radius: 5px; grid-column: span 2; text-align: center; font-weight: bold; font-size: 16px;"><strong>费用总计：</strong> ¥${totalFees.toLocaleString()}</div>
-                </div>
-            </div>
-            <div><h3 style="margin: 0 0 15px 0; color: #333;">详细记录</h3>${tableHTML}</div>
-            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">生成时间：${new Date().toLocaleString('zh-CN')}</div>`;
-        
-        document.body.appendChild(tempContainer);
-        
-        // 使用html2canvas生成图片
-        const canvas = await html2canvas(tempContainer, {
-            scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff',
-            width: 800, height: tempContainer.scrollHeight
-        });
-        
-        document.body.removeChild(tempContainer);
-        
-        // 创建PDF
-        const { jsPDF } = window.jspdf;
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 190;
-        const pageHeight = 297;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-        }
-        
-        pdf.save(`考勤报表-${month}.pdf`);
-        showMessage('PDF文件已成功导出！完美支持中文和日文显示', 'success');
-        
-    } catch (error) {
-        console.error('Canvas PDF导出错误:', error);
-        showMessage('正在使用备用方法导出PDF...', 'info');
-        exportToPDFTraditional();
-    }
-}
-
-// 导出CSV
-function exportToCSV() {
-    const month = document.getElementById('statsMonth').value;
-    if (!month) {
-        showMessage('请先生成统计数据', 'error');
-        return;
-    }
-    
-    const userRecords = attendanceRecords.filter(record => 
-        record.userId === currentUser.id && record.date.startsWith(month)
+        record.userId === currentUser.id.toString() && record.date.startsWith(month)
     );
     
     if (userRecords.length === 0) {
@@ -815,10 +865,10 @@ function exportToCSV() {
     
     // 创建CSV内容
     let csvContent = '\uFEFF'; // BOM for UTF-8
-    csvContent += '日期,姓名,人数,现场名称,停车费,高速费\n';
+    csvContent += '日期,姓名,人数,现场名称,部屋タイプ,部屋号,停车费,高速费\n';
     
     userRecords.forEach(record => {
-        csvContent += `${record.date},${record.name},${record.count},${record.site},${record.parkingFee},${record.highwayFee}\n`;
+        csvContent += `${record.date},${record.name},${record.count},${record.site},${record.roomType || ''},${record.roomNumber || ''},${record.parkingFee},${record.highwayFee}\n`;
     });
     
     // 创建下载链接
@@ -832,40 +882,25 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
     
-    showMessage('CSV文件已下载', 'success');
+    showMessage('CSVファイル已下载', 'success');
 }
 
-// 从本地存储加载数据
-function loadFromStorage() {
-    try {
-        const userData = localStorage.getItem('attendanceSystemUsers');
-        if (userData) {
-            users = JSON.parse(userData);
+// 页面加载完成后检查认证状态
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查本地存储中的认证信息
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('currentUser');
+    
+    if (token && user) {
+        try {
+            authToken = token;
+            currentUser = JSON.parse(user);
+            showMainPage();
+        } catch (e) {
+            console.error('Failed to parse user data from localStorage:', e);
+            // 清除无效的本地存储
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
         }
-        
-        const recordData = localStorage.getItem('attendanceSystemRecords');
-        if (recordData) {
-            attendanceRecords = JSON.parse(recordData);
-        }
-        
-        const currentUserData = localStorage.getItem('attendanceSystemCurrentUser');
-        if (currentUserData) {
-            currentUser = JSON.parse(currentUserData);
-        }
-    } catch (error) {
-        console.error('Error loading data from storage:', error);
-        showMessage('数据加载失败', 'error');
     }
-}
-
-// 保存数据到本地存储
-function saveToStorage() {
-    try {
-        localStorage.setItem('attendanceSystemUsers', JSON.stringify(users));
-        localStorage.setItem('attendanceSystemRecords', JSON.stringify(attendanceRecords));
-        localStorage.setItem('attendanceSystemCurrentUser', JSON.stringify(currentUser));
-    } catch (error) {
-        console.error('Error saving data to storage:', error);
-        showMessage('数据保存失败', 'error');
-    }
-}
+});
