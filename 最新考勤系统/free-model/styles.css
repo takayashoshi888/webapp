@@ -1170,6 +1170,25 @@ tr:hover {
         cursor: pointer;
         font-size: 18px;
     }
+    
+    /* 移动端侧边栏完全隐藏 */
+    .sidebar {
+        width: 250px;
+        left: -250px;
+    }
+    
+    .sidebar.collapsed {
+        width: 250px;
+        left: 0;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .main-content.sidebar-collapsed {
+        margin-left: 0;
+    }
 }
 
 /* 添加侧边栏切换按钮样式（默认隐藏） */

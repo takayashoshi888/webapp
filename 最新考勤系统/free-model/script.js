@@ -40,9 +40,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 添加窗口大小改变事件监听器
     handleResponsiveDesign();
     window.addEventListener('resize', handleResponsiveDesign);
-    
+
     // 初始化移动端优化
     initMobileOptimizations();
+
+    // 添加侧边栏切换功能
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                document.getElementById('mainContent').classList.toggle('sidebar-collapsed');
+            });
+        }
+    });
 });
 
 // 绑定事件
@@ -153,6 +166,17 @@ function initMobileOptimizations() {
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
     });
+    
+    // 添加侧边栏切换功能
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            document.getElementById('mainContent').classList.toggle('sidebar-collapsed');
+        });
+    }
 }
 
 // 处理响应式设计
@@ -1121,3 +1145,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+/**
+ * Opens the PDF editor in a new tab
+ */
+function openPDFEditor() {
+    window.open('https://tools.pdf24.org/zh/', '_blank');
+}
