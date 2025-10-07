@@ -166,17 +166,6 @@ function initMobileOptimizations() {
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
     });
-    
-    // 添加侧边栏切换功能
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
-    
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('collapsed');
-            document.getElementById('mainContent').classList.toggle('sidebar-collapsed');
-        });
-    }
 }
 
 // 处理响应式设计
@@ -185,10 +174,13 @@ function handleResponsiveDesign() {
     const mainContent = document.getElementById('mainContent');
     
     if (window.innerWidth <= 768) {
-        // 在小屏幕上默认折叠侧边栏
+        // 在小屏幕上默认隐藏侧边栏 (通过添加collapsed类)
         if (sidebar && mainContent) {
-            sidebar.classList.add('collapsed');
-            mainContent.classList.add('sidebar-collapsed');
+            // Only add collapsed class if it's not already there
+            if (!sidebar.classList.contains('collapsed')) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('sidebar-collapsed');
+            }
         }
     } else {
         // 在大屏幕上展开侧边栏

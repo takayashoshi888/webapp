@@ -1174,11 +1174,11 @@ tr:hover {
     /* 移动端侧边栏完全隐藏 */
     .sidebar {
         width: 250px;
-        left: -250px;
+        left: -250px; /* Hidden by default */
     }
     
+    /* When collapsed class is added, show the sidebar */
     .sidebar.collapsed {
-        width: 250px;
         left: 0;
     }
     
