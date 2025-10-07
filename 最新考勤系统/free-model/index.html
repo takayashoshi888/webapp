@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OrangeHRM风格考勤管理系统</title>
+    <title>TKYS考勤管理系统</title>
     <link rel="stylesheet" href="styles.css">
     <!-- jsPDF和autotable插件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -26,7 +26,7 @@
         <div class="login-bg-circle"></div>
         
         <div class="login-container">
-            <h1>WORKBANKHRM考勤管理系统</h1>
+            <h1>TKYSHRM考勤管理系统</h1>
             <form id="loginForm">
                 <div class="input-group">
                     <label for="loginUsername">邮箱:</label>
@@ -117,17 +117,17 @@
     <div id="mainPage" class="page">
         <!-- 顶部导航栏 -->
         <nav class="top-navbar">
+            <!-- 侧边栏切换按钮 (移动端) -->
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <div class="brand">WORKBANKHRM考勤管理系统</div>
             <div class="user-info">
                 <span id="currentUser"></span>
                 <button class="btn btn-danger" onclick="logout()">退出登录</button>
             </div>
         </nav>
-        
-        <!-- 侧边栏切换按钮 (移动端) -->
-        <button class="sidebar-toggle" id="sidebarToggle">
-            <i class="fas fa-bars"></i>
-        </button>
         
         <!-- 侧边栏 -->
         <div class="sidebar" id="sidebar">
@@ -343,20 +343,6 @@
                 this.setFont('NotoSansCJK');
             }]);
         }
-        
-        // 添加移动端侧边栏切换功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('collapsed');
-                    mainContent.classList.toggle('sidebar-collapsed');
-                });
-            }
-        });
     </script>
 </body>
 </html>

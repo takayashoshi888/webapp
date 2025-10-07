@@ -94,6 +94,8 @@ body {
     font-size: 18px;
     font-weight: 600;
     color: var(--interface-color-1);
+    flex-grow: 1;
+    text-align: center;
 }
 
 .top-navbar .user-info {
@@ -105,6 +107,85 @@ body {
 .top-navbar .user-info span {
     color: var(--interface-color-2);
     font-size: 14px;
+}
+
+/* 侧边栏切换按钮 (移动端) */
+.sidebar-toggle {
+    display: none;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .top-navbar {
+        padding: 0 10px;
+    }
+    
+    .top-navbar .brand {
+        font-size: 16px;
+        text-align: center;
+        margin: 0 10px;
+    }
+    
+    /* 在小屏幕上显示侧边栏切换按钮 */
+    .sidebar-toggle {
+        display: flex;
+    }
+}
+
+/* 移动端优化 - 表格横向滚动 */
+@media (max-width: 768px) {
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 600px;
+    }
+    
+    th, td {
+        white-space: nowrap;
+    }
+    
+    /* 在小屏幕上显示侧边栏切换按钮 */
+    .sidebar-toggle {
+        display: flex;
+    }
+    
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    /* 调整顶部导航栏在小屏幕上的样式 */
+    .top-navbar {
+        padding: 0 10px;
+    }
+    
+    .top-navbar .brand {
+        font-size: 16px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -198,15 +279,30 @@ body {
         left: -250px;
         transition: left 0.3s ease;
         top: 60px;
+        background-color: white; /* 确保背景色为白色 */
     }
     
     .sidebar.collapsed {
+        left: -250px;
+    }
+    
+    .sidebar:not(.collapsed) {
         left: 0;
     }
     
-    /* 移动端侧边栏collapsed状态 */
-    .sidebar.collapsed:not(.mobile-hidden) {
-        left: -250px;
+    /* 移动端主内容区域 */
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .main-content.sidebar-collapsed {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
+        top: 50px;
     }
 }
 
@@ -267,6 +363,7 @@ body {
 @media (max-width: 768px) {
     .main-content {
         margin-left: 0;
+        margin-top: 60px;
     }
     
     .main-content.sidebar-collapsed {

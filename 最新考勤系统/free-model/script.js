@@ -49,27 +49,70 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const mainContent = document.getElementById('mainContent');
-    
-    if (sidebarToggle && sidebar && mainContent) {
-        sidebarToggle.addEventListener('click', function() {
-            // 切换侧边栏状态
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('sidebar-collapsed');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.toggle('active');
-            }
+
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.stopPropagation(); // 阻止事件冒泡
+            toggleSidebar();
         });
     }
-    
+
     // 点击遮罩层关闭侧边栏
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', function() {
-            sidebar.classList.add('collapsed');
-            mainContent.classList.remove('sidebar-collapsed');
-            sidebarOverlay.classList.remove('active');
+            closeSidebar();
         });
     }
 });
+
+// 切换侧边栏显示状态
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (window.innerWidth <= 768) {
+        // 在移动端，切换侧边栏显示状态
+        if (sidebar.classList.contains('collapsed')) {
+            // 显示侧边栏
+            sidebar.classList.remove('collapsed');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.add('active');
+            }
+        } else {
+            // 隐藏侧边栏
+            closeSidebar();
+        }
+    } else {
+        // 在桌面端保持原有逻辑
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('sidebar-collapsed');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.toggle('active');
+        }
+    }
+}
+
+// 关闭侧边栏
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (window.innerWidth <= 768) {
+        // 在移动端，添加collapsed类以隐藏侧边栏
+        sidebar.classList.add('collapsed');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('active');
+        }
+    } else {
+        sidebar.classList.add('collapsed');
+        mainContent.classList.remove('sidebar-collapsed');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('active');
+        }
+    }
+}
 
 // 绑定事件
 function bindEvents() {
@@ -102,16 +145,8 @@ function bindSidebarEvents() {
             setActiveMenu(this);
             
             // 在移动端点击菜单项后关闭侧边栏
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            
-            if (window.innerWidth <= 768 && sidebar && mainContent) {
-                sidebar.classList.add('collapsed');
-                mainContent.classList.remove('sidebar-collapsed');
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.remove('active');
-                }
+            if (window.innerWidth <= 768) {
+                closeSidebar();
             }
         });
     });
@@ -138,16 +173,8 @@ function showPage(pageId) {
     page.classList.add('active');
     
     // 在移动端隐藏侧边栏
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
-    if (window.innerWidth <= 768 && sidebar && mainContent) {
-        sidebar.classList.add('collapsed');
-        mainContent.classList.remove('sidebar-collapsed');
-        if (sidebarOverlay) {
-            sidebarOverlay.classList.remove('active');
-        }
+    if (window.innerWidth <= 768) {
+        closeSidebar();
     }
 }
 
@@ -209,7 +236,6 @@ function handleResponsiveDesign() {
             // 确保侧边栏在移动设备上正确隐藏
             if (!sidebar.classList.contains('collapsed')) {
                 sidebar.classList.add('collapsed');
-                mainContent.classList.add('sidebar-collapsed');
                 if (sidebarOverlay) {
                     sidebarOverlay.classList.remove('active');
                 }
