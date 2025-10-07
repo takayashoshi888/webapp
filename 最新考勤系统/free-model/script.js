@@ -45,30 +45,30 @@ document.addEventListener('DOMContentLoaded', function() {
     initMobileOptimizations();
 
     // 添加侧边栏切换功能
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('collapsed');
-                document.getElementById('mainContent').classList.toggle('sidebar-collapsed');
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.toggle('active');
-                }
-            });
-        }
-        
-        // 点击遮罩层关闭侧边栏
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', function() {
-                sidebar.classList.remove('collapsed');
-                document.getElementById('mainContent').classList.remove('sidebar-collapsed');
-                sidebarOverlay.classList.remove('active');
-            });
-        }
-    });
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (sidebarToggle && sidebar && mainContent) {
+        sidebarToggle.addEventListener('click', function() {
+            // 切换侧边栏状态
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('sidebar-collapsed');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('active');
+            }
+        });
+    }
+    
+    // 点击遮罩层关闭侧边栏
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.remove('sidebar-collapsed');
+            sidebarOverlay.classList.remove('active');
+        });
+    }
 });
 
 // 绑定事件
@@ -102,12 +102,12 @@ function bindSidebarEvents() {
             setActiveMenu(this);
             
             // 在移动端点击菜单项后关闭侧边栏
-            if (window.innerWidth <= 768) {
-                const sidebar = document.getElementById('sidebar');
-                const mainContent = document.getElementById('mainContent');
-                const sidebarOverlay = document.getElementById('sidebarOverlay');
-                
-                sidebar.classList.remove('collapsed');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            
+            if (window.innerWidth <= 768 && sidebar && mainContent) {
+                sidebar.classList.add('collapsed');
                 mainContent.classList.remove('sidebar-collapsed');
                 if (sidebarOverlay) {
                     sidebarOverlay.classList.remove('active');
@@ -138,16 +138,15 @@ function showPage(pageId) {
     page.classList.add('active');
     
     // 在移动端隐藏侧边栏
-    if (window.innerWidth <= 768) {
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        if (sidebar && mainContent) {
-            sidebar.classList.add('collapsed');
-            mainContent.classList.add('sidebar-collapsed');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.remove('active');
-            }
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (window.innerWidth <= 768 && sidebar && mainContent) {
+        sidebar.classList.add('collapsed');
+        mainContent.classList.remove('sidebar-collapsed');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('active');
         }
     }
 }
@@ -207,7 +206,7 @@ function handleResponsiveDesign() {
     if (window.innerWidth <= 768) {
         // 在小屏幕上默认隐藏侧边栏 (通过添加collapsed类)
         if (sidebar && mainContent) {
-            // 只有当侧边栏未处于活动状态时才添加collapsed类
+            // 确保侧边栏在移动设备上正确隐藏
             if (!sidebar.classList.contains('collapsed')) {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('sidebar-collapsed');
