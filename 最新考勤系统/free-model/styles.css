@@ -126,6 +126,20 @@ body {
     width: 60px;
 }
 
+/* 移动端侧边栏滑出效果 */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 250px;
+        left: -250px;
+        transition: left 0.3s ease;
+    }
+    
+    .sidebar.collapsed {
+        width: 250px;
+        left: 0;
+    }
+}
+
 .sidebar-menu {
     list-style: none;
     padding: 0;
@@ -177,6 +191,17 @@ body {
 
 .main-content.sidebar-collapsed {
     margin-left: 60px;
+}
+
+/* 移动端主内容区域 */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .main-content.sidebar-collapsed {
+        margin-left: 0;
+    }
 }
 
 /* 登录页面特殊样式 */
@@ -1171,23 +1196,19 @@ tr:hover {
         font-size: 18px;
     }
     
-    /* 移动端侧边栏完全隐藏 */
-    .sidebar {
-        width: 250px;
-        left: -250px; /* Hidden by default */
-    }
-    
-    /* When collapsed class is added, show the sidebar */
-    .sidebar.collapsed {
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
         left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 998;
     }
     
-    .main-content {
-        margin-left: 0;
-    }
-    
-    .main-content.sidebar-collapsed {
-        margin-left: 0;
+    .sidebar-overlay.active {
+        display: block;
     }
 }
 

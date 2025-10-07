@@ -48,11 +48,24 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('DOMContentLoaded', function() {
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
         
         if (sidebarToggle) {
             sidebarToggle.addEventListener('click', function() {
                 sidebar.classList.toggle('collapsed');
                 document.getElementById('mainContent').classList.toggle('sidebar-collapsed');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.toggle('active');
+                }
+            });
+        }
+        
+        // 点击遮罩层关闭侧边栏
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', function() {
+                sidebar.classList.remove('collapsed');
+                document.getElementById('mainContent').classList.remove('sidebar-collapsed');
+                sidebarOverlay.classList.remove('active');
             });
         }
     });
@@ -87,6 +100,19 @@ function bindSidebarEvents() {
             
             // 设置活动菜单项
             setActiveMenu(this);
+            
+            // 在移动端点击菜单项后关闭侧边栏
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const mainContent = document.getElementById('mainContent');
+                const sidebarOverlay = document.getElementById('sidebarOverlay');
+                
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('sidebar-collapsed');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('active');
+                }
+            }
         });
     });
 }
@@ -115,9 +141,13 @@ function showPage(pageId) {
     if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
         if (sidebar && mainContent) {
             sidebar.classList.add('collapsed');
             mainContent.classList.add('sidebar-collapsed');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.remove('active');
+            }
         }
     }
 }
@@ -172,14 +202,18 @@ function initMobileOptimizations() {
 function handleResponsiveDesign() {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
     
     if (window.innerWidth <= 768) {
         // 在小屏幕上默认隐藏侧边栏 (通过添加collapsed类)
         if (sidebar && mainContent) {
-            // Only add collapsed class if it's not already there
+            // 只有当侧边栏未处于活动状态时才添加collapsed类
             if (!sidebar.classList.contains('collapsed')) {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('sidebar-collapsed');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('active');
+                }
             }
         }
     } else {
@@ -187,6 +221,9 @@ function handleResponsiveDesign() {
         if (sidebar && mainContent) {
             sidebar.classList.remove('collapsed');
             mainContent.classList.remove('sidebar-collapsed');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.remove('active');
+            }
         }
     }
 }
@@ -874,7 +911,7 @@ function exportToCSV() {
     
     // 创建CSV内容
     let csvContent = '\uFEFF'; // BOM for UTF-8
-    csvContent += '日期,姓名,人数,现场名称,停车费,高速费\n';
+    csvContent += '日期,姓名,人数,现场名称,停车费,高速費\n';
     
     userRecords.forEach(record => {
         csvContent += `${record.date},${record.name},${record.count},${record.site},${record.parkingFee},${record.highwayFee}\n`;
