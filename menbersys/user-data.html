@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - ユーザーデータ</title>
+    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="responsive-wrapper">
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <div class="logo-badge">
+                            <span class="logo-initial">TKY</span>
+                        </div>
+                        <div class="logo-text">
+                            <h1 class="company-name">TKY株式会社</h1>
+                            <p class="system-title">出勤管理システム</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="logout" class="admin-login-btn">
+                            <span class="icon">🚪</span>
+                            ログアウト
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="main-content">
+                <div class="form-card">
+                    <div class="card-header">
+                        <h2 class="form-title">あなたの出勤データ</h2>
+                        <p class="form-subtitle">ここでは、あなたの出勤情報を確認できます</p>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-card">
+                            <h3 class="info-title">個人情報</h3>
+                            <div class="info-item">
+                                <span class="info-label">氏名:</span>
+                                <span class="info-value" id="userName"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 class="info-title">出勤記録</h3>
+                                <button id="exportData" class="btn-export">
+                                    <span class="icon">💾</span>
+                                    データエクスポート
+                                </button>
+                            </div>
+                            <div class="table-container">
+                                <table id="attendanceTable" class="excel-style-table">
+                                    <thead>
+                                        <tr>
+                                            <th>日付</th>
+                                            <th>現場名</th>
+                                            <th>チーム</th>
+                                            <th>駐車料金</th>
+                                            <th>高速料金</th>
+                                            <th>合計</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 出勤データがここに表示されます -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script>
+        // データストレージキー
+        const STORAGE_KEY = 'tky_attendance_system';
+        const ATTENDANCE_KEY = 'attendance';
+
+        // データ取得関数
+        function getData(key) {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            return key ? data[key] : data;
+        }
+
+        // ページ読み込み時
+        document.addEventListener('DOMContentLoaded', function() {
+            // ログイン状態チェック
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // ユーザー情報表示
+            document.getElementById('userName').textContent = currentUser.name;
+            
+            // 出勤データ表示
+            renderAttendanceData(currentUser.name);
+        });
+        
+        // 出勤データを表示
+        function renderAttendanceData(userName) {
+            const attendanceData = getData(ATTENDANCE_KEY) || [];
+            const userAttendance = attendanceData.filter(record => record.name === userName);
+            
+            const tbody = document.querySelector('#attendanceTable tbody');
+            tbody.innerHTML = '';
+            
+            let totalParkingFee = 0;
+            let totalHighwayFee = 0;
+            
+            userAttendance.forEach(record => {
+                const row = document.createElement('tr');
+                const total = record.parkingFee + record.highwayFee;
+                totalParkingFee += record.parkingFee;
+                totalHighwayFee += record.highwayFee;
+                
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.site}</td>
+                    <td>${record.team}</td>
+                    <td>${record.parkingFee.toLocaleString()} 円</td>
+                    <td>${record.highwayFee.toLocaleString()} 円</td>
+                    <td>${total.toLocaleString()} 円</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // 合計行を追加
+            if (userAttendance.length > 0) {
+                const totalRow = document.createElement('tr');
+                totalRow.innerHTML = `
+                    <td colspan="3"><strong>合計</strong></td>
+                    <td><strong>${totalParkingFee.toLocaleString()} 円</strong></td>
+                    <td><strong>${totalHighwayFee.toLocaleString()} 円</strong></td>
+                    <td><strong>${(totalParkingFee + totalHighwayFee).toLocaleString()} 円</strong></td>
+                `;
+                tbody.appendChild(totalRow);
+            } else {
+                const noDataRow = document.createElement('tr');
+                noDataRow.innerHTML = `<td colspan="6">出勤データがありません</td>`;
+                tbody.appendChild(noDataRow);
+            }
+        }
+        
+        // データエクスポート
+        document.getElementById('exportData').addEventListener('click', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                alert('ユーザー情報が見つかりません');
+                return;
+            }
+            
+            const attendanceData = getData(ATTENDANCE_KEY) || [];
+            const userAttendance = attendanceData.filter(record => record.name === currentUser.name);
+            
+            if (userAttendance.length === 0) {
+                alert('エクスポートするデータがありません');
+                return;
+            }
+            
+            // CSVデータを生成
+            let csv = '日付,現場名,チーム,駐車料金,高速料金,合計\n';
+            userAttendance.forEach(record => {
+                const total = record.parkingFee + record.highwayFee;
+                csv += `${record.date},${record.site},${record.team},${record.parkingFee},${record.highwayFee},${total}\n`;
+            });
+            
+            // ファイル名を生成
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}`;
+            const filename = `出勤データ_${currentUser.name}_${timestamp}.csv`;
+            
+            // ダウンロード
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        });
+        
+        // ログアウト処理
+        document.getElementById('logout').addEventListener('click', function() {
+            if (confirm('本当にログアウトしますか？')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>

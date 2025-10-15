@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - ユーザー登録</title>
+    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>TKY株式会社</h1>
+            <p>ユーザー登録</p>
+        </div>
+        
+        <form class="login-form" id="registerForm">
+            <div class="error-message" id="errorMessage">
+                入力内容にエラーがあります
+            </div>
+            
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" id="username" name="username" placeholder="ユーザー名を入力" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" placeholder="パスワードを入力" required>
+                <small>※半角英数字8文字以上</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">パスワード確認</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="パスワードを再入力" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="name">氏名</label>
+                <input type="text" id="name" name="name" placeholder="氏名を入力" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="team">チーム</label>
+                <select id="team" name="team" required>
+                    <option value="">チームを選択してください</option>
+                    <option value="チームA">チームA</option>
+                    <option value="チームB">チームB</option>
+                    <option value="チームC">チームC</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="login-btn">ユーザー登録</button>
+        </form>
+        
+        
+        
+        <div class="back-to-main">
+            <a href="user-login.html">← ログインページに戻る</a>
+        </div>
+    </div>
+
+    <script>
+        // ユーザー登録処理
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const name = document.getElementById('name').value;
+            const team = document.getElementById('team').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // パスワード確認
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'パスワードが一致しません';
+                errorMessage.classList.add('show');
+                
+                // 3秒後にエラーメッセージを非表示
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+                return;
+            }
+            
+            // パスワード長さ確認
+            if (password.length < 8) {
+                errorMessage.textContent = 'パスワードは8文字以上である必要があります';
+                errorMessage.classList.add('show');
+                
+                // 3秒後にエラーメッセージを非表示
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+                return;
+            }
+            
+            // ユーザー名の重複チェックと登録
+            try {
+                // ローカルストレージからユーザー情報を取得
+                let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                
+                // ユーザー名が既に存在するかチェック
+                if (users.some(user => user.username === username)) {
+                    errorMessage.textContent = 'このユーザー名は既に使用されています';
+                    errorMessage.classList.add('show');
+                    
+                    // 3秒後にエラーメッセージを非表示
+                    setTimeout(() => {
+                        errorMessage.classList.remove('show');
+                    }, 3000);
+                    return;
+                }
+                
+                // 新しいユーザーを追加
+                users.push({ username, password, name, team });
+                
+                // ローカルストレージに保存
+                localStorage.setItem('registeredUsers', JSON.stringify(users));
+                
+                // 管理者パネルのメンバー情報にも追加
+                // 管理者パネルのデータストレージキー
+                const STORAGE_KEY = 'tky_attendance_system';
+                const MEMBERS_KEY = 'members';
+                
+                // 管理者パネルのデータを取得
+                let adminData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+                    [MEMBERS_KEY]: [],
+                    teams: ['チームA', 'チームB', 'チームC'],
+                    sites: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
+                    attendance: []
+                };
+                
+                // 新しいメンバーIDを生成
+                const members = adminData[MEMBERS_KEY];
+                const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
+                
+                // 新しいメンバーを追加
+                members.push({ id: newId, name, team });
+                adminData[MEMBERS_KEY] = members;
+                
+                // ローカルストレージに保存
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(adminData));
+                
+                // 登録成功メッセージ
+                alert('ユーザー登録が完了しました！');
+                
+                // ログインページにリダイレクト
+                window.location.href = 'user-login.html';
+            } catch (error) {
+                errorMessage.textContent = '登録中にエラーが発生しました';
+                errorMessage.classList.add('show');
+                
+                // 3秒後にエラーメッセージを非表示
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

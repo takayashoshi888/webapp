@@ -1,0 +1,22 @@
+{
+  "name": "tky-attendance-system",
+  "version": "1.0.0",
+  "description": "TKY出勤管理系统",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "attendance",
+    "system",
+    "tky"
+  ],
+  "author": "TKY Corporation",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.0"
+  }
+}

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - 出勤管理システム</title>
+    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="responsive-wrapper">
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <div class="logo-badge">
+                            <span class="logo-initial">TKY</span>
+                        </div>
+                        <div class="logo-text">
+                            <h1 class="company-name">TKY株式会社</h1>
+                            <p class="system-title">出勤管理システム</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="adminLogin" class="admin-login-btn">
+                            <span class="icon">🔒</span>
+                            管理者ログイン
+                        </button>
+                        <button id="userLogin" class="user-login-btn">
+                            <span class="icon">👤</span>
+                            ユーザーログイン
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="main-content">
+                <div class="form-card">
+                    <div class="card-header">
+                        <h2 class="form-title">出勤登録</h2>
+                        <p class="form-subtitle">今日の出勤情報を入力してください</p>
+                    </div>
+                    
+                    <form id="attendanceForm" class="attendance-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="date" class="form-label">日付</label>
+                                <input type="date" id="date" class="form-input" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="site" class="form-label">現場名</label>
+                                <select id="site" class="form-select" required>
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="team" class="form-label">チーム</label>
+                                <select id="team" class="form-select" required>
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="name" class="form-label">氏名</label>
+                            <input type="text" id="name" class="form-input" required placeholder="氏名を入力">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="parkingFee" class="form-label">駐車料金 (円)</label>
+                                <input type="number" id="parkingFee" class="form-input" min="0" value="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="highwayFee" class="form-label">高速料金 (円)</label>
+                                <input type="number" id="highwayFee" class="form-input" min="0" value="0">
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="submit-btn">
+                                <span class="icon">✅</span>
+                                出勤登録
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-card">
+                        <h3 class="info-title">システムについて</h3>
+                        <p class="info-text">このシステムでは、日々の出勤情報を記録できます。正確な情報を入力してください。</p>
+                        <p class="info-text">ユーザーは「ユーザーログイン」からログインしてください。</p>
+                        <p class="info-text">管理者は「管理者ログイン」からログインしてください。</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        // ページ読み込み時
+        document.addEventListener('DOMContentLoaded', function() {
+            // 日付フィールドに今日の日付を設定
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+            
+            // 管理者ログインボタン
+            document.getElementById('adminLogin').addEventListener('click', function() {
+                console.log("管理者ログインボタンクリック");
+                window.location.href = 'admin-login.html';
+            });
+            
+            // ユーザーログインボタン
+            document.getElementById('userLogin').addEventListener('click', function() {
+                console.log("ユーザーログインボタンクリック");
+                window.location.href = 'user-login.html';
+            });
+            
+            // 出勤登録フォーム
+            const form = document.getElementById('attendanceForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const date = document.getElementById('date').value;
+                const site = document.getElementById('site').value;
+                const team = document.getElementById('team').value;
+                const name = document.getElementById('name').value;
+                const parkingFee = parseInt(document.getElementById('parkingFee').value) || 0;
+                const highwayFee = parseInt(document.getElementById('highwayFee').value) || 0;
+
+                // 情報確認
+                const confirmMsg = 
+                    `以下の内容で登録します。\n\n` +
+                    `日付: ${date}\n` +
+                    `現場名: ${site}\n` +
+                    `チーム: ${team}\n` +
+                    `氏名: ${name}\n` +
+                    `駐車料金: ${parkingFee} 円\n` +
+                    `高速料金: ${highwayFee} 円\n\n` +
+                    `よろしいですか？`;
+                if (!window.confirm(confirmMsg)) {
+                    return;
+                }
+
+                // 出勤記録を保存
+                const attendance = getData(ATTENDANCE_KEY);
+                attendance.push({
+                    date,
+                    site,
+                    team,
+                    name,
+                    parkingFee,
+                    highwayFee
+                });
+                saveData(ATTENDANCE_KEY, attendance);
+
+                // フォームリセット
+                form.reset();
+                document.getElementById('date').value = today;
+                alert('出勤が登録されました！');
+            });
+        });
+    </script>
+</body>
+</html>

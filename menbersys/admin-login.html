@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - 管理者ログイン</title>
+    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>TKY株式会社</h1>
+            <p>管理者ログイン</p>
+        </div>
+        
+        <form class="login-form" id="adminLoginForm">
+            <div class="error-message" id="errorMessage">
+                パスワードが正しくありません
+            </div>
+            
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" id="username" name="username" placeholder="ユーザー名を入力" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" placeholder="パスワードを入力" required>
+            </div>
+            
+            <button type="submit" class="login-btn">ログイン</button>
+        </form>
+        
+        <div class="forgot-password">
+            <a href="#">パスワードをお忘れですか？</a>
+        </div>
+        
+        <div class="back-to-main">
+            <a href="index.html">← 出勤登録ページに戻る</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // 管理者パスワードを取得（初期値はadmin123）
+            const adminPassword = localStorage.getItem('adminPassword') || 'admin123';
+            
+            // 簡単な認証（実際のアプリではサーバー側で認証を行う）
+            if (username === 'admin' && password === adminPassword) {
+                // ログイン成功
+                window.location.href = 'admin.html';
+            } else {
+                // ログイン失敗
+                errorMessage.classList.add('show');
+                
+                // 3秒後にエラーメッセージを非表示
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

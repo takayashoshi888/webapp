@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - ユーザーログイン</title>
+    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>TKY株式会社</h1>
+            <p>ユーザーログイン</p>
+        </div>
+        
+        <form class="login-form" id="userLoginForm">
+            <div class="error-message" id="errorMessage">
+                ユーザー名またはパスワードが正しくありません
+            </div>
+            
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" id="username" name="username" placeholder="ユーザー名を入力" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" placeholder="パスワードを入力" required>
+            </div>
+            
+            <button type="submit" class="login-btn">ログイン</button>
+        </form>
+        
+        <div class="forgot-password">
+            <a href="register.html">新しいユーザー登録</a>
+        </div>
+                
+        <div class="back-to-main">
+            <a href="index.html">← 出勤登録ページに戻る</a>
+        </div>
+    </div>
+
+    <script>
+        // ユーザー認証
+        function authenticateUser(username, password) {
+            // ハードコードされたユーザー（実際のアプリではサーバー側で認証を行う）
+            const validUsers = [
+                { username: 'user1', password: 'password1', name: '山田太郎' },
+                { username: 'user2', password: 'password2', name: '佐藤花子' }
+            ];
+            
+            // 登録されたユーザー
+            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            
+            // すべてのユーザーから検索
+            const allUsers = [...validUsers, ...registeredUsers];
+            return allUsers.find(u => u.username === username && u.password === password) || null;
+        }
+        
+        // フォーム送信処理
+        document.getElementById('userLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            const user = authenticateUser(username, password);
+            
+            if (user) {
+                // ログイン成功
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                window.location.href = 'user-data.html';
+            } else {
+                // ログイン失敗
+                errorMessage.classList.add('show');
+                
+                // 3秒後にエラーメッセージを非表示
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
