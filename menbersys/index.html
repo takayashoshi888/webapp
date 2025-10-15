@@ -34,6 +34,9 @@
                 </div>
             </header>
             
+            <!-- Supabase 连接状态提示 -->
+            <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
+            
             <main class="main-content">
                 <div class="form-card">
                     <div class="card-header">
@@ -105,8 +108,79 @@
     
     <script src="script.js"></script>
     <script>
-        // ページ読み込み時
-        document.addEventListener('DOMContentLoaded', function() {
+        // 页面加载时测试 Supabase 连接
+        document.addEventListener('DOMContentLoaded', async function() {
+            const statusDiv = document.getElementById('supabaseStatus');
+            
+            try {
+                // 检查是否可以使用模块导入
+                let supabase;
+                try {
+                    // 尝试动态导入 Supabase 客户端
+                    const { default: supabaseClient } = await import('./js/supabaseClient.js');
+                    supabase = supabaseClient;
+                } catch (importError) {
+                    // 如果模块导入失败，使用兼容版本
+                    console.log('模块导入失败，使用兼容版本');
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.backgroundColor = '#fff3cd';
+                    statusDiv.style.color = '#856404';
+                    statusDiv.style.border = '1px solid #ffeaa7';
+                    statusDiv.innerHTML = '⚠️ 正在使用兼容模式连接数据库...';
+                    
+                    // 使用 CDN 版本
+                    await new Promise((resolve, reject) => {
+                        if (typeof supabase !== 'undefined' && supabase.createClient) {
+                            resolve();
+                            return;
+                        }
+                        
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    
+                    supabase = supabase.createClient(
+                        'https://xhqvbirifrdlmlnrwayp.supabase.co',
+                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc'
+                    );
+                }
+                
+                // 测试连接 - 尝试获取一个简单的查询
+                const { data, error } = await supabase
+                    .from('teams')
+                    .select('id')
+                    .limit(1);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 显示成功连接消息
+                statusDiv.style.display = 'block';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.color = '#155724';
+                statusDiv.style.border = '1px solid #c3e6cb';
+                statusDiv.innerHTML = '✅ 成功连接云端数据库 (Supabase)';
+                
+            } catch (error) {
+                // 连接失败时显示错误消息
+                console.log('Supabase 连接测试失败:', error.message);
+                statusDiv.style.display = 'block';
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.style.border = '1px solid #f5c6cb';
+                statusDiv.innerHTML = `❌ 数据库连接失败: ${error.message}`;
+            }
+            
+            // 初始化原有的页面功能
+            initializePage();
+        });
+        
+        // 初始化页面功能的函数
+        function initializePage() {
             // 日付フィールドに今日の日付を設定
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').value = today;
@@ -166,7 +240,7 @@
                 document.getElementById('date').value = today;
                 alert('出勤が登録されました！');
             });
-        });
+        }
     </script>
 </body>
 </html>

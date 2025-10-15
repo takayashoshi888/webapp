@@ -372,6 +372,9 @@
 </head>
 <body>
     <div class="container">
+        <!-- Supabase 连接状态提示 -->
+        <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
+        
         <header class="admin-header">
             <h1 class="logo">TKY株式会社 - 管理者パネル</h1>
             <button id="logout" class="btn-logout">ログアウト</button>
@@ -593,601 +596,638 @@
         </div>
     </div>
     
-    <script>
-        // データストレージキー
-        const STORAGE_KEY = 'tky_attendance_system';
-        const MEMBERS_KEY = 'members';
-        const TEAMS_KEY = 'teams';
-        const ATTENDANCE_KEY = 'attendance';
-        const SITES_KEY = 'sites';
-
-        // 初期データ
-        const initialData = {
-            [MEMBERS_KEY]: [
-                { id: 1, name: '山田太郎', team: 'チームA' },
-                { id: 2, name: '佐藤花子', team: 'チームB' }
-            ],
-            [TEAMS_KEY]: ['チームA', 'チームB', 'チームC'],
-            [SITES_KEY]: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
-            [ATTENDANCE_KEY]: []
-        };
-
-        // データ取得関数
-        function getData(key) {
-            const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
-            return key ? data[key] : data;
-        }
-
-        // データ保存関数
-        function saveData(key, value) {
-            const data = getData();
-            data[key] = value;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        }
-
-        // ログアウト処理
-        document.getElementById('logout').addEventListener('click', function() {
-            if (confirm('本当にログアウトしますか？')) {
-                window.location.href = 'index.html';
-            }
-        });
-
-        // タブ切り替え
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
+    <script type="module">
+        // 导入 Supabase 客户端
+        import { supabase } from './js/supabaseClient.js';
+        
+        // 页面加载时测试 Supabase 连接
+        document.addEventListener('DOMContentLoaded', async function() {
+            const statusDiv = document.getElementById('supabaseStatus');
+            
+            try {
+                // 测试连接 - 尝试获取一个简单的查询
+                const { data, error } = await supabase
+                    .from('admins')
+                    .select('id')
+                    .limit(1);
                 
-                // アクティブなタブを更新
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                // タブコンテンツを更新
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
-                });
-                document.getElementById(tabId).classList.add('active');
-                
-                // タブ固有の初期化
-                if (tabId === 'members') {
-                    renderMembersTable();
-                } else if (tabId === 'teams') {
-                    renderTeamsTable();
-                } else if (tabId === 'sites') {
-                    renderSitesTable();
-                } else if (tabId === 'stats') {
-                    renderStats();
-                }
-                // パスワード変更タブは特別な初期化不要
-            });
-        });
-
-        // メンバー追加ボタン
-        document.getElementById('addMember').addEventListener('click', function() {
-            document.getElementById('modalMemberTitle').textContent = 'メンバー追加';
-            document.getElementById('memberId').value = '';
-            document.getElementById('memberName').value = '';
-            document.getElementById('memberUsername').value = '';
-            document.getElementById('memberPassword').value = '';
-            
-            // チーム選択肢を更新
-            const teamSelect = document.getElementById('memberTeam');
-            teamSelect.innerHTML = '';
-            getData(TEAMS_KEY).forEach(team => {
-                const option = document.createElement('option');
-                option.value = team;
-                option.textContent = team;
-                teamSelect.appendChild(option);
-            });
-            
-            document.getElementById('memberModal').style.display = 'block';
-        });
-
-        // チーム追加ボタン
-        document.getElementById('addTeam').addEventListener('click', function() {
-            document.getElementById('teamName').value = '';
-            document.getElementById('teamModal').style.display = 'block';
-        });
-
-        // モーダル閉じるボタン
-        document.querySelectorAll('.close').forEach(closeBtn => {
-            closeBtn.addEventListener('click', function() {
-                this.closest('.modal').style.display = 'none';
-            });
-        });
-
-        // ウィンドウ外クリックでモーダルを閉じる
-        window.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal')) {
-                e.target.style.display = 'none';
-            }
-        });
-
-        // メンバーフォーム送信
-        document.getElementById('memberForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const id = document.getElementById('memberId').value;
-            const name = document.getElementById('memberName').value;
-            const username = document.getElementById('memberUsername').value;
-            const password = document.getElementById('memberPassword').value;
-            const team = document.getElementById('memberTeam').value;
-            
-            // パスワード長さ確認
-            if (password && password.length < 8) {
-                alert('パスワードは8文字以上である必要があります');
-                return;
-            }
-            
-            const members = getData(MEMBERS_KEY);
-            
-            if (id) {
-                // 既存メンバーを更新
-                const index = members.findIndex(m => m.id == id);
-                if (index !== -1) {
-                    members[index] = { id: parseInt(id), name, team };
+                if (error) {
+                    throw error;
                 }
                 
-                // ユーザー名とパスワードが入力されている場合、registeredUsersにも更新
-                if (username && password) {
-                    let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                // 显示成功连接消息
+                statusDiv.style.display = 'block';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.color = '#155724';
+                statusDiv.style.border = '1px solid #c3e6cb';
+                statusDiv.innerHTML = '✅ 成功连接云端数据库 (Supabase)';
+                
+            } catch (error) {
+                // 连接失败时不显示错误，避免影响用户体验
+                console.log('Supabase 连接テスト失败:', error.message);
+                statusDiv.style.display = 'none';
+            }
+            
+            // 初始化原有的管理员面板功能
+            initializeAdminPanel();
+        });
+        
+        // 初始化管理员面板功能の函数
+        function initializeAdminPanel() {
+            // 数据存储键
+            const STORAGE_KEY = 'tky_attendance_system';
+            const MEMBERS_KEY = 'members';
+            const TEAMS_KEY = 'teams';
+            const ATTENDANCE_KEY = 'attendance';
+            const SITES_KEY = 'sites';
+
+            // 初始数据
+            const initialData = {
+                [MEMBERS_KEY]: [
+                    { id: 1, name: '山田太郎', team: 'チームA' },
+                    { id: 2, name: '佐藤花子', team: 'チームB' }
+                ],
+                [TEAMS_KEY]: ['チームA', 'チームB', 'チームC'],
+                [SITES_KEY]: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
+                [ATTENDANCE_KEY]: []
+            };
+
+            // 数据获取函数
+            function getData(key) {
+                const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
+                return key ? data[key] : data;
+            }
+
+            // 数据保存函数
+            function saveData(key, value) {
+                const data = getData();
+                data[key] = value;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            }
+
+            // 登出处理
+            document.getElementById('logout').addEventListener('click', function() {
+                if (confirm('本当にログアウトしますか？')) {
+                    window.location.href = 'index.html';
+                }
+            });
+
+            // 标签页切换
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
                     
-                    // 既存のユーザー情報を更新または新規追加
-                    const userIndex = users.findIndex(user => user.name === name && user.team === team);
-                    if (userIndex !== -1) {
-                        // 既存ユーザーを更新
-                        users[userIndex] = { username, password, name, team };
-                    } else {
-                        // 新しいユーザーを追加
-                        // ユーザー名の重複チェック
+                    // 更新活动标签页
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 更新标签页内容
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // 标签页特定初始化
+                    if (tabId === 'members') {
+                        renderMembersTable();
+                    } else if (tabId === 'teams') {
+                        renderTeamsTable();
+                    } else if (tabId === 'sites') {
+                        renderSitesTable();
+                    } else if (tabId === 'stats') {
+                        renderStats();
+                    }
+                    // 密码变更标签页不需要特殊初始化
+                });
+            });
+
+            // 添加成员按钮
+            document.getElementById('addMember').addEventListener('click', function() {
+                document.getElementById('modalMemberTitle').textContent = 'メンバー追加';
+                document.getElementById('memberId').value = '';
+                document.getElementById('memberName').value = '';
+                document.getElementById('memberUsername').value = '';
+                document.getElementById('memberPassword').value = '';
+                
+                // 更新团队选择项
+                const teamSelect = document.getElementById('memberTeam');
+                teamSelect.innerHTML = '';
+                getData(TEAMS_KEY).forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team;
+                    option.textContent = team;
+                    teamSelect.appendChild(option);
+                });
+                
+                document.getElementById('memberModal').style.display = 'block';
+            });
+
+            // 添加团队按钮
+            document.getElementById('addTeam').addEventListener('click', function() {
+                document.getElementById('teamName').value = '';
+                document.getElementById('teamModal').style.display = 'block';
+            });
+
+            // 模态框关闭按钮
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+
+            // 点击窗口外部关闭模态框
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+
+            // 成员表单提交
+            document.getElementById('memberForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const id = document.getElementById('memberId').value;
+                const name = document.getElementById('memberName').value;
+                const username = document.getElementById('memberUsername').value;
+                const password = document.getElementById('memberPassword').value;
+                const team = document.getElementById('memberTeam').value;
+                
+                // 密码长度检查
+                if (password && password.length < 8) {
+                    alert('パスワードは8文字以上である必要があります');
+                    return;
+                }
+                
+                const members = getData(MEMBERS_KEY);
+                
+                if (id) {
+                    // 更新现有成员
+                    const index = members.findIndex(m => m.id == id);
+                    if (index !== -1) {
+                        members[index] = { id: parseInt(id), name, team };
+                    }
+                    
+                    // 如果输入了用户名和密码，则更新 registeredUsers
+                    if (username && password) {
+                        let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                        
+                        // 更新现有用户或添加新用户
+                        const userIndex = users.findIndex(user => user.name === name && user.team === team);
+                        if (userIndex !== -1) {
+                            // 更新现有用户
+                            users[userIndex] = { username, password, name, team };
+                        } else {
+                            // 添加新用户
+                            // 检查用户名是否已存在
+                            if (users.some(user => user.username === username)) {
+                                alert('このユーザー名は既に使用されています');
+                                return;
+                            }
+                            users.push({ username, password, name, team });
+                        }
+                        
+                        // 保存到本地存储
+                        localStorage.setItem('registeredUsers', JSON.stringify(users));
+                    }
+                } else {
+                    // 添加新成员
+                    const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
+                    members.push({ id: newId, name, team });
+                    
+                    // 如果输入了用户名とパスワード，则注册用户
+                    if (username && password) {
+                        let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                        
+                        // 检查用户名是否已存在
                         if (users.some(user => user.username === username)) {
                             alert('このユーザー名は既に使用されています');
                             return;
                         }
+                        
+                        // 添加新用户
                         users.push({ username, password, name, team });
+                        
+                        // 保存到本地存储
+                        localStorage.setItem('registeredUsers', JSON.stringify(users));
                     }
-                    
-                    // ローカルストレージに保存
-                    localStorage.setItem('registeredUsers', JSON.stringify(users));
                 }
-            } else {
-                // 新しいメンバーを追加
-                const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
-                members.push({ id: newId, name, team });
                 
-                // ユーザー名の重複チェックと登録
-                if (username && password) {
-                    let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                    
-                    // ユーザー名が既に存在するかチェック
-                    if (users.some(user => user.username === username)) {
-                        alert('このユーザー名は既に使用されています');
-                        return;
-                    }
-                    
-                    // 新しいユーザーを追加
-                    users.push({ username, password, name, team });
-                    
-                    // ローカルストレージに保存
-                    localStorage.setItem('registeredUsers', JSON.stringify(users));
-                }
-            }
-            
-            saveData(MEMBERS_KEY, members);
-            document.getElementById('memberModal').style.display = 'none';
-            renderMembersTable();
-        });
+                saveData(MEMBERS_KEY, members);
+                document.getElementById('memberModal').style.display = 'none';
+                renderMembersTable();
+            });
 
-        // チームフォーム送信
-        document.getElementById('teamForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const teamName = document.getElementById('teamName').value;
-            const teams = getData(TEAMS_KEY);
-            
-            if (!teams.includes(teamName)) {
-                teams.push(teamName);
-                saveData(TEAMS_KEY, teams);
-                document.getElementById('teamModal').style.display = 'none';
-                renderTeamsTable();
-            } else {
-                alert('このチーム名は既に存在します');
-            }
-        });
-
-        // メンバーテーブルをレンダリング
-        function renderMembersTable() {
-            const members = getData(MEMBERS_KEY);
-            const teams = getData(TEAMS_KEY);
-            const tbody = document.querySelector('#membersTable tbody');
-            if (!tbody) return;
-            
-            tbody.innerHTML = '';
-            
-            members.forEach(member => {
-                const row = document.createElement('tr');
+            // 团队表单提交
+            document.getElementById('teamForm').addEventListener('submit', function(e) {
+                e.preventDefault();
                 
-                row.innerHTML = `
-                    <td>${member.name}</td>
-                    <td>${member.team}</td>
-                    <td>
-                        <button class="action-btn btn-edit" data-id="${member.id}">編集</button>
-                        <button class="action-btn btn-delete" data-id="${member.id}">削除</button>
-                    </td>
-                `;
+                const teamName = document.getElementById('teamName').value;
+                const teams = getData(TEAMS_KEY);
                 
-                tbody.appendChild(row);
-            });
-            
-            // 編集ボタン
-            document.querySelectorAll('#membersTable .btn-edit').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const member = getData(MEMBERS_KEY).find(m => m.id == id);
-                    
-                    if (member) {
-                        document.getElementById('modalMemberTitle').textContent = 'メンバー編集';
-                        document.getElementById('memberId').value = member.id;
-                        document.getElementById('memberName').value = member.name;
-                        
-                        // ユーザー名とパスワードフィールドをクリア
-                        document.getElementById('memberUsername').value = '';
-                        document.getElementById('memberPassword').value = '';
-                        
-                        // チーム選択肢を更新
-                        const teamSelect = document.getElementById('memberTeam');
-                        teamSelect.innerHTML = '';
-                        teams.forEach(team => {
-                            const option = document.createElement('option');
-                            option.value = team;
-                            option.textContent = team;
-                            option.selected = team === member.team;
-                            teamSelect.appendChild(option);
-                        });
-                        
-                        document.getElementById('memberModal').style.display = 'block';
-                    }
-                });
-            });
-            
-            // 削除ボタン
-            document.querySelectorAll('#membersTable .btn-delete').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    if (confirm('このメンバーを削除しますか？')) {
-                        const id = this.getAttribute('data-id');
-                        const members = getData(MEMBERS_KEY).filter(m => m.id != id);
-                        saveData(MEMBERS_KEY, members);
-                        renderMembersTable();
-                    }
-                });
-            });
-        }
-
-        // チームテーブルをレンダリング
-        function renderTeamsTable() {
-            const teams = getData(TEAMS_KEY);
-            const members = getData(MEMBERS_KEY);
-            const tbody = document.querySelector('#teamsTable tbody');
-            if (!tbody) return;
-            
-            tbody.innerHTML = '';
-            
-            teams.forEach(team => {
-                const memberCount = members.filter(m => m.team === team).length;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${team}</td>
-                    <td>${memberCount}</td>
-                    <td>
-                        <button class="action-btn btn-edit" data-team="${team}">編集</button>
-                        <button class="action-btn btn-delete" data-team="${team}">削除</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-            
-            // チーム編集ボタン
-            document.querySelectorAll('#teamsTable .btn-edit').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const oldTeamName = this.getAttribute('data-team');
-                    const newTeamName = prompt('新しいチーム名を入力してください', oldTeamName);
-                    
-                    if (newTeamName && newTeamName !== oldTeamName) {
-                        if (getData(TEAMS_KEY).includes(newTeamName)) {
-                            alert('このチーム名は既に存在します');
-                            return;
-                        }
-                        
-                        // 更新团队名称
-                        const teams = getData(TEAMS_KEY).map(t => t === oldTeamName ? newTeamName : t);
-                        saveData(TEAMS_KEY, teams);
-                        
-                        // 更新关联成员
-                        const members = getData(MEMBERS_KEY).map(m => {
-                            if (m.team === oldTeamName) {
-                                return {...m, team: newTeamName};
-                            }
-                            return m;
-                        });
-                        saveData(MEMBERS_KEY, members);
-                        
-                        renderTeamsTable();
-                        renderMembersTable();
-                    }
-                });
-            });
-            
-            // チーム削除ボタン
-            document.querySelectorAll('#teamsTable .btn-delete').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const team = this.getAttribute('data-team');
-                    const membersInTeam = getData(MEMBERS_KEY).filter(m => m.team === team).length;
-                    
-                    if (membersInTeam > 0) {
-                        alert('このチームにはメンバーが存在するため削除できません');
-                        return;
-                    }
-                    
-                    if (confirm(`チーム「${team}」を削除しますか？`)) {
-                        const teams = getData(TEAMS_KEY).filter(t => t !== team);
-                        saveData(TEAMS_KEY, teams);
-                        renderTeamsTable();
-                    }
-                });
-            });
-        }
-
-        // 现場管理テーブルをレンダリング
-        function renderSitesTable() {
-            const sites = getData(SITES_KEY);
-            const tbody = document.querySelector('#sitesTable tbody');
-            if (!tbody) return;
-            
-            tbody.innerHTML = '';
-            
-            sites.forEach((site, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${site}</td>
-                    <td>
-                        <button class="action-btn btn-edit" onclick="editSite(${index})">編集</button>
-                        <button class="action-btn btn-delete" onclick="deleteSite(${index})">削除</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // 现場編集
-        function editSite(index) {
-            const sites = getData(SITES_KEY);
-            const siteName = sites[index];
-            document.getElementById('siteId').value = index;
-            document.getElementById('siteName').value = siteName;
-            document.getElementById('modalSiteTitle').textContent = '現場編集';
-            document.getElementById('siteModal').style.display = 'block';
-        }
-
-        // 现場削除
-        function deleteSite(index) {
-            const sites = getData(SITES_KEY);
-            const siteName = sites[index];
-            
-            if (confirm(`本当に現場「${siteName}」を削除しますか？`)) {
-                sites.splice(index, 1);
-                saveData(SITES_KEY, sites);
-                renderSitesTable();
-            }
-        }
-
-        // 現場フォーム送信
-        document.getElementById('siteForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const siteId = document.getElementById('siteId').value;
-            const siteName = document.getElementById('siteName').value.trim();
-            const sites = getData(SITES_KEY);
-            
-            if (siteId !== '') {
-                // 編集
-                sites[parseInt(siteId)] = siteName;
-            } else {
-                // 追加
-                if (!sites.includes(siteName)) {
-                    sites.push(siteName);
+                if (!teams.includes(teamName)) {
+                    teams.push(teamName);
+                    saveData(TEAMS_KEY, teams);
+                    document.getElementById('teamModal').style.display = 'none';
+                    renderTeamsTable();
                 } else {
-                    alert('この現場名は既に存在します');
-                    return;
-                }
-            }
-            
-            saveData(SITES_KEY, sites);
-            document.getElementById('siteModal').style.display = 'none';
-            renderSitesTable();
-        });
-
-        // 現場追加ボタン
-        document.getElementById('addSite').addEventListener('click', function() {
-            document.getElementById('siteId').value = '';
-            document.getElementById('siteName').value = '';
-            document.getElementById('modalSiteTitle').textContent = '現場追加';
-            document.getElementById('siteModal').style.display = 'block';
-        });
-
-        // 統計データをレンダリング
-        function renderStats() {
-            const attendance = getData(ATTENDANCE_KEY) || [];
-            
-            // 現場別統計
-            const siteStats = {};
-            const sites = getData(SITES_KEY);
-            sites.forEach(site => {
-                siteStats[site] = { days: 0, parkingFee: 0, highwayFee: 0, total: 0 };
-            });
-
-            attendance.forEach(record => {
-                if (siteStats[record.site]) {
-                    siteStats[record.site].days++;
-                    siteStats[record.site].parkingFee += record.parkingFee;
-                    siteStats[record.site].highwayFee += record.highwayFee;
-                    siteStats[record.site].total += record.parkingFee + record.highwayFee;
+                    alert('このチーム名は既に存在します');
                 }
             });
 
-            const siteStatsTbody = document.querySelector('#siteStats tbody');
-            if (siteStatsTbody) {
-                siteStatsTbody.innerHTML = '';
-                Object.entries(siteStats).forEach(([site, stats]) => {
+            // 渲染成员表格
+            function renderMembersTable() {
+                const members = getData(MEMBERS_KEY);
+                const teams = getData(TEAMS_KEY);
+                const tbody = document.querySelector('#membersTable tbody');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                members.forEach(member => {
                     const row = document.createElement('tr');
+                    
                     row.innerHTML = `
-                        <td>${site}</td>
-                        <td>${stats.days}</td>
-                        <td>${stats.parkingFee.toLocaleString()} 円</td>
-                        <td>${stats.highwayFee.toLocaleString()} 円</td>
-                        <td>${stats.total.toLocaleString()} 円</td>
+                        <td>${member.name}</td>
+                        <td>${member.team}</td>
+                        <td>
+                            <button class="action-btn btn-edit" data-id="${member.id}">編集</button>
+                            <button class="action-btn btn-delete" data-id="${member.id}">削除</button>
+                        </td>
                     `;
-                    siteStatsTbody.appendChild(row);
+                    
+                    tbody.appendChild(row);
+                });
+                
+                // 编辑按钮
+                document.querySelectorAll('#membersTable .btn-edit').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        const member = getData(MEMBERS_KEY).find(m => m.id == id);
+                        
+                        if (member) {
+                            document.getElementById('modalMemberTitle').textContent = 'メンバー編集';
+                            document.getElementById('memberId').value = member.id;
+                            document.getElementById('memberName').value = member.name;
+                            
+                            // 清空用户名和密码字段
+                            document.getElementById('memberUsername').value = '';
+                            document.getElementById('memberPassword').value = '';
+                            
+                            // 更新团队选择項
+                            const teamSelect = document.getElementById('memberTeam');
+                            teamSelect.innerHTML = '';
+                            teams.forEach(team => {
+                                const option = document.createElement('option');
+                                option.value = team;
+                                option.textContent = team;
+                                option.selected = team === member.team;
+                                teamSelect.appendChild(option);
+                            });
+                            
+                            document.getElementById('memberModal').style.display = 'block';
+                        }
+                    });
+                });
+                
+                // 删除按钮
+                document.querySelectorAll('#membersTable .btn-delete').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        if (confirm('このメンバーを削除しますか？')) {
+                            const id = this.getAttribute('data-id');
+                            const members = getData(MEMBERS_KEY).filter(m => m.id != id);
+                            saveData(MEMBERS_KEY, members);
+                            renderMembersTable();
+                        }
+                    });
                 });
             }
 
-            // メンバー別統計
-            const memberStats = {};
-            attendance.forEach(record => {
-                if (!memberStats[record.name]) {
-                    memberStats[record.name] = {
-                        days: 0,
-                        parkingFee: 0,
-                        highwayFee: 0,
-                        total: 0
-                    };
-                }
-                memberStats[record.name].days++;
-                memberStats[record.name].parkingFee += record.parkingFee;
-                memberStats[record.name].highwayFee += record.highwayFee;
-                memberStats[record.name].total += record.parkingFee + record.highwayFee;
-            });
-
-            const memberStatsTbody = document.getElementById('memberStats');
-            if (memberStatsTbody) {
-                memberStatsTbody.innerHTML = '';
-                Object.entries(memberStats).forEach(([name, stats]) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${name}</td>
-                        <td>${stats.days}</td>
-                        <td>${stats.parkingFee.toLocaleString()} 円</td>
-                        <td>${stats.highwayFee.toLocaleString()} 円</td>
-                        <td>${stats.total.toLocaleString()} 円</td>
-                    `;
-                    memberStatsTbody.appendChild(row);
-                });
-            }
-
-            // チーム別統計
-            const teamStats = {};
-            attendance.forEach(record => {
-                if (!teamStats[record.team]) {
-                    teamStats[record.team] = {
-                        days: 0,
-                        parkingFee: 0,
-                        highwayFee: 0,
-                        total: 0
-                    };
-                }
-                teamStats[record.team].days++;
-                teamStats[record.team].parkingFee += record.parkingFee;
-                teamStats[record.team].highwayFee += record.highwayFee;
-                teamStats[record.team].total += record.parkingFee + record.highwayFee;
-            });
-
-            const teamStatsTbody = document.getElementById('teamStats');
-            if (teamStatsTbody) {
-                teamStatsTbody.innerHTML = '';
-                Object.entries(teamStats).forEach(([team, stats]) => {
+            // 渲染チームテーブル
+            function renderTeamsTable() {
+                const teams = getData(TEAMS_KEY);
+                const members = getData(MEMBERS_KEY);
+                const tbody = document.querySelector('#teamsTable tbody');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                teams.forEach(team => {
+                    const memberCount = members.filter(m => m.team === team).length;
+                    
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${team}</td>
-                        <td>${stats.days}</td>
-                        <td>${stats.parkingFee.toLocaleString()} 円</td>
-                        <td>${stats.highwayFee.toLocaleString()} 円</td>
-                        <td>${stats.total.toLocaleString()} 円</td>
+                        <td>${memberCount}</td>
+                        <td>
+                            <button class="action-btn btn-edit" data-team="${team}">編集</button>
+                            <button class="action-btn btn-delete" data-team="${team}">削除</button>
+                        </td>
                     `;
-                    teamStatsTbody.appendChild(row);
+                    tbody.appendChild(row);
+                });
+                
+                // 团队編集ボタン
+                document.querySelectorAll('#teamsTable .btn-edit').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const oldTeamName = this.getAttribute('data-team');
+                        const newTeamName = prompt('新しいチーム名を入力してください', oldTeamName);
+                        
+                        if (newTeamName && newTeamName !== oldTeamName) {
+                            if (getData(TEAMS_KEY).includes(newTeamName)) {
+                                alert('このチーム名は既に存在します');
+                                return;
+                            }
+                            
+                            // 更新チーム名称
+                            const teams = getData(TEAMS_KEY).map(t => t === oldTeamName ? newTeamName : t);
+                            saveData(TEAMS_KEY, teams);
+                            
+                            // 更新関連メンバー
+                            const members = getData(MEMBERS_KEY).map(m => {
+                                if (m.team === oldTeamName) {
+                                    return {...m, team: newTeamName};
+                                }
+                                return m;
+                            });
+                            saveData(MEMBERS_KEY, members);
+                            
+                            renderTeamsTable();
+                            renderMembersTable();
+                        }
+                    });
+                });
+                
+                // 団队削除ボタン
+                document.querySelectorAll('#teamsTable .btn-delete').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const team = this.getAttribute('data-team');
+                        const membersInTeam = getData(MEMBERS_KEY).filter(m => m.team === team).length;
+                        
+                        if (membersInTeam > 0) {
+                            alert('このチームにはメンバーが存在するため削除できません');
+                            return;
+                        }
+                        
+                        if (confirm(`チーム「${team}」を削除しますか？`)) {
+                            const teams = getData(TEAMS_KEY).filter(t => t !== team);
+                            saveData(TEAMS_KEY, teams);
+                            renderTeamsTable();
+                        }
+                    });
                 });
             }
-        }
 
-        // データエクスポート
-        document.getElementById('exportData').addEventListener('click', function() {
-            const attendance = getData(ATTENDANCE_KEY) || [];
-            if (!attendance.length) {
-                alert('エクスポートするデータがありません');
-                return;
+            // 渲染現場テーブル
+            function renderSitesTable() {
+                const sites = getData(SITES_KEY);
+                const tbody = document.querySelector('#sitesTable tbody');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                sites.forEach((site, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${site}</td>
+                        <td>
+                            <button class="action-btn btn-edit" onclick="editSite(${index})">編集</button>
+                            <button class="action-btn btn-delete" onclick="deleteSite(${index})">削除</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
             }
-            
-            // CSVデータを生成
-            let csv = '日付,現場名,チーム,氏名,駐車料金,高速料金,合計\n';
-            attendance.forEach(record => {
-                csv += `${record.date},${record.site},${record.team},${record.name},${record.parkingFee},${record.highwayFee},${record.parkingFee + record.highwayFee}\n`;
+
+            // 編集現場
+            function editSite(index) {
+                const sites = getData(SITES_KEY);
+                const siteName = sites[index];
+                document.getElementById('siteId').value = index;
+                document.getElementById('siteName').value = siteName;
+                document.getElementById('modalSiteTitle').textContent = '現場編集';
+                document.getElementById('siteModal').style.display = 'block';
+            }
+
+            // 削除現場
+            function deleteSite(index) {
+                const sites = getData(SITES_KEY);
+                const siteName = sites[index];
+                
+                if (confirm(`本当に現場「${siteName}」を削除しますか？`)) {
+                    sites.splice(index, 1);
+                    saveData(SITES_KEY, sites);
+                    renderSitesTable();
+                }
+            }
+
+            // 現場フォーム送信
+            document.getElementById('siteForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const siteId = document.getElementById('siteId').value;
+                const siteName = document.getElementById('siteName').value.trim();
+                const sites = getData(SITES_KEY);
+                
+                if (siteId !== '') {
+                    // 編集
+                    sites[parseInt(siteId)] = siteName;
+                } else {
+                    // 追加
+                    if (!sites.includes(siteName)) {
+                        sites.push(siteName);
+                    } else {
+                        alert('この現場名は既に存在します');
+                        return;
+                    }
+                }
+                
+                saveData(SITES_KEY, sites);
+                document.getElementById('siteModal').style.display = 'none';
+                renderSitesTable();
             });
-            
-            // ファイル名を生成
-            const now = new Date();
-            const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}`;
-            const filename = `出勤データ_${timestamp}.csv`;
-            
-            // ダウンロード
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            link.click();
-        });
 
-        // パスワード変更フォーム送信
-        document.getElementById('passwordChangeForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-            
-            // 現在のパスワードを検証
-            // 実際のアプリでは、サーバー側で認証を行うべきですが、
-            // ここでは簡単のためにローカルストレージに保存されたパスワードをチェックします
-            const adminPassword = localStorage.getItem('adminPassword') || 'admin123';
-            
-            if (currentPassword !== adminPassword) {
-                alert('現在のパスワードが正しくありません');
-                return;
-            }
-            
-            // 新しいパスワードの確認
-            if (newPassword !== confirmNewPassword) {
-                alert('新しいパスワードが一致しません');
-                return;
-            }
-            
-            // パスワード長さ確認
-            if (newPassword.length < 8) {
-                alert('新しいパスワードは8文字以上である必要があります');
-                return;
-            }
-            
-            // 新しいパスワードを保存
-            localStorage.setItem('adminPassword', newPassword);
-            
-            // フォームをリセット
-            document.getElementById('passwordChangeForm').reset();
-            
-            alert('パスワードが正常に変更されました');
-        });
+            // 現場追加ボタン
+            document.getElementById('addSite').addEventListener('click', function() {
+                document.getElementById('siteId').value = '';
+                document.getElementById('siteName').value = '';
+                document.getElementById('modalSiteTitle').textContent = '現場追加';
+                document.getElementById('siteModal').style.display = 'block';
+            });
 
-        // 初期表示
-        renderMembersTable();
-        renderTeamsTable();
-        renderSitesTable();
+            // 統計データレンダリング
+            function renderStats() {
+                const attendance = getData(ATTENDANCE_KEY) || [];
+                
+                // 現場統計
+                const siteStats = {};
+                const sites = getData(SITES_KEY);
+                sites.forEach(site => {
+                    siteStats[site] = { days: 0, parkingFee: 0, highwayFee: 0, total: 0 };
+                });
+
+                attendance.forEach(record => {
+                    if (siteStats[record.site]) {
+                        siteStats[record.site].days++;
+                        siteStats[record.site].parkingFee += record.parkingFee;
+                        siteStats[record.site].highwayFee += record.highwayFee;
+                        siteStats[record.site].total += record.parkingFee + record.highwayFee;
+                    }
+                });
+
+                const siteStatsTbody = document.querySelector('#siteStats tbody');
+                if (siteStatsTbody) {
+                    siteStatsTbody.innerHTML = '';
+                    Object.entries(siteStats).forEach(([site, stats]) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${site}</td>
+                            <td>${stats.days}</td>
+                            <td>${stats.parkingFee.toLocaleString()} 円</td>
+                            <td>${stats.highwayFee.toLocaleString()} 円</td>
+                            <td>${stats.total.toLocaleString()} 円</td>
+                        `;
+                        siteStatsTbody.appendChild(row);
+                    });
+                }
+
+                // メンバー統計
+                const memberStats = {};
+                attendance.forEach(record => {
+                    if (!memberStats[record.name]) {
+                        memberStats[record.name] = {
+                            days: 0,
+                            parkingFee: 0,
+                            highwayFee: 0,
+                            total: 0
+                        };
+                    }
+                    memberStats[record.name].days++;
+                    memberStats[record.name].parkingFee += record.parkingFee;
+                    memberStats[record.name].highwayFee += record.highwayFee;
+                    memberStats[record.name].total += record.parkingFee + record.highwayFee;
+                });
+
+                const memberStatsTbody = document.getElementById('memberStats');
+                if (memberStatsTbody) {
+                    memberStatsTbody.innerHTML = '';
+                    Object.entries(memberStats).forEach(([name, stats]) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${name}</td>
+                            <td>${stats.days}</td>
+                            <td>${stats.parkingFee.toLocaleString()} 円</td>
+                            <td>${stats.highwayFee.toLocaleString()} 円</td>
+                            <td>${stats.total.toLocaleString()} 円</td>
+                        `;
+                        memberStatsTbody.appendChild(row);
+                    });
+                }
+
+                // チーム統計
+                const teamStats = {};
+                attendance.forEach(record => {
+                    if (!teamStats[record.team]) {
+                        teamStats[record.team] = {
+                            days: 0,
+                            parkingFee: 0,
+                            highwayFee: 0,
+                            total: 0
+                        };
+                    }
+                    teamStats[record.team].days++;
+                    teamStats[record.team].parkingFee += record.parkingFee;
+                    teamStats[record.team].highwayFee += record.highwayFee;
+                    teamStats[record.team].total += record.parkingFee + record.highwayFee;
+                });
+
+                const teamStatsTbody = document.getElementById('teamStats');
+                if (teamStatsTbody) {
+                    teamStatsTbody.innerHTML = '';
+                    Object.entries(teamStats).forEach(([team, stats]) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${team}</td>
+                            <td>${stats.days}</td>
+                            <td>${stats.parkingFee.toLocaleString()} 円</td>
+                            <td>${stats.highwayFee.toLocaleString()} 円</td>
+                            <td>${stats.total.toLocaleString()} 円</td>
+                        `;
+                        teamStatsTbody.appendChild(row);
+                    });
+                }
+            }
+
+            // データエクスポート
+            document.getElementById('exportData').addEventListener('click', function() {
+                const attendance = getData(ATTENDANCE_KEY) || [];
+                if (!attendance.length) {
+                    alert('エクスポートするデータがありません');
+                    return;
+                }
+                
+                // CSVデータ生成
+                let csv = '日付,現場名,チーム,氏名,駐車料金,高速料金,合計\n';
+                attendance.forEach(record => {
+                    csv += `${record.date},${record.site},${record.team},${record.name},${record.parkingFee},${record.highwayFee},${record.parkingFee + record.highwayFee}\n`;
+                });
+                
+                // ファイル名生成
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}`;
+                const filename = `出勤データ_${timestamp}.csv`;
+                
+                // ダウンロード
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.click();
+            });
+
+            // パスワード変更フォーム送信
+            document.getElementById('passwordChangeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+                
+                // 現在のパスワード確認
+                // 実際のアプリケーションではサーバー側で確認するべき
+                const adminPassword = localStorage.getItem('adminPassword') || 'admin123';
+                
+                if (currentPassword !== adminPassword) {
+                    alert('現在のパスワードが正しくありません');
+                    return;
+                }
+                
+                // 新しいパスワード確認
+                if (newPassword !== confirmNewPassword) {
+                    alert('新しいパスワードが一致しません');
+                    return;
+                }
+                
+                // パスワード長さチェック
+                if (newPassword.length < 8) {
+                    alert('新しいパスワードは8文字以上である必要があります');
+                    return;
+                }
+                
+                // 新しいパスワード保存
+                localStorage.setItem('adminPassword', newPassword);
+                
+                // フォームリセット
+                document.getElementById('passwordChangeForm').reset();
+                
+                alert('パスワードが正常に変更されました');
+            });
+
+            // 初期表示
+            renderMembersTable();
+            renderTeamsTable();
+            renderSitesTable();
+        }
     </script>
 </body>
 </html>

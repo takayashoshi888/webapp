@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase 连接测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .connection-status {
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="responsive-wrapper">
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <div class="logo-badge">
+                            <span class="logo-initial">TKY</span>
+                        </div>
+                        <div class="logo-text">
+                            <h1 class="company-name">TKY株式会社</h1>
+                            <p class="system-title">Supabase 连接テスト</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="main-content">
+                <div class="test-container">
+                    <div class="test-card">
+                        <h2>Supabase 数据库连接测试</h2>
+                        <p>点击下面的按钮测试与 Supabase 数据库的连接。</p>
+                        
+                        <button id="testConnection" class="btn">测试连接</button>
+                        <a href="index.html" class="btn" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">返回主页</a>
+                        
+                        <div id="statusMessage"></div>
+                        <div id="results"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入 Supabase 客户端
+        import { supabase } from './js/supabaseClient.js';
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<div class="connection-status ${type}">${message}</div>`;
+        }
+        
+        // 显示结果
+        function showResults(data, title) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `
+                <div class="test-card">
+                    <h3>${title}</h3>
+                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        // 测试连接按钮事件
+        document.getElementById('testConnection').addEventListener('click', async () => {
+            showStatus('正在连接云端数据库...', 'loading');
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                // 测试连接 - 尝试获取 teams 表的数据
+                const { data, error } = await supabase
+                    .from('teams')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 显示成功消息
+                showStatus('✅ 成功连接云端数据库！', 'success');
+                showResults(data, '团队数据');
+                
+                // 同时获取其他表的数据作为测试
+                const tablesToTest = ['sites', 'members'];
+                
+                for (const table of tablesToTest) {
+                    try {
+                        const { data: tableData, error: tableError } = await supabase
+                            .from(table)
+                            .select('*')
+                            .limit(5);
+                        
+                        if (tableError) {
+                            throw tableError;
+                        }
+                        
+                        showResults(tableData, `${table === 'sites' ? '现场' : '成员'}データ`);
+                    } catch (tableError) {
+                        showResults({ error: tableError.message }, `${table === 'sites' ? '現場' : 'メンバー'}データ (エラー)`);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Supabase 连接错误:', error);
+                showStatus(`❌ 连接云端数据库失败: ${error.message}`, 'error');
+                
+                // 显示错误详情
+                document.getElementById('results').innerHTML = `
+                    <div class="test-card">
+                        <h3>错误详情</h3>
+                        <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">${JSON.stringify({
+                            message: error.message,
+                            code: error.code,
+                            hint: error.hint
+                        }, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

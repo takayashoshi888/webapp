@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase 使用示例</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .example-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .example-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="responsive-wrapper">
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <div class="logo-badge">
+                            <span class="logo-initial">TKY</span>
+                        </div>
+                        <div class="logo-text">
+                            <h1 class="company-name">TKY株式会社</h1>
+                            <p class="system-title">Supabase 使用示例</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="main-content">
+                <div class="example-container">
+                    <div class="example-card">
+                        <h2>Supabase 客户端使用示例</h2>
+                        <p>以下示例展示了如何在项目中使用 Supabase 客户端进行数据库操作。</p>
+                        
+                        <h3>1. 导入 Supabase 客户端</h3>
+                        <div class="code-block">
+// 在 HTML 文件中使用模块导入<br>
+&lt;script type="module"&gt;<br>
+&nbsp;&nbsp;import supabase from './js/supabaseClient.js'<br>
+&lt;/script&gt;
+                        </div>
+                        
+                        <h3>2. 查询数据</h3>
+                        <button id="queryData" class="btn">查询团队数据</button>
+                        <div id="queryResult"></div>
+                        
+                        <h3>3. 插入数据</h3>
+                        <button id="insertData" class="btn">插入新团队</button>
+                        <div id="insertResult"></div>
+                        
+                        <h3>4. 更新数据</h3>
+                        <button id="updateData" class="btn">更新团队名称</button>
+                        <div id="updateResult"></div>
+                        
+                        <h3>5. 删除数据</h3>
+                        <button id="deleteData" class="btn">删除团队</button>
+                        <div id="deleteResult"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import supabase from './js/supabaseClient.js'
+        
+        // 显示结果的函数
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+        
+        // 查询数据示例
+        document.getElementById('queryData').addEventListener('click', async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('teams')
+                    .select('*')
+                
+                if (error) throw error;
+                
+                showResult('queryResult', 
+                    `查询成功！找到 ${data.length} 个团队：<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                    'success');
+            } catch (error) {
+                showResult('queryResult', `查询失败：${error.message}`, 'error');
+            }
+        });
+        
+        // 插入数据示例
+        document.getElementById('insertData').addEventListener('click', async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('teams')
+                    .insert({ name: `新团队 ${new Date().getTime()}` })
+                    .select()
+                
+                if (error) throw error;
+                
+                showResult('insertResult', 
+                    `插入成功！<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                    'success');
+            } catch (error) {
+                showResult('insertResult', `插入失败：${error.message}`, 'error');
+            }
+        });
+        
+        // 更新数据示例
+        document.getElementById('updateData').addEventListener('click', async () => {
+            try {
+                // 首先获取一个团队的 ID
+                const { data: teams, error: fetchError } = await supabase
+                    .from('teams')
+                    .select('id')
+                    .limit(1)
+                
+                if (fetchError) throw fetchError;
+                if (teams.length === 0) {
+                    showResult('updateResult', '没有可更新的团队', 'error');
+                    return;
+                }
+                
+                const teamId = teams[0].id;
+                const newName = `更新团队 ${new Date().getTime()}`;
+                
+                const { data, error } = await supabase
+                    .from('teams')
+                    .update({ name: newName })
+                    .eq('id', teamId)
+                    .select()
+                
+                if (error) throw error;
+                
+                showResult('updateResult', 
+                    `更新成功！<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                    'success');
+            } catch (error) {
+                showResult('updateResult', `更新失败：${error.message}`, 'error');
+            }
+        });
+        
+        // 删除数据示例
+        document.getElementById('deleteData').addEventListener('click', async () => {
+            try {
+                // 首先获取一个团队的 ID
+                const { data: teams, error: fetchError } = await supabase
+                    .from('teams')
+                    .select('id')
+                    .limit(1)
+                
+                if (fetchError) throw fetchError;
+                if (teams.length === 0) {
+                    showResult('deleteResult', '没有可删除的团队', 'error');
+                    return;
+                }
+                
+                const teamId = teams[0].id;
+                
+                const { data, error } = await supabase
+                    .from('teams')
+                    .delete()
+                    .eq('id', teamId)
+                
+                if (error) throw error;
+                
+                showResult('deleteResult', 
+                    `删除成功！删除了 ${data.length} 条记录`, 
+                    'success');
+            } catch (error) {
+                showResult('deleteResult', `删除失败：${error.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
