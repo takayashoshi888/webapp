@@ -7,64 +7,37 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="container">
-        <div class="responsive-wrapper">
-            <header class="app-header">
-                <div class="header-content">
-                    <div class="logo-section">
-                        <div class="logo-badge">
-                            <span class="logo-initial">TKY</span>
-                        </div>
-                        <div class="logo-text">
-                            <h1 class="company-name">TKY株式会社</h1>
-                            <p class="system-title">ユーザーログイン</p>
-                        </div>
-                    </div>
-                    <div class="header-actions">
-                        <button id="backToMain" class="back-btn">
-                            <span class="icon">←</span>
-                            メイン画面へ戻る
-                        </button>
-                    </div>
-                </div>
-            </header>
+<body class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>TKY株式会社</h1>
+            <p>ユーザーログイン</p>
+        </div>
+        
+        <!-- Supabase 连接状态提示 -->
+        <div id="supabaseStatus" style="margin: 10px; padding: 10px; border-radius: 5px; display: none;"></div>
+        
+        <form class="login-form" id="loginForm">
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" id="username" name="username" placeholder="ユーザー名を入力" required>
+            </div>
             
-            <!-- Supabase 连接状态提示 -->
-            <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" placeholder="パスワードを入力" required>
+            </div>
             
-            <main class="main-content">
-                <div class="form-card">
-                    <div class="card-header">
-                        <h2 class="form-title">ユーザーログイン</h2>
-                        <p class="form-subtitle">ユーザー名とパスワードを入力してください</p>
-                    </div>
-                    
-                    <form id="loginForm" class="login-form">
-                        <div class="form-group">
-                            <label for="username" class="form-label">ユーザー名</label>
-                            <input type="text" id="username" class="form-input" required placeholder="ユーザー名を入力">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="password" class="form-label">パスワード</label>
-                            <input type="password" id="password" class="form-input" required placeholder="パスワードを入力">
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="submit-btn">
-                                <span class="icon">🔑</span>
-                                ログイン
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <div id="loginMessage" class="login-message" style="display: none;"></div>
-                </div>
-            </main>
+            <button type="submit" class="login-btn">ログイン</button>
+        </form>
+        
+        <div id="loginMessage" class="login-message" style="display: none;"></div>
+        
+        <div class="back-to-main">
+            <a href="index.html">← 出勤登録ページに戻る</a>
         </div>
     </div>
-    
+
     <!-- 加载 Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -195,13 +168,9 @@
                 statusDiv.innerHTML = '✅ 成功连接云端数据库 (Supabase)';
                 
             } catch (error) {
-                // 连接失败时显示错误消息
-                console.log('Supabase 连接测试失败:', error.message);
-                statusDiv.style.display = 'block';
-                statusDiv.style.backgroundColor = '#f8d7da';
-                statusDiv.style.color = '#721c24';
-                statusDiv.style.border = '1px solid #f5c6cb';
-                statusDiv.innerHTML = `❌ 数据库连接失败: ${error.message}`;
+                // 连接失败时不显示错误，避免影响用户体验
+                console.log('Supabase 连接テスト失败:', error.message);
+                statusDiv.style.display = 'none';
             }
             
             // 初始化页面功能
@@ -210,11 +179,6 @@
 
         // 初始化页面功能
         function initializePage() {
-            // 返回主页面按钮
-            document.getElementById('backToMain').addEventListener('click', function() {
-                window.location.href = 'index.html';
-            });
-
             // 登录表单提交
             document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
