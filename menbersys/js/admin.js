@@ -12,26 +12,105 @@ const ATTENDANCE_KEY = 'attendance';
 
 // 初期データ
 const initialData = {
-    [MEMBERS_KEY]: [
-        { id: 1, name: '山田太郎', username: 'yamada', team: 'チームA' },
-        { id: 2, name: '佐藤花子', username: 'sato', team: 'チームB' }
-    ],
-    [TEAMS_KEY]: ['チームA', 'チームB', 'チームC'],
-    [SITES_KEY]: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
+    [MEMBERS_KEY]: [],
+    [TEAMS_KEY]: [],
+    [SITES_KEY]: [],
     [ATTENDANCE_KEY]: []
 };
 
-// データ取得関数
-function getData(key) {
+// 智能数据获取函数 - 优先从Supabase获取，失败时使用本地缓存
+async function getData(key) {
+    try {
+        // 首先尝试从Supabase获取最新数据
+        let supabaseData = null;
+        
+        if (key === MEMBERS_KEY) {
+            const { data, error } = await supabase
+                .from('members')
+                .select('*');
+            if (!error) supabaseData = data;
+        } else if (key === TEAMS_KEY) {
+            const { data, error } = await supabase
+                .from('teams')
+                .select('*');
+            if (!error) supabaseData = data.map(t => t.name);
+        } else if (key === SITES_KEY) {
+            const { data, error } = await supabase
+                .from('sites')
+                .select('*');
+            if (!error) supabaseData = data.map(s => s.name);
+        } else if (key === ATTENDANCE_KEY) {
+            const { data, error } = await supabase
+                .from('attendance_records')
+                .select('*');
+            if (!error) supabaseData = data;
+        }
+        
+        // 如果从Supabase成功获取数据，更新本地存储
+        if (supabaseData !== null) {
+            const currentData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
+            currentData[key] = supabaseData;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+            console.log(`✅ 从Supabase成功获取${key}数据`);
+            return supabaseData;
+        }
+    } catch (error) {
+        console.warn(`⚠️ 从Supabase获取${key}数据失败，使用本地缓存:`, error.message);
+    }
+    
+    // 如果Supabase获取失败，使用本地存储数据
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
     return key ? data[key] : data;
 }
 
-// データ保存関数
-function saveData(key, value) {
-    const data = getData();
+// 智能数据保存函数 - 同时保存到本地和Supabase
+async function saveData(key, value) {
+    // 先保存到本地存储
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
     data[key] = value;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    
+    // 然后同步到Supabase
+    try {
+        if (key === MEMBERS_KEY) {
+            // 同步成员数据到Supabase
+            for (const member of value) {
+                const teamId = await getTeamId(member.team);
+                if (teamId) {
+                    const { error } = await supabase
+                        .from('members')
+                        .upsert({
+                            name: member.name,
+                            username: member.username,
+                            password: member.password,
+                            team_id: teamId
+                        }, { onConflict: 'username' });
+                    if (error) throw error;
+                }
+            }
+        } else if (key === TEAMS_KEY) {
+            // 同步团队数据到Supabase
+            for (const teamName of value) {
+                const { error } = await supabase
+                    .from('teams')
+                    .upsert({ name: teamName }, { onConflict: 'name' });
+                if (error) throw error;
+            }
+        } else if (key === SITES_KEY) {
+            // 同步现场数据到Supabase
+            for (const siteName of value) {
+                const { error } = await supabase
+                    .from('sites')
+                    .upsert({ name: siteName }, { onConflict: 'name' });
+                if (error) throw error;
+            }
+        }
+        
+        console.log(`✅ ${key}数据已成功同步到Supabase`);
+    } catch (error) {
+        console.error(`❌ ${key}数据同步到Supabase失败:`, error);
+        // 即使云端同步失败，本地数据仍然保存成功
+    }
 }
 
 // 数据映射辅助函数
@@ -84,11 +163,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // 初始化页面功能
-    initializePage();
+    await initializePage();
 });
 
 // 初始化页面功能
-function initializePage() {
+async function initializePage() {
+    // 页面加载时同步所有数据
+    try {
+        console.log('🔄 正在从Supabase同步数据...');
+        
+        // 同步团队成员数据
+        await getData(MEMBERS_KEY);
+        await getData(TEAMS_KEY);
+        await getData(SITES_KEY);
+        await getData(ATTENDANCE_KEY);
+        
+        console.log('✅ 数据同步完成');
+    } catch (error) {
+        console.warn('⚠️ 数据同步过程中出现错误，使用本地数据:', error);
+    }
     // ログアウト処理
     document.getElementById('logout').addEventListener('click', function() {
         if (confirm('本当にログアウトしますか？')) {
@@ -99,7 +192,7 @@ function initializePage() {
     // タブ切り替え
     const tabButtons = document.querySelectorAll('.tab-btn');
     tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', async function() {
             const tabId = this.getAttribute('data-tab');
             
             // アクティブなタブを更新
@@ -114,19 +207,19 @@ function initializePage() {
             
             // タブ固有の初期化
             if (tabId === 'members') {
-                renderMembersTable();
+                await renderMembersTable();
             } else if (tabId === 'teams') {
-                renderTeamsTable();
+                await renderTeamsTable();
             } else if (tabId === 'sites') {
-                renderSitesTable();
+                await renderSitesTable();
             } else if (tabId === 'stats') {
-                renderStats();
+                await renderStats();
             }
         });
     });
 
     // メンバー追加ボタン
-    document.getElementById('addMember').addEventListener('click', function() {
+    document.getElementById('addMember').addEventListener('click', async function() {
         document.getElementById('modalMemberTitle').textContent = 'メンバー追加';
         document.getElementById('memberId').value = '';
         document.getElementById('memberName').value = '';
@@ -136,7 +229,8 @@ function initializePage() {
         // チーム選択肢を更新
         const teamSelect = document.getElementById('memberTeam');
         teamSelect.innerHTML = '';
-        getData(TEAMS_KEY).forEach(team => {
+        const teams = await getData(TEAMS_KEY);
+        teams.forEach(team => {
             const option = document.createElement('option');
             option.value = team;
             option.textContent = team;
@@ -227,33 +321,33 @@ function initializePage() {
         }
         
         document.getElementById('memberModal').style.display = 'none';
-        renderMembersTable();
+        await renderMembersTable();
     });
 
     // チームフォーム送信
-    document.getElementById('teamForm').addEventListener('submit', function(e) {
+    document.getElementById('teamForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const teamName = document.getElementById('teamName').value;
-        const teams = getData(TEAMS_KEY);
+        const teams = await getData(TEAMS_KEY);
         
         if (!teams.includes(teamName)) {
             teams.push(teamName);
-            saveData(TEAMS_KEY, teams);
+            await saveData(TEAMS_KEY, teams);
             document.getElementById('teamModal').style.display = 'none';
-            renderTeamsTable();
+            await renderTeamsTable();
         } else {
             alert('このチーム名は既に存在します');
         }
     });
 
     // 現地フォーム送信
-    document.getElementById('siteForm').addEventListener('submit', function(e) {
+    document.getElementById('siteForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const siteId = document.getElementById('siteId').value;
         const siteName = document.getElementById('siteName').value.trim();
-        const sites = getData(SITES_KEY);
+        const sites = await getData(SITES_KEY);
         
         if (siteId !== '') {
             // 編集
@@ -268,9 +362,9 @@ function initializePage() {
             }
         }
         
-        saveData(SITES_KEY, sites);
+        await saveData(SITES_KEY, sites);
         document.getElementById('siteModal').style.display = 'none';
-        renderSitesTable();
+        await renderSitesTable();
     });
 
     // 現地追加ボタン
@@ -346,14 +440,14 @@ function initializePage() {
     });
 
     // 初期表示
-    renderMembersTable();
-    renderTeamsTable();
-    renderSitesTable();
+    await renderMembersTable();
+    await renderTeamsTable();
+    await renderSitesTable();
 }
 
 // メンバーテーブルをレンダリング
-function renderMembersTable() {
-    const members = getData(MEMBERS_KEY);
+async function renderMembersTable() {
+    const members = await getData(MEMBERS_KEY);
     const tbody = document.querySelector('#membersTable tbody');
     if (!tbody) return;
     
@@ -406,21 +500,22 @@ function renderMembersTable() {
     
     // 削除ボタン
     document.querySelectorAll('#membersTable .btn-delete').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
             if (confirm('このメンバーを削除しますか？')) {
                 const id = this.getAttribute('data-id');
-                const members = getData(MEMBERS_KEY).filter(m => m.id != id);
-                saveData(MEMBERS_KEY, members);
-                renderMembersTable();
+                const members = await getData(MEMBERS_KEY);
+                const filteredMembers = members.filter(m => m.id != id);
+                await saveData(MEMBERS_KEY, filteredMembers);
+                await renderMembersTable();
             }
         });
     });
 }
 
 // チームテーブルをレンダリング
-function renderTeamsTable() {
-    const teams = getData(TEAMS_KEY);
-    const members = getData(MEMBERS_KEY);
+async function renderTeamsTable() {
+    const teams = await getData(TEAMS_KEY);
+    const members = await getData(MEMBERS_KEY);
     const tbody = document.querySelector('#teamsTable tbody');
     if (!tbody) return;
     
@@ -443,40 +538,43 @@ function renderTeamsTable() {
     
     // チーム編集ボタン
     document.querySelectorAll('#teamsTable .btn-edit').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
             const oldTeamName = this.getAttribute('data-team');
             const newTeamName = prompt('新しいチーム名を入力してください', oldTeamName);
             
             if (newTeamName && newTeamName !== oldTeamName) {
-                if (getData(TEAMS_KEY).includes(newTeamName)) {
+                const teams = await getData(TEAMS_KEY);
+                if (teams.includes(newTeamName)) {
                     alert('このチーム名は既に存在します');
                     return;
                 }
                 
                 // 更新团队名称
-                const teams = getData(TEAMS_KEY).map(t => t === oldTeamName ? newTeamName : t);
-                saveData(TEAMS_KEY, teams);
+                const updatedTeams = teams.map(t => t === oldTeamName ? newTeamName : t);
+                await saveData(TEAMS_KEY, updatedTeams);
                 
                 // 更新关联成员
-                const members = getData(MEMBERS_KEY).map(m => {
+                const members = await getData(MEMBERS_KEY);
+                const updatedMembers = members.map(m => {
                     if (m.team === oldTeamName) {
                         return {...m, team: newTeamName};
                     }
                     return m;
                 });
-                saveData(MEMBERS_KEY, members);
+                await saveData(MEMBERS_KEY, updatedMembers);
                 
-                renderTeamsTable();
-                renderMembersTable();
+                await renderTeamsTable();
+                await renderMembersTable();
             }
         });
     });
     
     // チーム削除ボタン
     document.querySelectorAll('#teamsTable .btn-delete').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
             const team = this.getAttribute('data-team');
-            const membersInTeam = getData(MEMBERS_KEY).filter(m => m.team === team).length;
+            const members = await getData(MEMBERS_KEY);
+            const membersInTeam = members.filter(m => m.team === team).length;
             
             if (membersInTeam > 0) {
                 alert('このチームにはメンバーが存在するため削除できません');
@@ -484,17 +582,18 @@ function renderTeamsTable() {
             }
             
             if (confirm(`チーム「${team}」を削除しますか？`)) {
-                const teams = getData(TEAMS_KEY).filter(t => t !== team);
-                saveData(TEAMS_KEY, teams);
-                renderTeamsTable();
+                const teams = await getData(TEAMS_KEY);
+                const filteredTeams = teams.filter(t => t !== team);
+                await saveData(TEAMS_KEY, filteredTeams);
+                await renderTeamsTable();
             }
         });
     });
 }
 
 // 現地管理テーブルをレンダリング
-function renderSitesTable() {
-    const sites = getData(SITES_KEY);
+async function renderSitesTable() {
+    const sites = await getData(SITES_KEY);
     const tbody = document.querySelector('#sitesTable tbody');
     if (!tbody) return;
     
@@ -514,8 +613,8 @@ function renderSitesTable() {
 }
 
 // 現地編集
-function editSite(index) {
-    const sites = getData(SITES_KEY);
+async function editSite(index) {
+    const sites = await getData(SITES_KEY);
     const siteName = sites[index];
     document.getElementById('siteId').value = index;
     document.getElementById('siteName').value = siteName;
@@ -524,24 +623,24 @@ function editSite(index) {
 }
 
 // 現地削除
-function deleteSite(index) {
-    const sites = getData(SITES_KEY);
+async function deleteSite(index) {
+    const sites = await getData(SITES_KEY);
     const siteName = sites[index];
     
     if (confirm(`本当に現場「${siteName}」を削除しますか？`)) {
         sites.splice(index, 1);
-        saveData(SITES_KEY, sites);
-        renderSitesTable();
+        await saveData(SITES_KEY, sites);
+        await renderSitesTable();
     }
 }
 
 // 統計データをレンダリング
-function renderStats() {
-    const attendance = getData(ATTENDANCE_KEY) || [];
+async function renderStats() {
+    const attendance = await getData(ATTENDANCE_KEY) || [];
     
     // 現場別統計
     const siteStats = {};
-    const sites = getData(SITES_KEY);
+    const sites = await getData(SITES_KEY);
     sites.forEach(site => {
         siteStats[site] = { days: 0, parkingFee: 0, highwayFee: 0, total: 0 };
     });
