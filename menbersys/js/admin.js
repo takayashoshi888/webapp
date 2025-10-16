@@ -276,7 +276,7 @@ async function initializePage() {
             return;
         }
         
-        const members = getData(MEMBERS_KEY);
+        const members = await getData(MEMBERS_KEY);
         
         if (id) {
             // 既存メンバーを更新
@@ -290,7 +290,7 @@ async function initializePage() {
             members.push({ id: newId, name, username, password, team });
         }
         
-        saveData(MEMBERS_KEY, members);
+        await saveData(MEMBERS_KEY, members);
 
         // 同步到Supabase
         try {
@@ -376,8 +376,8 @@ async function initializePage() {
     });
 
     // データエクスポート
-    document.getElementById('exportData').addEventListener('click', function() {
-        const attendance = getData(ATTENDANCE_KEY) || [];
+    document.getElementById('exportData').addEventListener('click', async function() {
+        const attendance = await getData(ATTENDANCE_KEY) || [];
         if (!attendance.length) {
             alert('エクスポートするデータがありません');
             return;
@@ -471,9 +471,10 @@ async function renderMembersTable() {
     
     // 編集ボタン
     document.querySelectorAll('#membersTable .btn-edit').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
             const id = this.getAttribute('data-id');
-            const member = getData(MEMBERS_KEY).find(m => m.id == id);
+            const members = await getData(MEMBERS_KEY);
+            const member = members.find(m => m.id == id);
             
             if (member) {
                 document.getElementById('modalMemberTitle').textContent = 'メンバー編集';
@@ -485,7 +486,8 @@ async function renderMembersTable() {
                 // チーム選択肢を更新
                 const teamSelect = document.getElementById('memberTeam');
                 teamSelect.innerHTML = '';
-                getData(TEAMS_KEY).forEach(team => {
+                const teams = await getData(TEAMS_KEY);
+                teams.forEach(team => {
                     const option = document.createElement('option');
                     option.value = team;
                     option.textContent = team;
@@ -604,11 +606,27 @@ async function renderSitesTable() {
         row.innerHTML = `
             <td>${site}</td>
             <td>
-                <button class="action-btn btn-edit" onclick="editSite(${index})">編集</button>
-                <button class="action-btn btn-delete" onclick="deleteSite(${index})">削除</button>
+                <button class="action-btn btn-edit" data-index="${index}">編集</button>
+                <button class="action-btn btn-delete" data-index="${index}">削除</button>
             </td>
         `;
         tbody.appendChild(row);
+    });
+    
+    // 現地編集ボタン
+    document.querySelectorAll('#sitesTable .btn-edit').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            await editSite(index);
+        });
+    });
+    
+    // 現地削除ボタン
+    document.querySelectorAll('#sitesTable .btn-delete').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            await deleteSite(index);
+        });
     });
 }
 
