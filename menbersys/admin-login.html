@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKY株式会社 - 管理者ログイン</title>
-    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-container">
@@ -44,10 +44,14 @@
         </div>
     </div>
 
-    <script type="module">
-        // 导入 Supabase 客户端
-        import { supabase } from './js/supabaseClient.js';
-        
+    <!-- 加载 Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase 配置
+        const supabaseUrl = 'https://xhqvbirifrdlmlnrwayp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         // 页面加载时测试 Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
             const statusDiv = document.getElementById('supabaseStatus');

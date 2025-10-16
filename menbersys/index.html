@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKY株式会社 - 出勤管理システム</title>
-    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -106,11 +106,14 @@
         </div>
     </div>
     
-    <script type="module">
-        // 导入数据同步函数
-        import { syncAllData, getMemberIdByName, getSiteId, getTeamId } from './js/dataSync.js';
-        import { supabase } from './js/supabaseClient.js';
-        
+    <!-- 加载 Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase 配置
+        const supabaseUrl = 'https://xhqvbirifrdlmlnrwayp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         // 数据存储键
         const STORAGE_KEY = 'tky_attendance_system';
         const MEMBERS_KEY = 'members';
@@ -140,6 +143,53 @@
             const data = getData();
             data[key] = value;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // 数据映射辅助函数
+        let teamMap = null;
+        let siteMap = null;
+        let memberMap = null;
+
+        // 获取团队ID
+        async function getTeamId(teamName) {
+            if (!teamMap) {
+                const { data, error } = await supabase.from('teams').select('id, name');
+                if (!error) {
+                    teamMap = Object.fromEntries(data.map(t => [t.name, t.id]));
+                } else {
+                    console.error('获取团队数据失败:', error);
+                    return null;
+                }
+            }
+            return teamMap?.[teamName] || null;
+        }
+
+        // 获取现场ID
+        async function getSiteId(siteName) {
+            if (!siteMap) {
+                const { data, error } = await supabase.from('sites').select('id, name');
+                if (!error) {
+                    siteMap = Object.fromEntries(data.map(s => [s.name, s.id]));
+                } else {
+                    console.error('获取现场数据失败:', error);
+                    return null;
+                }
+            }
+            return siteMap?.[siteName] || null;
+        }
+
+        // 根据成员名获取成员ID
+        async function getMemberIdByName(memberName) {
+            if (!memberMap) {
+                const { data, error } = await supabase.from('members').select('id, name');
+                if (!error) {
+                    memberMap = Object.fromEntries(data.map(m => [m.name, m.id]));
+                } else {
+                    console.error('获取成员数据失败:', error);
+                    return null;
+                }
+            }
+            return memberMap?.[memberName] || null;
         }
 
         // 页面加载时测试 Supabase 连接

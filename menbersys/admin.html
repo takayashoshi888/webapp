@@ -4,603 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKY株式会社 - 管理者パネル</title>
-    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* 管理者パネルの追加スタイル */
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #2c3e50, #4a6491);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        .admin-header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
-        }
-        
-        .btn-logout {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-logout:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .admin-nav {
-            display: flex;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-        }
-        
-        .tab-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            background: #f8f9fa;
-            cursor: pointer;
-            font-weight: 600;
-            color: #6c757d;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .tab-btn:hover {
-            background: #e9ecef;
-        }
-        
-        .tab-btn.active {
-            background: linear-gradient(135deg, #f39c12, #e67e00);
-            color: white;
-        }
-        
-        .admin-content {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .action-bar {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 20px;
-        }
-        
-        .btn-add {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-add:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .action-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 5px;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-edit {
-            background: #f39c12;
-            color: white;
-        }
-        
-        .btn-edit:hover {
-            background: #e67e22;
-        }
-        
-        .btn-delete {
-            background: #e74c3c;
-            color: white;
-        }
-        
-        .btn-delete:hover {
-            background: #c0392b;
-        }
-        
-        .filter-bar {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-        }
-        
-        .filter-bar select, 
-        .filter-bar input {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-        
-        .btn-export {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            align-self: flex-end;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-export:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .excel-style-container {
-            overflow-x: auto;
-        }
-        
-        .excel-style-table {
-            min-width: 800px;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        
-        .excel-style-table th {
-            background: #3498db;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .excel-style-table td {
-            padding: 12px 15px;
-            border: 1px solid #eee;
-            text-align: right;
-        }
-        
-        .excel-style-table td:first-child {
-            text-align: left;
-        }
-        
-        .excel-style-table tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-        
-        .excel-style-table tr:hover {
-            background: #e9ecef;
-        }
-        
-        .table-title {
-            background: #2c3e50 !important;
-            color: white !important;
-            font-size: 1.2rem;
-        }
-        
-        /* モーダルスタイル */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #7f8c8d;
-        }
-
-        .close:hover {
-            color: #2c3e50;
-        }
-        
-        .password-change-container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .password-change-container h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #2c3e50;
-        }
-        
-        .password-change-form {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .password-change-form .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .password-change-form label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        .password-change-form input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        
-        .password-change-form input:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-        }
-        
-        .password-change-form small {
-            display: block;
-            margin-top: 5px;
-            color: #6c757d;
-            font-size: 14px;
-        }
-        
-        .password-change-form .btn-submit {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .password-change-form .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .password-change-form .btn-submit:active {
-            transform: translateY(0);
-        }
-        
-        @media (max-width: 768px) {
-            .admin-header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-            
-            .admin-nav {
-                flex-direction: column;
-            }
-            
-            .filter-bar {
-                flex-direction: column;
-            }
-            
-            .action-bar {
-                justify-content: center;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <!-- Supabase 连接状态提示 -->
-        <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
-        
-        <header class="admin-header">
-            <h1 class="logo">TKY株式会社 - 管理者パネル</h1>
-            <button id="logout" class="btn-logout">ログアウト</button>
-        </header>
-        
-        <nav class="admin-nav">
-            <button class="tab-btn active" data-tab="members">メンバー管理</button>
-            <button class="tab-btn" data-tab="teams">チーム管理</button>
-            <button class="tab-btn" data-tab="sites">現場管理</button>
-            <button class="tab-btn" data-tab="stats">統計</button>
-            <button class="tab-btn" data-tab="password">パスワード変更</button>
-        </nav>
-        
-        <main class="admin-content">
-            <!-- メンバー管理タブ -->
-            <div id="members" class="tab-content active">
-                <div class="action-bar">
-                    <button id="addMember" class="btn-add">+ メンバー追加</button>
+        <div class="responsive-wrapper">
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <div class="logo-badge">
+                            <span class="logo-initial">TKY</span>
+                        </div>
+                        <div class="logo-text">
+                            <h1 class="company-name">TKY株式会社</h1>
+                            <p class="system-title">管理者パネル</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="backToMain" class="back-btn">
+                            <span class="icon">←</span>
+                            メイン画面へ戻る
+                        </button>
+                    </div>
                 </div>
-                <table id="membersTable">
-                    <thead>
-                        <tr>
-                            <th>氏名</th>
-                            <th>チーム</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            </header>
             
-            <!-- チーム管理タブ -->
-            <div id="teams" class="tab-content">
-                <div class="action-bar">
-                    <button id="addTeam" class="btn-add">+ チーム追加</button>
-                </div>
-                <table id="teamsTable">
-                    <thead>
-                        <tr>
-                            <th>チーム名</th>
-                            <th>メンバー数</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <!-- Supabase 连接状态提示 -->
+            <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
             
-            <!-- 现場管理タブ -->
-            <div id="sites" class="tab-content">
-                <div class="action-bar">
-                    <button id="addSite" class="btn-add">+ 现場追加</button>
-                </div>
-                <table id="sitesTable">
-                    <thead>
-                        <tr>
-                            <th>現場名</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            
-            <!-- 統計タブ -->
-            <div id="stats" class="tab-content">
-                <div class="filter-bar">
-                    <select id="statsTeamFilter">
-                        <option value="all">全チーム</option>
-                    </select>
-                    <select id="statsSiteFilter">
-                        <option value="all">全現場</option>
-                        <option value="東京サイト">東京现场</option>
-                        <option value="大阪サイト">大阪现场</option>
-                        <option value="名古屋サイト">名古屋现场</option>
-                    </select>
-                    <input type="date" id="statsStartDate">
-                    <span>〜</span>
-                    <input type="date" id="statsEndDate">
-                    <button id="exportData" class="btn-export">データエクスポート</button>
+            <main class="main-content">
+                <div class="form-card">
+                    <div class="card-header">
+                        <h2 class="form-title">メンバー管理</h2>
+                        <p class="form-subtitle">メンバーの追加・編集・削除ができます</p>
+                    </div>
+                    
+                    <form id="memberForm" class="member-form">
+                        <div class="form-group">
+                            <label for="memberName" class="form-label">氏名</label>
+                            <input type="text" id="memberName" class="form-input" required placeholder="氏名を入力">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="username" class="form-label">ユーザー名</label>
+                            <input type="text" id="username" class="form-input" required placeholder="ユーザー名を入力">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password" class="form-label">パスワード</label>
+                            <input type="password" id="password" class="form-input" required placeholder="パスワードを入力">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="team" class="form-label">チーム</label>
+                            <select id="team" class="form-select" required>
+                                <option value="">選択してください</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="submit-btn">
+                                <span class="icon">➕</span>
+                                メンバー追加
+                            </button>
+                            <button type="button" id="clearForm" class="clear-btn">
+                                <span class="icon">🗑️</span>
+                                クリア
+                            </button>
+                        </div>
+                    </form>
                 </div>
                 
-                <div class="excel-style-container">
-                    <table id="siteStats" class="excel-style-table">
-                        <thead>
-                            <tr>
-                                <th colspan="5" class="table-title">現場別統計</th>
-                            </tr>
-                            <tr>
-                                <th>現場名</th>
-                                <th>総出勤日数</th>
-                                <th>総駐車料金</th>
-                                <th>総高速料金</th>
-                                <th>総費用</th>
-                            </tr>
-                        </thead>
-                        <tbody id="siteStats"></tbody>
-                    </table>
-                
-                    <table class="excel-style-table">
-                        <thead>
-                            <tr>
-                                <th colspan="5" class="table-title">メンバー別統計</th>
-                            </tr>
-                            <tr>
-                                <th>氏名</th>
-                                <th>出勤日数</th>
-                                <th>駐車料金合計</th>
-                                <th>高速料金合計</th>
-                                <th>総費用</th>
-                            </tr>
-                        </thead>
-                        <tbody id="memberStats"></tbody>
-                    </table>
-                
-                    <table class="excel-style-table">
-                        <thead>
-                            <tr>
-                                <th colspan="5" class="table-title">チーム別統計</th>
-                            </tr>
-                            <tr>
-                                <th>チーム名</th>
-                                <th>総出勤日数</th>
-                                <th>総駐車料金</th>
-                                <th>総高速料金</th>
-                                <th>総費用</th>
-                            </tr>
-                        </thead>
-                        <tbody id="teamStats"></tbody>
-                    </table>
+                <div class="members-list">
+                    <h3 class="list-title">登録済みメンバー</h3>
+                    <div id="membersContainer" class="members-container">
+                        <!-- メンバーリストがここに表示されます -->
+                    </div>
                 </div>
-            </div>
-        </main>
-    </div>
-    
-    <!-- メンバー追加/編集モーダル -->
-    <div id="memberModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="modalMemberTitle">メンバー追加</h2>
-            <form id="memberForm">
-                <input type="hidden" id="memberId">
-                <div class="form-group">
-                    <label for="memberName">氏名:</label>
-                    <input type="text" id="memberName" required>
-                </div>
-                <div class="form-group">
-                    <label for="memberUsername">ユーザー名:</label>
-                    <input type="text" id="memberUsername" required>
-                </div>
-                <div class="form-group">
-                    <label for="memberPassword">パスワード:</label>
-                    <input type="password" id="memberPassword" required>
-                    <small>※半角英数字8文字以上</small>
-                </div>
-                <div class="form-group">
-                    <label for="memberTeam">チーム:</label>
-                    <select id="memberTeam" required></select>
-                </div>
-                <button type="submit" class="btn-submit">保存</button>
-            </form>
+            </main>
         </div>
     </div>
     
-    <!-- チーム追加モーダル -->
-    <div id="teamModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>チーム追加</h2>
-            <form id="teamForm">
-                <div class="form-group">
-                    <label for="teamName">チーム名:</label>
-                    <input type="text" id="teamName" required>
-                </div>
-                <button type="submit" class="btn-submit">保存</button>
-            </form>
-        </div>
-    </div>
-    
-    <!-- 现場追加/編集モーダル -->
-    <div id="siteModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="modalSiteTitle">現場追加</h2>
-            <form id="siteForm">
-                <input type="hidden" id="siteId">
-                <div class="form-group">
-                    <label for="siteName">現場名:</label>
-                    <input type="text" id="siteName" required>
-                </div>
-                <button type="submit" class="btn-submit">保存</button>
-            </form>
-        </div>
-    </div>
-    
-    <!-- パスワード変更タブ -->
-    <div id="password" class="tab-content">
-        <div class="password-change-container">
-            <h2>管理者パスワード変更</h2>
-            <form id="passwordChangeForm" class="password-change-form">
-                <div class="form-group">
-                    <label for="currentPassword">現在のパスワード</label>
-                    <input type="password" id="currentPassword" name="currentPassword" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="newPassword">新しいパスワード</label>
-                    <input type="password" id="newPassword" name="newPassword" required>
-                    <small>※半角英数字8文字以上</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirmNewPassword">新しいパスワード（確認）</label>
-                    <input type="password" id="confirmNewPassword" name="confirmNewPassword" required>
-                </div>
-                
-                <button type="submit" class="btn-submit">パスワードを変更</button>
-            </form>
-        </div>
-    </div>
-    
-    <script type="module">
-        // 导入 Supabase 客户端和数据同步函数
-        import { supabase } from './js/supabaseClient.js';
-        import { getTeamId } from './js/dataSync.js';
-        
+    <!-- 加载 Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase 配置
+        const supabaseUrl = 'https://xhqvbirifrdlmlnrwayp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 数据存储键
+        const STORAGE_KEY = 'tky_attendance_system';
+        const MEMBERS_KEY = 'members';
+        const TEAMS_KEY = 'teams';
+        const SITES_KEY = 'sites';
+
+        // 初期データ
+        const initialData = {
+            [MEMBERS_KEY]: [
+                { id: 1, name: '山田太郎', team: 'チームA' },
+                { id: 2, name: '佐藤花子', team: 'チームB' }
+            ],
+            [TEAMS_KEY]: ['チームA', 'チームB', 'チームC'],
+            [SITES_KEY]: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト']
+        };
+
+        // データ取得関数
+        function getData(key) {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
+            return key ? data[key] : data;
+        }
+
+        // データ保存関数
+        function saveData(key, value) {
+            const data = getData();
+            data[key] = value;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // 数据映射辅助函数
+        let teamMap = null;
+
+        // 获取团队ID
+        async function getTeamId(teamName) {
+            if (!teamMap) {
+                const { data, error } = await supabase.from('teams').select('id, name');
+                if (!error) {
+                    teamMap = Object.fromEntries(data.map(t => [t.name, t.id]));
+                } else {
+                    console.error('获取团队数据失败:', error);
+                    return null;
+                }
+            }
+            return teamMap?.[teamName] || null;
+        }
+
         // 页面加载时测试 Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
             const statusDiv = document.getElementById('supabaseStatus');
@@ -608,7 +147,7 @@
             try {
                 // 测试连接 - 尝试获取一个简单的查询
                 const { data, error } = await supabase
-                    .from('admins')
+                    .from('teams')
                     .select('id')
                     .limit(1);
                 
@@ -624,666 +163,240 @@
                 statusDiv.innerHTML = '✅ 成功连接云端数据库 (Supabase)';
                 
             } catch (error) {
-                // 连接失败时不显示错误，避免影响用户体验
-                console.log('Supabase 连接テスト失败:', error.message);
-                statusDiv.style.display = 'none';
+                // 连接失败时显示错误消息
+                console.log('Supabase 连接测试失败:', error.message);
+                statusDiv.style.display = 'block';
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.style.border = '1px solid #f5c6cb';
+                statusDiv.innerHTML = `❌ 数据库连接失败: ${error.message}`;
             }
             
-            // 初始化原有的管理员面板功能
-            initializeAdminPanel();
+            // 初始化页面功能
+            initializePage();
         });
-        
-        // 初始化管理员面板功能の函数
-        function initializeAdminPanel() {
-            // 数据存储键
-            const STORAGE_KEY = 'tky_attendance_system';
-            const MEMBERS_KEY = 'members';
-            const TEAMS_KEY = 'teams';
-            const ATTENDANCE_KEY = 'attendance';
-            const SITES_KEY = 'sites';
 
-            // 初始数据
-            const initialData = {
-                [MEMBERS_KEY]: [
-                    { id: 1, name: '山田太郎', team: 'チームA' },
-                    { id: 2, name: '佐藤花子', team: 'チームB' }
-                ],
-                [TEAMS_KEY]: ['チームA', 'チームB', 'チームC'],
-                [SITES_KEY]: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
-                [ATTENDANCE_KEY]: []
-            };
-
-            // 数据获取函数
-            function getData(key) {
-                const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
-                return key ? data[key] : data;
-            }
-
-            // 数据保存函数
-            function saveData(key, value) {
-                const data = getData();
-                data[key] = value;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-            }
-
-            // 登出处理
-            document.getElementById('logout').addEventListener('click', function() {
-                if (confirm('本当にログアウトしますか？')) {
-                    window.location.href = 'index.html';
-                }
+        // 初始化页面功能
+        function initializePage() {
+            // 团队选择项更新
+            const teamSelect = document.getElementById('team');
+            teamSelect.innerHTML = '<option value="">選択してください</option>';
+            getData(TEAMS_KEY).forEach(team => {
+                const option = document.createElement('option');
+                option.value = team;
+                option.textContent = team;
+                teamSelect.appendChild(option);
             });
 
-            // 标签页切换
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    
-                    // 更新活动标签页
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // 更新标签页内容
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    document.getElementById(tabId).classList.add('active');
-                    
-                    // 标签页特定初始化
-                    if (tabId === 'members') {
-                        renderMembersTable();
-                    } else if (tabId === 'teams') {
-                        renderTeamsTable();
-                    } else if (tabId === 'sites') {
-                        renderSitesTable();
-                    } else if (tabId === 'stats') {
-                        renderStats();
-                    }
-                    // 密码变更标签页不需要特殊初始化
-                });
-            });
-
-            // 添加成员按钮
-            document.getElementById('addMember').addEventListener('click', function() {
-                document.getElementById('modalMemberTitle').textContent = 'メンバー追加';
-                document.getElementById('memberId').value = '';
-                document.getElementById('memberName').value = '';
-                document.getElementById('memberUsername').value = '';
-                document.getElementById('memberPassword').value = '';
-                
-                // 更新团队选择项
-                const teamSelect = document.getElementById('memberTeam');
-                teamSelect.innerHTML = '';
-                getData(TEAMS_KEY).forEach(team => {
-                    const option = document.createElement('option');
-                    option.value = team;
-                    option.textContent = team;
-                    teamSelect.appendChild(option);
-                });
-                
-                document.getElementById('memberModal').style.display = 'block';
-            });
-
-            // 添加团队按钮
-            document.getElementById('addTeam').addEventListener('click', function() {
-                document.getElementById('teamName').value = '';
-                document.getElementById('teamModal').style.display = 'block';
-            });
-
-            // 模态框关闭按钮
-            document.querySelectorAll('.close').forEach(closeBtn => {
-                closeBtn.addEventListener('click', function() {
-                    this.closest('.modal').style.display = 'none';
-                });
-            });
-
-            // 点击窗口外部关闭模态框
-            window.addEventListener('click', function(e) {
-                if (e.target.classList.contains('modal')) {
-                    e.target.style.display = 'none';
-                }
+            // 返回主页面按钮
+            document.getElementById('backToMain').addEventListener('click', function() {
+                window.location.href = 'index.html';
             });
 
             // 成员表单提交
             document.getElementById('memberForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
-                const id = document.getElementById('memberId').value;
+
                 const name = document.getElementById('memberName').value;
-                const username = document.getElementById('memberUsername').value;
-                const password = document.getElementById('memberPassword').value;
-                const team = document.getElementById('memberTeam').value;
-                
-                // 密码长度检查
-                if (password && password.length < 8) {
-                    alert('パスワードは8文字以上である必要があります');
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const team = document.getElementById('team').value;
+
+                // 信息确认
+                const confirmMsg = 
+                    `以下の内容でメンバーを追加します。\n\n` +
+                    `氏名: ${name}\n` +
+                    `ユーザー名: ${username}\n` +
+                    `チーム: ${team}\n\n` +
+                    `よろしいですか？`;
+                if (!window.confirm(confirmMsg)) {
                     return;
                 }
-                
+
+                // 保存到本地存储
                 const members = getData(MEMBERS_KEY);
-                
-                if (id) {
-                    // 更新现有成员
-                    const index = members.findIndex(m => m.id == id);
-                    if (index !== -1) {
-                        members[index] = { id: parseInt(id), name, team };
-                    }
-                    
-                    // 如果输入了用户名和密码，则更新 registeredUsers
-                    if (username && password) {
-                        let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                        
-                        // 更新现有用户或添加新用户
-                        const userIndex = users.findIndex(user => user.name === name && user.team === team);
-                        if (userIndex !== -1) {
-                            // 更新现有用户
-                            users[userIndex] = { username, password, name, team };
-                        } else {
-                            // 添加新用户
-                            // 检查用户名是否已存在
-                            if (users.some(user => user.username === username)) {
-                                alert('このユーザー名は既に使用されています');
-                                return;
-                            }
-                            users.push({ username, password, name, team });
-                        }
-                        
-                        // 保存到本地存储
-                        localStorage.setItem('registeredUsers', JSON.stringify(users));
-                    }
-                    
-                    // 同步到 Supabase
-                    try {
-                        const teamId = await getTeamId(team);
-                        if (teamId) {
-                            const { data, error } = await supabase
-                                .from('members')
-                                .upsert({
-                                    id: parseInt(id),
-                                    name: name,
-                                    username: username,
-                                    password: password,
-                                    team_id: teamId
-                                });
-                                
-                            if (error) {
-                                console.error('Supabase 同步失败:', error);
-                                alert('成员已保存到本地，但云端同步失败');
-                            } else {
-                                console.log('成员数据已同步到 Supabase');
-                            }
-                        } else {
-                            console.warn('无法找到团队ID映射，跳过Supabase同步');
-                        }
-                    } catch (error) {
-                        console.error('Supabase 同步过程中出错:', error);
-                        alert('成员已保存到本地，但云端同步出错');
-                    }
-                } else {
-                    // 添加新成员
-                    const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
-                    members.push({ id: newId, name, team });
-                    
-                    // 如果输入了用户名とパスワード，则注册用户
-                    if (username && password) {
-                        let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                        
-                        // 检查用户名是否已存在
-                        if (users.some(user => user.username === username)) {
-                            alert('このユーザー名は既に使用されています');
-                            return;
-                        }
-                        
-                        // 添加新用户
-                        users.push({ username, password, name, team });
-                        
-                        // 保存到本地存储
-                        localStorage.setItem('registeredUsers', JSON.stringify(users));
-                    }
-                    
-                    // 同步到 Supabase
-                    try {
-                        const teamId = await getTeamId(team);
-                        if (teamId) {
-                            const { data, error } = await supabase
-                                .from('members')
-                                .upsert({
-                                    id: newId,
-                                    name: name,
-                                    username: username,
-                                    password: password,
-                                    team_id: teamId
-                                });
-                                
-                            if (error) {
-                                console.error('Supabase 同步失败:', error);
-                                alert('成员已保存到本地，但云端同步失败');
-                            } else {
-                                console.log('成员数据已同步到 Supabase');
-                            }
-                        } else {
-                            console.warn('无法找到团队ID映射，跳过Supabase同步');
-                        }
-                    } catch (error) {
-                        console.error('Supabase 同步过程中出错:', error);
-                        alert('成员已保存到本地，但云端同步出错');
-                    }
-                }
-                
+                const newMember = {
+                    id: Date.now(),
+                    name: name,
+                    username: username,
+                    password: password,
+                    team: team
+                };
+                members.push(newMember);
                 saveData(MEMBERS_KEY, members);
-                document.getElementById('memberModal').style.display = 'none';
-                renderMembersTable();
-            });
 
-            // 团队表单提交
-            document.getElementById('teamForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const teamName = document.getElementById('teamName').value;
-                const teams = getData(TEAMS_KEY);
-                
-                if (!teams.includes(teamName)) {
-                    teams.push(teamName);
-                    saveData(TEAMS_KEY, teams);
-                    document.getElementById('teamModal').style.display = 'none';
-                    renderTeamsTable();
-                } else {
-                    alert('このチーム名は既に存在します');
-                }
-            });
-
-            // 渲染成员表格
-            function renderMembersTable() {
-                const members = getData(MEMBERS_KEY);
-                const teams = getData(TEAMS_KEY);
-                const tbody = document.querySelector('#membersTable tbody');
-                if (!tbody) return;
-                
-                tbody.innerHTML = '';
-                
-                members.forEach(member => {
-                    const row = document.createElement('tr');
-                    
-                    row.innerHTML = `
-                        <td>${member.name}</td>
-                        <td>${member.team}</td>
-                        <td>
-                            <button class="action-btn btn-edit" data-id="${member.id}">編集</button>
-                            <button class="action-btn btn-delete" data-id="${member.id}">削除</button>
-                        </td>
-                    `;
-                    
-                    tbody.appendChild(row);
-                });
-                
-                // 编辑按钮
-                document.querySelectorAll('#membersTable .btn-edit').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.getAttribute('data-id');
-                        const member = getData(MEMBERS_KEY).find(m => m.id == id);
-                        
-                        if (member) {
-                            document.getElementById('modalMemberTitle').textContent = 'メンバー編集';
-                            document.getElementById('memberId').value = member.id;
-                            document.getElementById('memberName').value = member.name;
+                // 同步到Supabase
+                try {
+                    const teamId = await getTeamId(team);
+                    if (teamId) {
+                        const { data, error } = await supabase
+                            .from('members')
+                            .upsert({
+                                name: name,
+                                username: username,
+                                password: password,
+                                team_id: teamId
+                            }, { onConflict: 'username' });
                             
-                            // 清空用户名和密码字段
-                            document.getElementById('memberUsername').value = '';
-                            document.getElementById('memberPassword').value = '';
-                            
-                            // 更新团队选择項
-                            const teamSelect = document.getElementById('memberTeam');
-                            teamSelect.innerHTML = '';
-                            teams.forEach(team => {
-                                const option = document.createElement('option');
-                                option.value = team;
-                                option.textContent = team;
-                                option.selected = team === member.team;
-                                teamSelect.appendChild(option);
-                            });
-                            
-                            document.getElementById('memberModal').style.display = 'block';
+                        if (error) {
+                            console.error('Supabase 同步失败:', error);
+                            alert('成员已保存到本地，但云端同步失败');
+                        } else {
+                            console.log('成员数据已同步到 Supabase');
                         }
-                    });
-                });
-                
-                // 删除按钮
-                document.querySelectorAll('#membersTable .btn-delete').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        if (confirm('このメンバーを削除しますか？')) {
-                            const id = this.getAttribute('data-id');
-                            const members = getData(MEMBERS_KEY).filter(m => m.id != id);
-                            saveData(MEMBERS_KEY, members);
-                            renderMembersTable();
-                        }
-                    });
-                });
-            }
-
-            // 渲染チームテーブル
-            function renderTeamsTable() {
-                const teams = getData(TEAMS_KEY);
-                const members = getData(MEMBERS_KEY);
-                const tbody = document.querySelector('#teamsTable tbody');
-                if (!tbody) return;
-                
-                tbody.innerHTML = '';
-                
-                teams.forEach(team => {
-                    const memberCount = members.filter(m => m.team === team).length;
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${team}</td>
-                        <td>${memberCount}</td>
-                        <td>
-                            <button class="action-btn btn-edit" data-team="${team}">編集</button>
-                            <button class="action-btn btn-delete" data-team="${team}">削除</button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                // 团队編集ボタン
-                document.querySelectorAll('#teamsTable .btn-edit').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const oldTeamName = this.getAttribute('data-team');
-                        const newTeamName = prompt('新しいチーム名を入力してください', oldTeamName);
-                        
-                        if (newTeamName && newTeamName !== oldTeamName) {
-                            if (getData(TEAMS_KEY).includes(newTeamName)) {
-                                alert('このチーム名は既に存在します');
-                                return;
-                            }
-                            
-                            // 更新チーム名称
-                            const teams = getData(TEAMS_KEY).map(t => t === oldTeamName ? newTeamName : t);
-                            saveData(TEAMS_KEY, teams);
-                            
-                            // 更新関連メンバー
-                            const members = getData(MEMBERS_KEY).map(m => {
-                                if (m.team === oldTeamName) {
-                                    return {...m, team: newTeamName};
-                                }
-                                return m;
-                            });
-                            saveData(MEMBERS_KEY, members);
-                            
-                            renderTeamsTable();
-                            renderMembersTable();
-                        }
-                    });
-                });
-                
-                // 団队削除ボタン
-                document.querySelectorAll('#teamsTable .btn-delete').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const team = this.getAttribute('data-team');
-                        const membersInTeam = getData(MEMBERS_KEY).filter(m => m.team === team).length;
-                        
-                        if (membersInTeam > 0) {
-                            alert('このチームにはメンバーが存在するため削除できません');
-                            return;
-                        }
-                        
-                        if (confirm(`チーム「${team}」を削除しますか？`)) {
-                            const teams = getData(TEAMS_KEY).filter(t => t !== team);
-                            saveData(TEAMS_KEY, teams);
-                            renderTeamsTable();
-                        }
-                    });
-                });
-            }
-
-            // 渲染現場テーブル
-            function renderSitesTable() {
-                const sites = getData(SITES_KEY);
-                const tbody = document.querySelector('#sitesTable tbody');
-                if (!tbody) return;
-                
-                tbody.innerHTML = '';
-                
-                sites.forEach((site, index) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${site}</td>
-                        <td>
-                            <button class="action-btn btn-edit" onclick="editSite(${index})">編集</button>
-                            <button class="action-btn btn-delete" onclick="deleteSite(${index})">削除</button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            }
-
-            // 編集現場
-            function editSite(index) {
-                const sites = getData(SITES_KEY);
-                const siteName = sites[index];
-                document.getElementById('siteId').value = index;
-                document.getElementById('siteName').value = siteName;
-                document.getElementById('modalSiteTitle').textContent = '現場編集';
-                document.getElementById('siteModal').style.display = 'block';
-            }
-
-            // 削除現場
-            function deleteSite(index) {
-                const sites = getData(SITES_KEY);
-                const siteName = sites[index];
-                
-                if (confirm(`本当に現場「${siteName}」を削除しますか？`)) {
-                    sites.splice(index, 1);
-                    saveData(SITES_KEY, sites);
-                    renderSitesTable();
-                }
-            }
-
-            // 現場フォーム送信
-            document.getElementById('siteForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const siteId = document.getElementById('siteId').value;
-                const siteName = document.getElementById('siteName').value.trim();
-                const sites = getData(SITES_KEY);
-                
-                if (siteId !== '') {
-                    // 編集
-                    sites[parseInt(siteId)] = siteName;
-                } else {
-                    // 追加
-                    if (!sites.includes(siteName)) {
-                        sites.push(siteName);
                     } else {
-                        alert('この現場名は既に存在します');
-                        return;
+                        console.warn('无法找到对应的团队ID，跳过Supabase同步');
+                        alert('成员已保存到本地，但云端同步需要团队映射');
                     }
+                } catch (error) {
+                    console.error('Supabase 同步过程中出错:', error);
+                    alert('成员已保存到本地，但云端同步出错');
                 }
+
+                // 更新成员列表
+                updateMembersList();
                 
-                saveData(SITES_KEY, sites);
-                document.getElementById('siteModal').style.display = 'none';
-                renderSitesTable();
+                // 表单重置
+                this.reset();
+                alert('メンバーが追加されました！');
             });
 
-            // 現場追加ボタン
-            document.getElementById('addSite').addEventListener('click', function() {
-                document.getElementById('siteId').value = '';
-                document.getElementById('siteName').value = '';
-                document.getElementById('modalSiteTitle').textContent = '現場追加';
-                document.getElementById('siteModal').style.display = 'block';
+            // 清除表单按钮
+            document.getElementById('clearForm').addEventListener('click', function() {
+                document.getElementById('memberForm').reset();
             });
 
-            // 統計データレンダリング
-            function renderStats() {
-                const attendance = getData(ATTENDANCE_KEY) || [];
-                
-                // 現場統計
-                const siteStats = {};
-                const sites = getData(SITES_KEY);
-                sites.forEach(site => {
-                    siteStats[site] = { days: 0, parkingFee: 0, highwayFee: 0, total: 0 };
-                });
+            // 初始化成员列表
+            updateMembersList();
+        }
 
-                attendance.forEach(record => {
-                    if (siteStats[record.site]) {
-                        siteStats[record.site].days++;
-                        siteStats[record.site].parkingFee += record.parkingFee;
-                        siteStats[record.site].highwayFee += record.highwayFee;
-                        siteStats[record.site].total += record.parkingFee + record.highwayFee;
-                    }
-                });
-
-                const siteStatsTbody = document.querySelector('#siteStats tbody');
-                if (siteStatsTbody) {
-                    siteStatsTbody.innerHTML = '';
-                    Object.entries(siteStats).forEach(([site, stats]) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${site}</td>
-                            <td>${stats.days}</td>
-                            <td>${stats.parkingFee.toLocaleString()} 円</td>
-                            <td>${stats.highwayFee.toLocaleString()} 円</td>
-                            <td>${stats.total.toLocaleString()} 円</td>
-                        `;
-                        siteStatsTbody.appendChild(row);
-                    });
-                }
-
-                // メンバー統計
-                const memberStats = {};
-                attendance.forEach(record => {
-                    if (!memberStats[record.name]) {
-                        memberStats[record.name] = {
-                            days: 0,
-                            parkingFee: 0,
-                            highwayFee: 0,
-                            total: 0
-                        };
-                    }
-                    memberStats[record.name].days++;
-                    memberStats[record.name].parkingFee += record.parkingFee;
-                    memberStats[record.name].highwayFee += record.highwayFee;
-                    memberStats[record.name].total += record.parkingFee + record.highwayFee;
-                });
-
-                const memberStatsTbody = document.getElementById('memberStats');
-                if (memberStatsTbody) {
-                    memberStatsTbody.innerHTML = '';
-                    Object.entries(memberStats).forEach(([name, stats]) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${name}</td>
-                            <td>${stats.days}</td>
-                            <td>${stats.parkingFee.toLocaleString()} 円</td>
-                            <td>${stats.highwayFee.toLocaleString()} 円</td>
-                            <td>${stats.total.toLocaleString()} 円</td>
-                        `;
-                        memberStatsTbody.appendChild(row);
-                    });
-                }
-
-                // チーム統計
-                const teamStats = {};
-                attendance.forEach(record => {
-                    if (!teamStats[record.team]) {
-                        teamStats[record.team] = {
-                            days: 0,
-                            parkingFee: 0,
-                            highwayFee: 0,
-                            total: 0
-                        };
-                    }
-                    teamStats[record.team].days++;
-                    teamStats[record.team].parkingFee += record.parkingFee;
-                    teamStats[record.team].highwayFee += record.highwayFee;
-                    teamStats[record.team].total += record.parkingFee + record.highwayFee;
-                });
-
-                const teamStatsTbody = document.getElementById('teamStats');
-                if (teamStatsTbody) {
-                    teamStatsTbody.innerHTML = '';
-                    Object.entries(teamStats).forEach(([team, stats]) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${team}</td>
-                            <td>${stats.days}</td>
-                            <td>${stats.parkingFee.toLocaleString()} 円</td>
-                            <td>${stats.highwayFee.toLocaleString()} 円</td>
-                            <td>${stats.total.toLocaleString()} 円</td>
-                        `;
-                        teamStatsTbody.appendChild(row);
-                    });
-                }
+        // 更新成员列表
+        function updateMembersList() {
+            const members = getData(MEMBERS_KEY);
+            const container = document.getElementById('membersContainer');
+            
+            container.innerHTML = '';
+            
+            if (members.length === 0) {
+                container.innerHTML = '<p class="no-members">登録されているメンバーはいません</p>';
+                return;
             }
-
-            // データエクスポート
-            document.getElementById('exportData').addEventListener('click', function() {
-                const attendance = getData(ATTENDANCE_KEY) || [];
-                if (!attendance.length) {
-                    alert('エクスポートするデータがありません');
-                    return;
-                }
-                
-                // CSVデータ生成
-                let csv = '日付,現場名,チーム,氏名,駐車料金,高速料金,合計\n';
-                attendance.forEach(record => {
-                    csv += `${record.date},${record.site},${record.team},${record.name},${record.parkingFee},${record.highwayFee},${record.parkingFee + record.highwayFee}\n`;
-                });
-                
-                // ファイル名生成
-                const now = new Date();
-                const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}`;
-                const filename = `出勤データ_${timestamp}.csv`;
-                
-                // ダウンロード
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                link.click();
+            
+            members.forEach(member => {
+                const memberElement = document.createElement('div');
+                memberElement.className = 'member-item';
+                memberElement.innerHTML = `
+                    <div class="member-info">
+                        <strong>${member.name}</strong> (${member.username})
+                        <span class="member-team">${member.team}</span>
+                    </div>
+                    <div class="member-actions">
+                        <button class="edit-btn" data-id="${member.id}">編集</button>
+                        <button class="delete-btn" data-id="${member.id}">削除</button>
+                    </div>
+                `;
+                container.appendChild(memberElement);
             });
 
-            // パスワード変更フォーム送信
-            document.getElementById('passwordChangeForm').addEventListener('submit', function(e) {
+            // 添加删除事件监听器
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const memberId = parseInt(this.getAttribute('data-id'));
+                    deleteMember(memberId);
+                });
+            });
+
+            // 添加编辑事件监听器
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const memberId = parseInt(this.getAttribute('data-id'));
+                    editMember(memberId);
+                });
+            });
+        }
+
+        // 删除成员
+        function deleteMember(memberId) {
+            if (!confirm('このメンバーを削除してもよろしいですか？')) {
+                return;
+            }
+            
+            const members = getData(MEMBERS_KEY);
+            const updatedMembers = members.filter(member => member.id !== memberId);
+            saveData(MEMBERS_KEY, updatedMembers);
+            updateMembersList();
+            alert('メンバーを削除しました');
+        }
+
+        // 编辑成员
+        function editMember(memberId) {
+            const members = getData(MEMBERS_KEY);
+            const member = members.find(m => m.id === memberId);
+            
+            if (!member) return;
+            
+            // 填充表单
+            document.getElementById('memberName').value = member.name;
+            document.getElementById('username').value = member.username;
+            document.getElementById('password').value = member.password;
+            document.getElementById('team').value = member.team;
+            
+            // 修改提交按钮文本
+            const submitBtn = document.querySelector('#memberForm .submit-btn');
+            submitBtn.innerHTML = '<span class="icon">✏️</span>メンバー更新';
+            
+            // 临时修改提交事件
+            const form = document.getElementById('memberForm');
+            const originalSubmit = form.onsubmit;
+            
+            form.onsubmit = async function(e) {
                 e.preventDefault();
                 
-                const currentPassword = document.getElementById('currentPassword').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+                const name = document.getElementById('memberName').value;
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const team = document.getElementById('team').value;
                 
-                // 現在のパスワード確認
-                // 実際のアプリケーションではサーバー側で確認するべき
-                const adminPassword = localStorage.getItem('adminPassword') || 'admin123';
-                
-                if (currentPassword !== adminPassword) {
-                    alert('現在のパスワードが正しくありません');
-                    return;
+                // 更新本地存储
+                const members = getData(MEMBERS_KEY);
+                const memberIndex = members.findIndex(m => m.id === memberId);
+                if (memberIndex !== -1) {
+                    members[memberIndex] = { ...members[memberIndex], name, username, password, team };
+                    saveData(MEMBERS_KEY, members);
                 }
                 
-                // 新しいパスワード確認
-                if (newPassword !== confirmNewPassword) {
-                    alert('新しいパスワードが一致しません');
-                    return;
+                // 同步到Supabase
+                try {
+                    const teamId = await getTeamId(team);
+                    if (teamId) {
+                        const { data, error } = await supabase
+                            .from('members')
+                            .upsert({
+                                name: name,
+                                username: username,
+                                password: password,
+                                team_id: teamId
+                            }, { onConflict: 'username' });
+                            
+                        if (error) {
+                            console.error('Supabase 同步失败:', error);
+                            alert('成员已更新到本地，但云端同步失败');
+                        } else {
+                            console.log('成员数据已同步到 Supabase');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Supabase 同步过程中出错:', error);
+                    alert('成员已更新到本地，但云端同步出错');
                 }
                 
-                // パスワード長さチェック
-                if (newPassword.length < 8) {
-                    alert('新しいパスワードは8文字以上である必要があります');
-                    return;
-                }
-                
-                // 新しいパスワード保存
-                localStorage.setItem('adminPassword', newPassword);
-                
-                // フォームリセット
-                document.getElementById('passwordChangeForm').reset();
-                
-                alert('パスワードが正常に変更されました');
-            });
-
-            // 初期表示
-            renderMembersTable();
-            renderTeamsTable();
-            renderSitesTable();
+                // 恢复原始状态
+                form.onsubmit = originalSubmit;
+                submitBtn.innerHTML = '<span class="icon">➕</span>メンバー追加';
+                form.reset();
+                updateMembersList();
+                alert('メンバー情報を更新しました！');
+            };
         }
     </script>
 </body>

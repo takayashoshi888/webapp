@@ -4,51 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKY株式会社 - ユーザーログイン</title>
-    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="login-container">
-    <div class="login-card">
-        <div class="login-header">
-            <h1>TKY株式会社</h1>
-            <p>ユーザーログイン</p>
-        </div>
-        
-        <!-- Supabase 连接状态提示 -->
-        <div id="supabaseStatus" style="margin: 10px; padding: 10px; border-radius: 5px; display: none;"></div>
-        
-        <form class="login-form" id="userLoginForm">
-            <div class="error-message" id="errorMessage">
-                ユーザー名またはパスワードが正しくありません
-            </div>
+<body>
+    <div class="container">
+        <div class="responsive-wrapper">
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <div class="logo-badge">
+                            <span class="logo-initial">TKY</span>
+                        </div>
+                        <div class="logo-text">
+                            <h1 class="company-name">TKY株式会社</h1>
+                            <p class="system-title">ユーザーログイン</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="backToMain" class="back-btn">
+                            <span class="icon">←</span>
+                            メイン画面へ戻る
+                        </button>
+                    </div>
+                </div>
+            </header>
             
-            <div class="form-group">
-                <label for="username">ユーザー名</label>
-                <input type="text" id="username" name="username" placeholder="ユーザー名を入力" required>
-            </div>
+            <!-- Supabase 连接状态提示 -->
+            <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
             
-            <div class="form-group">
-                <label for="password">パスワード</label>
-                <input type="password" id="password" name="password" placeholder="パスワードを入力" required>
-            </div>
-            
-            <button type="submit" class="login-btn">ログイン</button>
-        </form>
-        
-        <div class="forgot-password">
-            <a href="register.html">新しいユーザー登録</a>
-        </div>
-                
-        <div class="back-to-main">
-            <a href="index.html">← 出勤登録ページに戻る</a>
+            <main class="main-content">
+                <div class="form-card">
+                    <div class="card-header">
+                        <h2 class="form-title">ユーザーログイン</h2>
+                        <p class="form-subtitle">ユーザー名とパスワードを入力してください</p>
+                    </div>
+                    
+                    <form id="loginForm" class="login-form">
+                        <div class="form-group">
+                            <label for="username" class="form-label">ユーザー名</label>
+                            <input type="text" id="username" class="form-input" required placeholder="ユーザー名を入力">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password" class="form-label">パスワード</label>
+                            <input type="password" id="password" class="form-input" required placeholder="パスワードを入力">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="submit-btn">
+                                <span class="icon">🔑</span>
+                                ログイン
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="loginMessage" class="login-message" style="display: none;"></div>
+                </div>
+            </main>
         </div>
     </div>
+    
+    <!-- 加载 Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase 配置
+        const supabaseUrl = 'https://xhqvbirifrdlmlnrwayp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    <script type="module">
-        // 导入 Supabase 客户端和数据同步函数
-        import { supabase } from './js/supabaseClient.js';
-        import { getTeamNameById } from './js/dataSync.js';
-        
+        // 数据存储键
+        const STORAGE_KEY = 'tky_attendance_system';
+        const MEMBERS_KEY = 'members';
+
+        // 初期データ
+        const initialData = {
+            [MEMBERS_KEY]: [
+                { id: 1, name: '山田太郎', team: 'チームA' },
+                { id: 2, name: '佐藤花子', team: 'チームB' }
+            ]
+        };
+
+        // データ取得関数
+        function getData(key) {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
+            return key ? data[key] : data;
+        }
+
+        // 数据映射辅助函数
+        let memberMap = null;
+
+        // 根据成员名获取成员信息
+        async function getMemberByName(memberName) {
+            if (!memberMap) {
+                const { data, error } = await supabase.from('members').select('*');
+                if (!error) {
+                    memberMap = Object.fromEntries(data.map(m => [m.name, m]));
+                } else {
+                    console.error('获取成员数据失败:', error);
+                    return null;
+                }
+            }
+            return memberMap?.[memberName] || null;
+        }
+
+        // 根据用户名获取团队名称
+        async function getTeamNameById(teamId) {
+            try {
+                const { data, error } = await supabase
+                    .from('teams')
+                    .select('name')
+                    .eq('id', teamId)
+                    .single();
+                
+                if (!error && data) {
+                    return data.name;
+                }
+                return '未知团队';
+            } catch (error) {
+                console.error('获取团队名称失败:', error);
+                return '未知团队';
+            }
+        }
+
+        // 用户认证函数
+        async function authenticateUser(username, password) {
+            try {
+                // 首先尝试 Supabase 认证
+                const { data, error } = await supabase
+                    .from('members')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single();
+                    
+                if (!error && data) {
+                    return {
+                        username: data.username,
+                        name: data.name,
+                        team: await getTeamNameById(data.team_id)
+                    };
+                }
+                
+                // 如果 Supabase 认证失败，回退到本地认证
+                const localUsers = getData(MEMBERS_KEY);
+                const user = localUsers.find(u => u.username === username && u.password === password);
+                if (user) {
+                    return {
+                        username: user.username,
+                        name: user.name,
+                        team: user.team
+                    };
+                }
+                
+                return null;
+                
+            } catch (error) {
+                console.error('认证错误:', error);
+                // 出错时回退到本地认证
+                const localUsers = getData(MEMBERS_KEY);
+                const user = localUsers.find(u => u.username === username && u.password === password);
+                return user ? {
+                    username: user.username,
+                    name: user.name,
+                    team: user.team
+                } : null;
+            }
+        }
+
         // 页面加载时测试 Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
             const statusDiv = document.getElementById('supabaseStatus');
@@ -56,7 +179,7 @@
             try {
                 // 测试连接 - 尝试获取一个简单的查询
                 const { data, error } = await supabase
-                    .from('members')
+                    .from('teams')
                     .select('id')
                     .limit(1);
                 
@@ -72,85 +195,76 @@
                 statusDiv.innerHTML = '✅ 成功连接云端数据库 (Supabase)';
                 
             } catch (error) {
-                // 连接失败时不显示错误，避免影响用户体验
-                console.log('Supabase 连接テスト失败:', error.message);
-                statusDiv.style.display = 'none';
+                // 连接失败时显示错误消息
+                console.log('Supabase 连接测试失败:', error.message);
+                statusDiv.style.display = 'block';
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.style.border = '1px solid #f5c6cb';
+                statusDiv.innerHTML = `❌ 数据库连接失败: ${error.message}`;
             }
             
-            // 初始化原有的用户登录功能
-            initializeUserLogin();
+            // 初始化页面功能
+            initializePage();
         });
-        
-        // 初始化用户登录功能的函数
-        function initializeUserLogin() {
-            // 用户认证
-            async function authenticateUser(username, password) {
-                try {
-                    // 首先尝试 Supabase 认证
-                    const { data, error } = await supabase
-                        .from('members')
-                        .select('*')
-                        .eq('username', username)
-                        .eq('password', password)
-                        .single();
-                        
-                    if (!error && data) {
-                        return {
-                            username: data.username,
-                            name: data.name,
-                            team: await getTeamNameById(data.team_id)
-                        };
-                    }
-                    
-                    // 如果 Supabase 认证失败，回退到本地认证
-                    const validUsers = [
-                        { username: 'user1', password: 'password1', name: '山田太郎', team: 'チームA' },
-                        { username: 'user2', password: 'password2', name: '佐藤花子', team: 'チームB' }
-                    ];
-                    
-                    // 注册的ユーザー
-                    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                    
-                    // から所有ユーザー中検索
-                    const allUsers = [...validUsers, ...registeredUsers];
-                    return allUsers.find(u => u.username === username && u.password === password) || null;
-                    
-                } catch (error) {
-                    console.error('认证错误:', error);
-                    // 出错时回退到本地认证
-                    const validUsers = [
-                        { username: 'user1', password: 'password1', name: '山田太郎', team: 'チームA' },
-                        { username: 'user2', password: 'password2', name: '佐藤花子', team: 'チームB' }
-                    ];
-                    
-                    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                    const allUsers = [...validUsers, ...registeredUsers];
-                    return allUsers.find(u => u.username === username && u.password === password) || null;
-                }
-            }
-            
-            // 表单提交処理
-            document.getElementById('userLoginForm').addEventListener('submit', async function(e) {
+
+        // 初始化页面功能
+        function initializePage() {
+            // 返回主页面按钮
+            document.getElementById('backToMain').addEventListener('click', function() {
+                window.location.href = 'index.html';
+            });
+
+            // 登录表单提交
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
+
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
-                const errorMessage = document.getElementById('errorMessage');
-                
-                const user = await authenticateUser(username, password);
-                
-                if (user) {
-                    // ログイン成功
-                    localStorage.setItem('currentUser', JSON.stringify(user));
-                    window.location.href = 'user-data.html';
-                } else {
-                    // ログイン失敗
-                    errorMessage.classList.add('show');
-                    
-                    // 3秒後エラーメッセージを非表示
-                    setTimeout(() => {
-                        errorMessage.classList.remove('show');
-                    }, 3000);
+                const messageDiv = document.getElementById('loginMessage');
+
+                // 显示加载状态
+                messageDiv.style.display = 'block';
+                messageDiv.style.backgroundColor = '#d1ecf1';
+                messageDiv.style.color = '#0c5460';
+                messageDiv.style.border = '1px solid #bee5eb';
+                messageDiv.innerHTML = '認証中...';
+
+                try {
+                    // 认证用户
+                    const user = await authenticateUser(username, password);
+
+                    if (user) {
+                        // 登录成功
+                        messageDiv.style.backgroundColor = '#d4edda';
+                        messageDiv.style.color = '#155724';
+                        messageDiv.style.border = '1px solid #c3e6cb';
+                        messageDiv.innerHTML = 
+                            `✅ ログイン成功！\n` +
+                            `ようこそ、${user.name}さん (${user.team})`;
+
+                        // 保存登录状态到sessionStorage
+                        sessionStorage.setItem('currentUser', JSON.stringify(user));
+
+                        // 3秒后跳转到主页面
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 3000);
+
+                    } else {
+                        // 登录失败
+                        messageDiv.style.backgroundColor = '#f8d7da';
+                        messageDiv.style.color = '#721c24';
+                        messageDiv.style.border = '1px solid #f5c6cb';
+                        messageDiv.innerHTML = '❌ ユーザー名またはパスワードが正しくありません';
+                    }
+                } catch (error) {
+                    // 认证过程中出错
+                    console.error('认证过程出错:', error);
+                    messageDiv.style.backgroundColor = '#f8d7da';
+                    messageDiv.style.color = '#721c24';
+                    messageDiv.style.border = '1px solid #f5c6cb';
+                    messageDiv.innerHTML = '❌ 認証プロセスでエラーが発生しました';
                 }
             });
         }
