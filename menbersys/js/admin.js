@@ -471,7 +471,8 @@ async function renderMembersTable() {
     
     // 編集ボタン
     document.querySelectorAll('#membersTable .btn-edit').forEach(btn => {
-        btn.addEventListener('click', async function() {
+        // 先移除已存在的事件监听器（如果有的话）
+        const clickHandler = async function() {
             const id = this.getAttribute('data-id');
             const members = await getData(MEMBERS_KEY);
             const member = members.find(m => m.id === parseInt(id));
@@ -497,12 +498,18 @@ async function renderMembersTable() {
                 
                 document.getElementById('memberModal').style.display = 'block';
             }
-        });
+        };
+        
+        // 移除旧的事件监听器
+        btn.removeEventListener('click', clickHandler);
+        // 添加新的事件监听器
+        btn.addEventListener('click', clickHandler);
     });
     
     // 削除ボタン
     document.querySelectorAll('#membersTable .btn-delete').forEach(btn => {
-        btn.addEventListener('click', async function() {
+        // 先移除已存在的事件监听器（如果有的话）
+        const clickHandler = async function() {
             if (confirm('このメンバーを削除しますか？')) {
                 const id = this.getAttribute('data-id');
                 const members = await getData(MEMBERS_KEY);
@@ -529,7 +536,12 @@ async function renderMembersTable() {
                 
                 await renderMembersTable();
             }
-        });
+        };
+        
+        // 移除旧的事件监听器
+        btn.removeEventListener('click', clickHandler);
+        // 添加新的事件监听器
+        btn.addEventListener('click', clickHandler);
     });
 }
 
@@ -559,7 +571,8 @@ async function renderTeamsTable() {
     
     // チーム編集ボタン
     document.querySelectorAll('#teamsTable .btn-edit').forEach(btn => {
-        btn.addEventListener('click', async function() {
+        // 先移除已存在的事件监听器（如果有的话）
+        const clickHandler = async function() {
             const oldTeamName = this.getAttribute('data-team');
             const newTeamName = prompt('新しいチーム名を入力してください', oldTeamName);
             
@@ -587,12 +600,18 @@ async function renderTeamsTable() {
                 await renderTeamsTable();
                 await renderMembersTable();
             }
-        });
+        };
+        
+        // 移除旧的事件监听器
+        btn.removeEventListener('click', clickHandler);
+        // 添加新的事件监听器
+        btn.addEventListener('click', clickHandler);
     });
     
     // チーム削除ボタン
     document.querySelectorAll('#teamsTable .btn-delete').forEach(btn => {
-        btn.addEventListener('click', async function() {
+        // 先移除已存在的事件监听器（如果有的话）
+        const clickHandler = async function() {
             const team = this.getAttribute('data-team');
             const members = await getData(MEMBERS_KEY);
             const membersInTeam = members.filter(m => m.team === team).length;
@@ -642,7 +661,12 @@ async function renderTeamsTable() {
                 
                 await renderTeamsTable();
             }
-        });
+        };
+        
+        // 移除旧的事件监听器
+        btn.removeEventListener('click', clickHandler);
+        // 添加新的事件监听器
+        btn.addEventListener('click', clickHandler);
     });
 }
 
@@ -668,18 +692,30 @@ async function renderSitesTable() {
     
     // 現地編集ボタン
     document.querySelectorAll('#sitesTable .btn-edit').forEach(btn => {
-        btn.addEventListener('click', async function() {
+        // 先移除已存在的事件监听器（如果有的话）
+        const clickHandler = async function() {
             const index = parseInt(this.getAttribute('data-index'));
             await editSite(index);
-        });
+        };
+        
+        // 移除旧的事件监听器
+        btn.removeEventListener('click', clickHandler);
+        // 添加新的事件监听器
+        btn.addEventListener('click', clickHandler);
     });
     
     // 現地削除ボタン
     document.querySelectorAll('#sitesTable .btn-delete').forEach(btn => {
-        btn.addEventListener('click', async function() {
+        // 先移除已存在的事件监听器（如果有的话）
+        const clickHandler = async function() {
             const index = parseInt(this.getAttribute('data-index'));
             await deleteSite(index);
-        });
+        };
+        
+        // 移除旧的事件监听器
+        btn.removeEventListener('click', clickHandler);
+        // 添加新的事件监听器
+        btn.addEventListener('click', clickHandler);
     });
 }
 
