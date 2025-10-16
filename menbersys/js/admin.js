@@ -508,6 +508,25 @@ async function renderMembersTable() {
                 const members = await getData(MEMBERS_KEY);
                 const filteredMembers = members.filter(m => m.id !== parseInt(id));
                 await saveData(MEMBERS_KEY, filteredMembers);
+                
+                // 同步删除到Supabase
+                try {
+                    const { error } = await supabase
+                        .from('members')
+                        .delete()
+                        .eq('id', id);
+                    
+                    if (error) {
+                        console.error('Supabase 删除失败:', error);
+                        alert('成员已从本地删除，但云端同步失败');
+                    } else {
+                        console.log('成员数据已从 Supabase 删除');
+                    }
+                } catch (error) {
+                    console.error('Supabase 删除过程中出错:', error);
+                    alert('成员已从本地删除，但云端同步出错');
+                }
+                
                 await renderMembersTable();
             }
         });
@@ -587,6 +606,40 @@ async function renderTeamsTable() {
                 const teams = await getData(TEAMS_KEY);
                 const filteredTeams = teams.filter(t => t !== team);
                 await saveData(TEAMS_KEY, filteredTeams);
+                
+                // 同步删除到Supabase
+                try {
+                    // 首先获取团队ID
+                    const { data: teamData, error: teamError } = await supabase
+                        .from('teams')
+                        .select('id')
+                        .eq('name', team)
+                        .single();
+                    
+                    if (teamError) {
+                        console.error('获取团队ID失败:', teamError);
+                        alert('团队已从本地删除，但云端同步失败');
+                        await renderTeamsTable();
+                        return;
+                    }
+                    
+                    // 删除Supabase中的团队
+                    const { error } = await supabase
+                        .from('teams')
+                        .delete()
+                        .eq('id', teamData.id);
+                    
+                    if (error) {
+                        console.error('Supabase 删除团队失败:', error);
+                        alert('团队已从本地删除，但云端同步失败');
+                    } else {
+                        console.log('团队数据已从 Supabase 删除');
+                    }
+                } catch (error) {
+                    console.error('Supabase 删除团队过程中出错:', error);
+                    alert('团队已从本地删除，但云端同步出错');
+                }
+                
                 await renderTeamsTable();
             }
         });
@@ -648,6 +701,26 @@ async function deleteSite(index) {
     if (confirm(`本当に現場「${siteName}」を削除しますか？`)) {
         sites.splice(index, 1);
         await saveData(SITES_KEY, sites);
+        
+        // 同步删除到Supabase
+        try {
+            // 删除Supabase中的现场
+            const { error } = await supabase
+                .from('sites')
+                .delete()
+                .eq('name', siteName);
+            
+            if (error) {
+                console.error('Supabase 删除现场失败:', error);
+                alert('现场已从本地删除，但云端同步失败');
+            } else {
+                console.log('现场数据已从 Supabase 删除');
+            }
+        } catch (error) {
+            console.error('Supabase 删除现场过程中出错:', error);
+            alert('现场已从本地删除，但云端同步出错');
+        }
+        
         await renderSitesTable();
     }
 }
