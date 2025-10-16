@@ -280,7 +280,7 @@ async function initializePage() {
         
         if (id) {
             // 既存メンバーを更新
-            const index = members.findIndex(m => m.id == id);
+            const index = members.findIndex(m => m.id === parseInt(id));
             if (index !== -1) {
                 members[index] = { ...members[index], name, username, password, team };
             }
@@ -474,7 +474,7 @@ async function renderMembersTable() {
         btn.addEventListener('click', async function() {
             const id = this.getAttribute('data-id');
             const members = await getData(MEMBERS_KEY);
-            const member = members.find(m => m.id == id);
+            const member = members.find(m => m.id === parseInt(id));
             
             if (member) {
                 document.getElementById('modalMemberTitle').textContent = 'メンバー編集';
@@ -506,7 +506,7 @@ async function renderMembersTable() {
             if (confirm('このメンバーを削除しますか？')) {
                 const id = this.getAttribute('data-id');
                 const members = await getData(MEMBERS_KEY);
-                const filteredMembers = members.filter(m => m.id != id);
+                const filteredMembers = members.filter(m => m.id !== parseInt(id));
                 await saveData(MEMBERS_KEY, filteredMembers);
                 await renderMembersTable();
             }
