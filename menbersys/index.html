@@ -106,48 +106,47 @@
         </div>
     </div>
     
-    <script src="script.js"></script>
-    <script>
+    <script type="module">
+        // 导入数据同步函数
+        import { syncAllData, getMemberIdByName, getSiteId, getTeamId } from './js/dataSync.js';
+        import { supabase } from './js/supabaseClient.js';
+        
+        // 数据存储键
+        const STORAGE_KEY = 'tky_attendance_system';
+        const MEMBERS_KEY = 'members';
+        const TEAMS_KEY = 'teams';
+        const ATTENDANCE_KEY = 'attendance';
+        const SITES_KEY = 'sites';
+
+        // 初期データ
+        const initialData = {
+            [MEMBERS_KEY]: [
+                { id: 1, name: '山田太郎', team: 'チームA' },
+                { id: 2, name: '佐藤花子', team: 'チームB' }
+            ],
+            [TEAMS_KEY]: ['チームA', 'チームB', 'チームC'],
+            [SITES_KEY]: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
+            [ATTENDANCE_KEY]: []
+        };
+
+        // データ取得関数
+        function getData(key) {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
+            return key ? data[key] : data;
+        }
+
+        // データ保存関数
+        function saveData(key, value) {
+            const data = getData();
+            data[key] = value;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
         // 页面加载时测试 Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
             const statusDiv = document.getElementById('supabaseStatus');
             
             try {
-                // 检查是否可以使用模块导入
-                let supabase;
-                try {
-                    // 尝试动态导入 Supabase 客户端
-                    const { default: supabaseClient } = await import('./js/supabaseClient.js');
-                    supabase = supabaseClient;
-                } catch (importError) {
-                    // 如果模块导入失败，使用兼容版本
-                    console.log('模块导入失败，使用兼容版本');
-                    statusDiv.style.display = 'block';
-                    statusDiv.style.backgroundColor = '#fff3cd';
-                    statusDiv.style.color = '#856404';
-                    statusDiv.style.border = '1px solid #ffeaa7';
-                    statusDiv.innerHTML = '⚠️ 正在使用兼容模式连接数据库...';
-                    
-                    // 使用 CDN 版本
-                    await new Promise((resolve, reject) => {
-                        if (typeof supabase !== 'undefined' && supabase.createClient) {
-                            resolve();
-                            return;
-                        }
-                        
-                        const script = document.createElement('script');
-                        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-                        script.onload = resolve;
-                        script.onerror = reject;
-                        document.head.appendChild(script);
-                    });
-                    
-                    supabase = supabase.createClient(
-                        'https://xhqvbirifrdlmlnrwayp.supabase.co',
-                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc'
-                    );
-                }
-                
                 // 测试连接 - 尝试获取一个简单的查询
                 const { data, error } = await supabase
                     .from('teams')
@@ -185,6 +184,26 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').value = today;
             
+            // 现场选择项更新
+            const siteSelect = document.getElementById('site');
+            siteSelect.innerHTML = '<option value="">選択してください</option>';
+            getData(SITES_KEY).forEach(site => {
+                const option = document.createElement('option');
+                option.value = site;
+                option.textContent = site;
+                siteSelect.appendChild(option);
+            });
+
+            // 团队选择项更新
+            const teamSelect = document.getElementById('team');
+            teamSelect.innerHTML = '<option value="">選択してください</option>';
+            getData(TEAMS_KEY).forEach(team => {
+                const option = document.createElement('option');
+                option.value = team;
+                option.textContent = team;
+                teamSelect.appendChild(option);
+            });
+            
             // 管理者ログインボタン
             document.getElementById('adminLogin').addEventListener('click', function() {
                 console.log("管理者ログインボタンクリック");
@@ -199,7 +218,7 @@
             
             // 出勤登録フォーム
             const form = document.getElementById('attendanceForm');
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const date = document.getElementById('date').value;
@@ -223,7 +242,7 @@
                     return;
                 }
 
-                // 出勤記録を保存
+                // 出勤記録を保存到本地存储
                 const attendance = getData(ATTENDANCE_KEY);
                 attendance.push({
                     date,
@@ -234,6 +253,39 @@
                     highwayFee
                 });
                 saveData(ATTENDANCE_KEY, attendance);
+
+                // 同步到Supabase
+                try {
+                    const memberId = await getMemberIdByName(name);
+                    const siteId = await getSiteId(site);
+                    const teamId = await getTeamId(team);
+                    
+                    if (memberId && siteId && teamId) {
+                        const { data, error } = await supabase
+                            .from('attendance_records')
+                            .insert({
+                                date: date,
+                                member_id: memberId,
+                                site_id: siteId,
+                                team_id: teamId,
+                                parking_fee: parkingFee,
+                                highway_fee: highwayFee
+                            });
+                            
+                        if (error) {
+                            console.error('Supabase 同步失败:', error);
+                            alert('出勤已保存到本地，但云端同步失败');
+                        } else {
+                            console.log('出勤记录已同步到 Supabase');
+                        }
+                    } else {
+                        console.warn('无法找到对应的ID映射，跳过Supabase同步');
+                        alert('出勤已保存到本地，但云端同步需要数据映射');
+                    }
+                } catch (error) {
+                    console.error('Supabase 同步过程中出错:', error);
+                    alert('出勤已保存到本地，但云端同步出错');
+                }
 
                 // フォームリセット
                 form.reset();

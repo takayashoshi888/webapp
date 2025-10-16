@@ -45,8 +45,9 @@
     </div>
 
     <script type="module">
-        // 导入 Supabase 客户端
+        // 导入 Supabase 客户端和数据同步函数
         import { supabase } from './js/supabaseClient.js';
+        import { getTeamNameById } from './js/dataSync.js';
         
         // 页面加载时测试 Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
@@ -83,30 +84,60 @@
         // 初始化用户登录功能的函数
         function initializeUserLogin() {
             // 用户认证
-            function authenticateUser(username, password) {
-                // 硬编码的用户（实际应用中应在服务器端验证）
-                const validUsers = [
-                    { username: 'user1', password: 'password1', name: '山田太郎' },
-                    { username: 'user2', password: 'password2', name: '佐藤花子' }
-                ];
-                
-                // 注册的ユーザー
-                const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                
-                // から所有ユーザー中検索
-                const allUsers = [...validUsers, ...registeredUsers];
-                return allUsers.find(u => u.username === username && u.password === password) || null;
+            async function authenticateUser(username, password) {
+                try {
+                    // 首先尝试 Supabase 认证
+                    const { data, error } = await supabase
+                        .from('members')
+                        .select('*')
+                        .eq('username', username)
+                        .eq('password', password)
+                        .single();
+                        
+                    if (!error && data) {
+                        return {
+                            username: data.username,
+                            name: data.name,
+                            team: await getTeamNameById(data.team_id)
+                        };
+                    }
+                    
+                    // 如果 Supabase 认证失败，回退到本地认证
+                    const validUsers = [
+                        { username: 'user1', password: 'password1', name: '山田太郎', team: 'チームA' },
+                        { username: 'user2', password: 'password2', name: '佐藤花子', team: 'チームB' }
+                    ];
+                    
+                    // 注册的ユーザー
+                    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                    
+                    // から所有ユーザー中検索
+                    const allUsers = [...validUsers, ...registeredUsers];
+                    return allUsers.find(u => u.username === username && u.password === password) || null;
+                    
+                } catch (error) {
+                    console.error('认证错误:', error);
+                    // 出错时回退到本地认证
+                    const validUsers = [
+                        { username: 'user1', password: 'password1', name: '山田太郎', team: 'チームA' },
+                        { username: 'user2', password: 'password2', name: '佐藤花子', team: 'チームB' }
+                    ];
+                    
+                    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                    const allUsers = [...validUsers, ...registeredUsers];
+                    return allUsers.find(u => u.username === username && u.password === password) || null;
+                }
             }
             
             // 表单提交処理
-            document.getElementById('userLoginForm').addEventListener('submit', function(e) {
+            document.getElementById('userLoginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 const errorMessage = document.getElementById('errorMessage');
                 
-                const user = authenticateUser(username, password);
+                const user = await authenticateUser(username, password);
                 
                 if (user) {
                     // ログイン成功

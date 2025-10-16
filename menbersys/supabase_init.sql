@@ -65,3 +65,41 @@ INSERT INTO sites (name) VALUES ('東京サイト'), ('大阪サイト'), ('名�
 INSERT INTO members (name, username, password, team_id) VALUES 
 ('山田太郎', 'user1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1), -- password: password1
 ('佐藤花子', 'user2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2); -- password: password2
+
+-- 添加索引提高查询性能
+CREATE INDEX IF NOT EXISTS idx_members_username ON members(username);
+CREATE INDEX IF NOT EXISTS idx_members_team_id ON members(team_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_member_id ON attendance_records(member_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(date);
+CREATE INDEX IF NOT EXISTS idx_attendance_site_id ON attendance_records(site_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_team_id ON attendance_records(team_id);
+
+-- 添加视图以便于数据同步
+CREATE OR REPLACE VIEW member_details AS
+SELECT 
+    m.id,
+    m.name,
+    m.username,
+    m.password,
+    t.name as team_name,
+    t.id as team_id
+FROM members m
+LEFT JOIN teams t ON m.team_id = t.id;
+
+CREATE OR REPLACE VIEW attendance_details AS
+SELECT 
+    ar.id,
+    ar.date,
+    m.name as member_name,
+    m.id as member_id,
+    s.name as site_name,
+    s.id as site_id,
+    t.name as team_name,
+    t.id as team_id,
+    ar.parking_fee,
+    ar.highway_fee,
+    ar.created_at
+FROM attendance_records ar
+LEFT JOIN members m ON ar.member_id = m.id
+LEFT JOIN sites s ON ar.site_id = s.id
+LEFT JOIN teams t ON ar.team_id = t.id;

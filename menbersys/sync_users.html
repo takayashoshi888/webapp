@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户数据同步</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 100%;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 10px;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        .connection-status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>用户数据同步</h1>
+        
+        <div class="note">
+            <p><strong>说明：</strong>此页面用于同步本地用户数据与Supabase数据库中的用户数据。</p>
+            <p>当您在不同设备上创建用户时，需要使用此功能来确保数据一致性。</p>
+        </div>
+        
+        <button id="syncBtn" class="btn btn-success">同步用户数据</button>
+        <button id="syncToLocalBtn" class="btn">从云端同步到本地</button>
+        <button id="syncToCloudBtn" class="btn">从本地同步到云端</button>
+        
+        <div id="statusMessage"></div>
+        <div id="results"></div>
+        
+        <div class="back-link">
+            <a href="index.html">← 返回主页</a>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入 Supabase 客户端和同步函数
+        import { supabase } from './js/supabaseClient.js';
+        import { syncRegisteredUsersToSupabase, syncSupabaseUsersToLocal, syncUsersBidirectionally } from './sync_users_to_supabase.js';
+        
+        // DOM 元素
+        const syncBtn = document.getElementById('syncBtn');
+        const syncToLocalBtn = document.getElementById('syncToLocalBtn');
+        const syncToCloudBtn = document.getElementById('syncToCloudBtn');
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<div class="connection-status ${type}">${message}</div>`;
+        }
+        
+        // 显示结果
+        function showResults(data, title) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div style="background: #e8f5e9; border-radius: 5px; padding: 15px; margin: 15px 0;">
+                    <h3>${title}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        // 显示本地用户数据
+        function showLocalUsers() {
+            try {
+                const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                showResults(registeredUsers, '本地用户数据');
+                return registeredUsers.length;
+            } catch (error) {
+                console.error('获取本地用户数据失败:', error);
+                return 0;
+            }
+        }
+        
+        // 显示云端用户数据
+        async function showCloudUsers() {
+            try {
+                const { data: members, error } = await supabase
+                    .from('members')
+                    .select('name, username, team_id');
+                    
+                if (error) {
+                    console.error('获取云端用户数据失败:', error);
+                    return 0;
+                }
+                
+                showResults(members, '云端用户数据');
+                return members.length;
+            } catch (error) {
+                console.error('获取云端用户数据失败:', error);
+                return 0;
+            }
+        }
+        
+        // 双向同步按钮事件
+        syncBtn.addEventListener('click', async () => {
+            showStatus('正在双向同步用户数据...', 'loading');
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                await syncUsersBidirectionally();
+                
+                showStatus('✅ 用户数据双向同步完成！', 'success');
+                
+                // 显示同步后的数据
+                const localCount = showLocalUsers();
+                const cloudCount = await showCloudUsers();
+                
+                showStatus(`✅ 用户数据双向同步完成！本地: ${localCount} 个用户, 云端: ${cloudCount} 个用户`, 'success');
+                
+            } catch (error) {
+                console.error('同步失败:', error);
+                showStatus(`❌ 同步失败: ${error.message}`, 'error');
+            }
+        });
+        
+        // 从云端同步到本地按钮事件
+        syncToLocalBtn.addEventListener('click', async () => {
+            showStatus('正在从云端同步用户数据到本地...', 'loading');
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                await syncSupabaseUsersToLocal();
+                
+                showStatus('✅ 从云端同步用户数据到本地完成！', 'success');
+                
+                // 显示同步后的数据
+                const localCount = showLocalUsers();
+                showStatus(`✅ 从云端同步用户数据到本地完成！本地: ${localCount} 个用户`, 'success');
+                
+            } catch (error) {
+                console.error('同步失败:', error);
+                showStatus(`❌ 同步失败: ${error.message}`, 'error');
+            }
+        });
+        
+        // 从本地同步到云端按钮事件
+        syncToCloudBtn.addEventListener('click', async () => {
+            showStatus('正在从本地同步用户数据到云端...', 'loading');
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                await syncRegisteredUsersToSupabase();
+                
+                showStatus('✅ 从本地同步用户数据到云端完成！', 'success');
+                
+                // 显示同步后的数据
+                const cloudCount = await showCloudUsers();
+                showStatus(`✅ 从本地同步用户数据到云端完成！云端: ${cloudCount} 个用户`, 'success');
+                
+            } catch (error) {
+                console.error('同步失败:', error);
+                showStatus(`❌ 同步失败: ${error.message}`, 'error');
+            }
+        });
+        
+        // 页面加载时显示当前数据状态
+        document.addEventListener('DOMContentLoaded', async () => {
+            showStatus('正在加载数据状态...', 'loading');
+            
+            try {
+                const localCount = showLocalUsers();
+                const cloudCount = await showCloudUsers();
+                
+                showStatus(`当前数据状态 - 本地: ${localCount} 个用户, 云端: ${cloudCount} 个用户`, 'info');
+            } catch (error) {
+                console.error('加载数据状态失败:', error);
+                showStatus(`加载数据状态失败: ${error.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

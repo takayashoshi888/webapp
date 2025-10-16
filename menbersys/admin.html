@@ -597,8 +597,9 @@
     </div>
     
     <script type="module">
-        // 导入 Supabase 客户端
+        // 导入 Supabase 客户端和数据同步函数
         import { supabase } from './js/supabaseClient.js';
+        import { getTeamId } from './js/dataSync.js';
         
         // 页面加载时测试 Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
@@ -744,7 +745,7 @@
             });
 
             // 成员表单提交
-            document.getElementById('memberForm').addEventListener('submit', function(e) {
+            document.getElementById('memberForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const id = document.getElementById('memberId').value;
@@ -790,6 +791,34 @@
                         // 保存到本地存储
                         localStorage.setItem('registeredUsers', JSON.stringify(users));
                     }
+                    
+                    // 同步到 Supabase
+                    try {
+                        const teamId = await getTeamId(team);
+                        if (teamId) {
+                            const { data, error } = await supabase
+                                .from('members')
+                                .upsert({
+                                    id: parseInt(id),
+                                    name: name,
+                                    username: username,
+                                    password: password,
+                                    team_id: teamId
+                                });
+                                
+                            if (error) {
+                                console.error('Supabase 同步失败:', error);
+                                alert('成员已保存到本地，但云端同步失败');
+                            } else {
+                                console.log('成员数据已同步到 Supabase');
+                            }
+                        } else {
+                            console.warn('无法找到团队ID映射，跳过Supabase同步');
+                        }
+                    } catch (error) {
+                        console.error('Supabase 同步过程中出错:', error);
+                        alert('成员已保存到本地，但云端同步出错');
+                    }
                 } else {
                     // 添加新成员
                     const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
@@ -810,6 +839,34 @@
                         
                         // 保存到本地存储
                         localStorage.setItem('registeredUsers', JSON.stringify(users));
+                    }
+                    
+                    // 同步到 Supabase
+                    try {
+                        const teamId = await getTeamId(team);
+                        if (teamId) {
+                            const { data, error } = await supabase
+                                .from('members')
+                                .upsert({
+                                    id: newId,
+                                    name: name,
+                                    username: username,
+                                    password: password,
+                                    team_id: teamId
+                                });
+                                
+                            if (error) {
+                                console.error('Supabase 同步失败:', error);
+                                alert('成员已保存到本地，但云端同步失败');
+                            } else {
+                                console.log('成员数据已同步到 Supabase');
+                            }
+                        } else {
+                            console.warn('无法找到团队ID映射，跳过Supabase同步');
+                        }
+                    } catch (error) {
+                        console.error('Supabase 同步过程中出错:', error);
+                        alert('成员已保存到本地，但云端同步出错');
                     }
                 }
                 

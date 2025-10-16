@@ -1,4 +1,4 @@
-// Supabase 客户端配置
+// supabaseClient.js
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
 // 替换为你的 Supabase 项目 URL 和 匿名公开 API 密钥
