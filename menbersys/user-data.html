@@ -1,3 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKY株式会社 - ユーザーデータ</title>
+    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="responsive-wrapper">
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <div class="logo-badge">
+                            <span class="logo-initial">TKY</span>
+                        </div>
+                        <div class="logo-text">
+                            <h1 class="company-name">TKY株式会社</h1>
+                            <p class="system-title">出勤管理システム</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="logout" class="admin-login-btn">
+                            <span class="icon">🚪</span>
+                            ログアウト
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Supabase 连接状态提示 -->
+            <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
+            
+            <main class="main-content">
+                <div class="form-card">
+                    <div class="card-header">
+                        <h2 class="form-title">あなたの出勤データ</h2>
+                        <p class="form-subtitle">ここでは、あなたの出勤情報を確認できます</p>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-card">
+                            <h3 class="info-title">個人情報</h3>
+                            <div class="info-item">
+                                <span class="info-label">氏名:</span>
+                                <span class="info-value" id="userName"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 class="info-title">出勤記録</h3>
+                                <button id="exportData" class="btn-export">
+                                    <span class="icon">💾</span>
+                                    データエクスポート
+                                </button>
+                            </div>
+                            <div class="table-container">
+                                <table id="attendanceTable" class="excel-style-table">
+                                    <thead>
+                                        <tr>
+                                            <th>日付</th>
+                                            <th>現場名</th>
+                                            <th>チーム</th>
+                                            <th>駐車料金</th>
+                                            <th>高速料金</th>
+                                            <th>合計</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 出勤データがここに表示されます -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
     <script type="module">
         // 导入 Supabase 客户端
         import { supabase } from './js/supabaseClient.js';
@@ -27,7 +112,9 @@
             } catch (error) {
                 // 连接失败时不显示错误，避免影响用户体验
                 console.log('Supabase 连接テスト失败:', error.message);
-                statusDiv.style.display = 'none';
+                if (statusDiv) {
+                    statusDiv.style.display = 'none';
+                }
             }
             
             // 初始化原有的用户数据功能
@@ -36,8 +123,7 @@
         
         // 初始化用户データ機能の函数
         function initializeUserData() {
-            // ページ読み込み時
-            // ログイン状態をチェック
+            // ページ読み込み时检查登录状态
             let currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
             if (!currentUser) {
                 // 如果sessionStorage中没有，尝试从localStorage获取（向后兼容）
@@ -74,6 +160,11 @@
                     }
                     
                     const tbody = document.querySelector('#attendanceTable tbody');
+                    if (!tbody) {
+                        console.error('无法找到出勤表格的tbody元素');
+                        return;
+                    }
+                    
                     tbody.innerHTML = '';
                     
                     let totalParkingFee = 0;
@@ -116,7 +207,9 @@
                 } catch (error) {
                     console.error('获取出勤数据失败:', error);
                     const tbody = document.querySelector('#attendanceTable tbody');
-                    tbody.innerHTML = `<tr><td colspan="6">データ取得中にエラーが発生しました</td></tr>`;
+                    if (tbody) {
+                        tbody.innerHTML = `<tr><td colspan="6">データ取得中にエラーが発生しました</td></tr>`;
+                    }
                 }
             }
             
