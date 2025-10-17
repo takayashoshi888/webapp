@@ -150,7 +150,7 @@
                 if (!data[SITES_KEY]) data[SITES_KEY] = initialData[SITES_KEY];
                 if (!data[ATTENDANCE_KEY]) data[ATTENDANCE_KEY] = initialData[ATTENDANCE_KEY];
                 
-                // 如果请求特定键，返回该键の値，否则返回整个データ对象
+                // 如果请求特定键，返回该键の値，否则返回整个データオブジェクト
                 return key ? (Array.isArray(data[key]) ? data[key] : []) : data;
             } catch (error) {
                 console.error('データ解析错误:', error);
@@ -213,7 +213,7 @@
             return memberMap?.[memberName] || null;
         }
 
-        // 页面加载时测试 Supabase 连接
+        // 页面加载時テスト Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
             const statusDiv = document.getElementById('supabaseStatus');
             
@@ -255,31 +255,11 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').value = today;
             
-            // 现場选择項更新
-            const siteSelect = document.getElementById('site');
-            siteSelect.innerHTML = '<option value="">選択してください</option>';
-            const sites = getData(SITES_KEY);
-            if (Array.isArray(sites)) {
-                sites.forEach(site => {
-                    const option = document.createElement('option');
-                    option.value = site;
-                    option.textContent = site;
-                    siteSelect.appendChild(option);
-                });
-            }
-
-            // 团队选择項更新
-            const teamSelect = document.getElementById('team');
-            teamSelect.innerHTML = '<option value="">選択してください</option>';
-            const teams = getData(TEAMS_KEY);
-            if (Array.isArray(teams)) {
-                teams.forEach(team => {
-                    const option = document.createElement('option');
-                    option.value = team;
-                    option.textContent = team;
-                    teamSelect.appendChild(option);
-                });
-            }
+            // 現場选择項更新（从Supabase获取データ）
+            updateSiteOptions();
+            
+            // 团队选择項更新（从Supabase获取データ）
+            updateTeamOptions();
             
             // 管理者ログインボタン
             document.getElementById('adminLogin').addEventListener('click', function() {
@@ -424,6 +404,92 @@
                     alert('出勤记录保存失敗: ' + error.message);
                 }
             });
+        }
+        
+        // 从Supabase获取现场选项并更新下拉框
+        async function updateSiteOptions() {
+            const siteSelect = document.getElementById('site');
+            siteSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            try {
+                // 从Supabase获取现场データ
+                const { data: sites, error } = await supabase
+                    .from('sites')
+                    .select('name');
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 更新本地存储（用于离线情况）
+                if (sites && sites.length > 0) {
+                    const siteNames = sites.map(site => site.name);
+                    saveData(SITES_KEY, siteNames);
+                    
+                    // 更新下拉框
+                    siteNames.forEach(siteName => {
+                        const option = document.createElement('option');
+                        option.value = siteName;
+                        option.textContent = siteName;
+                        siteSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('获取现场データ失败:', error);
+                // 如果Supabase获取失败，使用本地存储的数据作为后备
+                const sites = getData(SITES_KEY);
+                if (Array.isArray(sites) && sites.length > 0) {
+                    sites.forEach(site => {
+                        const option = document.createElement('option');
+                        option.value = site;
+                        option.textContent = site;
+                        siteSelect.appendChild(option);
+                    });
+                }
+            }
+        }
+        
+        // 从Supabase获取团队选项并更新下拉框
+        async function updateTeamOptions() {
+            const teamSelect = document.getElementById('team');
+            teamSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            try {
+                // 从Supabase获取团队データ
+                const { data: teams, error } = await supabase
+                    .from('teams')
+                    .select('name');
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 更新本地存储（用于离线情况）
+                if (teams && teams.length > 0) {
+                    const teamNames = teams.map(team => team.name);
+                    saveData(TEAMS_KEY, teamNames);
+                    
+                    // 更新下拉框
+                    teamNames.forEach(teamName => {
+                        const option = document.createElement('option');
+                        option.value = teamName;
+                        option.textContent = teamName;
+                        teamSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('获取チームデータ失败:', error);
+                // 如果Supabase获取失败，使用本地存储的数据作为后备
+                const teams = getData(TEAMS_KEY);
+                if (Array.isArray(teams) && teams.length > 0) {
+                    teams.forEach(team => {
+                        const option = document.createElement('option');
+                        option.value = team;
+                        option.textContent = team;
+                        teamSelect.appendChild(option);
+                    });
+                }
+            }
         }
     </script>
 </body>
