@@ -27,11 +27,24 @@ body {
 
 /* ヘッダースタイル */
 .app-header {
-    background: linear-gradient(135deg, #2c3e50 0%, #1a2530 100%);
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    padding: 20px;
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    border-radius: 16px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+    padding: 25px 30px;
     color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.app-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSg0NSkiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjAuNSIgZmlsbD0iIzZjN2NiYyIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcGF0dGVybikiLz48L3N2Zz4=');
+    opacity: 0.1;
 }
 
 .header-content {
@@ -39,59 +52,170 @@ body {
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 25px;
+    position: relative;
+    z-index: 1;
 }
 
 .logo-section {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 25px;
 }
 
 .logo-badge {
-    background: linear-gradient(135deg, #3498db 0%, #1a5276 100%);
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
+    background: linear-gradient(135deg, #3949ab 0%, #5c6bc0 100%);
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    font-weight: 800;
+    font-size: 24px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.logo-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .logo-text .company-name {
-    font-size: 24px;
-    font-weight: 700;
-    margin: 0 0 5px 0;
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .logo-text .system-title {
-    font-size: 16px;
-    opacity: 0.9;
+    font-size: 18px;
+    font-weight: 500;
+    opacity: 0.95;
     margin: 0;
+    letter-spacing: 0.3px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
 }
 
 .header-actions .admin-login-btn,
 .header-actions .user-login-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+    border: none;
     color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
+    padding: 14px 24px;
+    border-radius: 12px;
     font-weight: 600;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.header-actions .admin-login-btn::before,
+.header-actions .user-login-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+}
+
+.header-actions .admin-login-btn:hover::before,
+.header-actions .user-login-btn:hover::before {
+    left: 100%;
 }
 
 .header-actions .admin-login-btn:hover,
 .header-actions .user-login-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+}
+
+.header-actions .admin-login-btn {
+    background: linear-gradient(135deg, #ff7043 0%, #f4511e 100%);
+    box-shadow: 0 4px 12px rgba(244, 81, 30, 0.3);
+}
+
+.header-actions .admin-login-btn:hover {
+    box-shadow: 0 6px 16px rgba(244, 81, 30, 0.4);
+}
+
+.header-actions .icon {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 响应式設計 */
+@media (max-width: 768px) {
+    .app-header {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .logo-section {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .header-actions .admin-login-btn,
+    .header-actions .user-login-btn {
+        flex: 1;
+        max-width: 200px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-badge {
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+    }
+    
+    .logo-text .company-name {
+        font-size: 24px;
+    }
+    
+    .logo-text .system-title {
+        font-size: 16px;
+    }
+    
+    .header-actions .admin-login-btn,
+    .header-actions .user-login-btn {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    
+    .header-actions .icon {
+        font-size: 16px;
+    }
 }
 
 /* メインコンテンツ */
@@ -371,7 +495,7 @@ button {
     margin: 0;
 }
 
-/* Excel风格テーブル容器 */
+/* Excelスタイルテーブル容器 */
 .excel-style-container {
     overflow-x: auto;
 }
