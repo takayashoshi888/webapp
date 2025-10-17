@@ -1,88 +1,3 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TKY株式会社 - ユーザーデータ</title>
-    <link rel="icon" href="http://workbank.page.gd/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <div class="responsive-wrapper">
-            <header class="app-header">
-                <div class="header-content">
-                    <div class="logo-section">
-                        <div class="logo-badge">
-                            <span class="logo-initial">TKY</span>
-                        </div>
-                        <div class="logo-text">
-                            <h1 class="company-name">TKY株式会社</h1>
-                            <p class="system-title">出勤管理システム</p>
-                        </div>
-                    </div>
-                    <div class="header-actions">
-                        <button id="logout" class="admin-login-btn">
-                            <span class="icon">🚪</span>
-                            ログアウト
-                        </button>
-                    </div>
-                </div>
-            </header>
-            
-            <!-- Supabase 连接状态提示 -->
-            <div id="supabaseStatus" style="margin: 10px 20px; padding: 10px; border-radius: 5px; display: none;"></div>
-            
-            <main class="main-content">
-                <div class="form-card">
-                    <div class="card-header">
-                        <h2 class="form-title">あなたの出勤データ</h2>
-                        <p class="form-subtitle">ここでは、あなたの出勤情報を確認できます</p>
-                    </div>
-                    
-                    <div class="info-section">
-                        <div class="info-card">
-                            <h3 class="info-title">個人情報</h3>
-                            <div class="info-item">
-                                <span class="info-label">氏名:</span>
-                                <span class="info-value" id="userName"></span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-section">
-                        <div class="info-card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                                <h3 class="info-title">出勤記録</h3>
-                                <button id="exportData" class="btn-export">
-                                    <span class="icon">💾</span>
-                                    データエクスポート
-                                </button>
-                            </div>
-                            <div class="table-container">
-                                <table id="attendanceTable" class="excel-style-table">
-                                    <thead>
-                                        <tr>
-                                            <th>日付</th>
-                                            <th>現場名</th>
-                                            <th>チーム</th>
-                                            <th>駐車料金</th>
-                                            <th>高速料金</th>
-                                            <th>合計</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- 出勤データがここに表示されます -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-    
     <script type="module">
         // 导入 Supabase 客户端
         import { supabase } from './js/supabaseClient.js';
@@ -121,16 +36,6 @@
         
         // 初始化用户データ機能の函数
         function initializeUserData() {
-            // データ存储キー
-            const STORAGE_KEY = 'tky_attendance_system';
-            const ATTENDANCE_KEY = 'attendance';
-
-            // データ取得関数
-            function getData(key) {
-                const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-                return key ? data[key] : data;
-            }
-
             // ページ読み込み時
             // ログイン状態をチェック
             let currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
@@ -156,84 +61,113 @@
             renderAttendanceData(currentUser.name);
             
             // 出勤データを表示
-            function renderAttendanceData(userName) {
-                const attendanceData = getData(ATTENDANCE_KEY) || [];
-                const userAttendance = attendanceData.filter(record => record.name === userName);
-                
-                const tbody = document.querySelector('#attendanceTable tbody');
-                tbody.innerHTML = '';
-                
-                let totalParkingFee = 0;
-                let totalHighwayFee = 0;
-                
-                userAttendance.forEach(record => {
-                    const row = document.createElement('tr');
-                    const total = record.parkingFee + record.highwayFee;
-                    totalParkingFee += record.parkingFee;
-                    totalHighwayFee += record.highwayFee;
+            async function renderAttendanceData(userName) {
+                try {
+                    // 从Supabase获取用户的出勤数据
+                    const { data: attendanceData, error } = await supabase
+                        .from('attendance_details')
+                        .select('*')
+                        .eq('member_name', userName);
                     
-                    row.innerHTML = `
-                        <td>${record.date}</td>
-                        <td>${record.site}</td>
-                        <td>${record.team}</td>
-                        <td>${record.parkingFee.toLocaleString()} 円</td>
-                        <td>${record.highwayFee.toLocaleString()} 円</td>
-                        <td>${total.toLocaleString()} 円</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                // 合計行を追加
-                if (userAttendance.length > 0) {
-                    const totalRow = document.createElement('tr');
-                    totalRow.innerHTML = `
-                        <td colspan="3"><strong>合計</strong></td>
-                        <td><strong>${totalParkingFee.toLocaleString()} 円</strong></td>
-                        <td><strong>${totalHighwayFee.toLocaleString()} 円</strong></td>
-                        <td><strong>${(totalParkingFee + totalHighwayFee).toLocaleString()} 円</strong></td>
-                    `;
-                    tbody.appendChild(totalRow);
-                } else {
-                    const noDataRow = document.createElement('tr');
-                    noDataRow.innerHTML = `<td colspan="6">出勤データがありません</td>`;
-                    tbody.appendChild(noDataRow);
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    const tbody = document.querySelector('#attendanceTable tbody');
+                    tbody.innerHTML = '';
+                    
+                    let totalParkingFee = 0;
+                    let totalHighwayFee = 0;
+                    
+                    attendanceData.forEach(record => {
+                        const row = document.createElement('tr');
+                        const parkingFee = record.parking_fee || 0;
+                        const highwayFee = record.highway_fee || 0;
+                        const total = parkingFee + highwayFee;
+                        totalParkingFee += parkingFee;
+                        totalHighwayFee += highwayFee;
+                        
+                        row.innerHTML = `
+                            <td>${record.date}</td>
+                            <td>${record.site_name}</td>
+                            <td>${record.team_name}</td>
+                            <td>${parkingFee.toLocaleString()} 円</td>
+                            <td>${highwayFee.toLocaleString()} 円</td>
+                            <td>${total.toLocaleString()} 円</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // 合計行を追加
+                    if (attendanceData.length > 0) {
+                        const totalRow = document.createElement('tr');
+                        totalRow.innerHTML = `
+                            <td colspan="3"><strong>合計</strong></td>
+                            <td><strong>${totalParkingFee.toLocaleString()} 円</strong></td>
+                            <td><strong>${totalHighwayFee.toLocaleString()} 円</strong></td>
+                            <td><strong>${(totalParkingFee + totalHighwayFee).toLocaleString()} 円</strong></td>
+                        `;
+                        tbody.appendChild(totalRow);
+                    } else {
+                        const noDataRow = document.createElement('tr');
+                        noDataRow.innerHTML = `<td colspan="6">出勤データがありません</td>`;
+                        tbody.appendChild(noDataRow);
+                    }
+                } catch (error) {
+                    console.error('获取出勤数据失败:', error);
+                    const tbody = document.querySelector('#attendanceTable tbody');
+                    tbody.innerHTML = `<tr><td colspan="6">データ取得中にエラーが発生しました</td></tr>`;
                 }
             }
             
             // データエクスポート
-            document.getElementById('exportData').addEventListener('click', function() {
+            document.getElementById('exportData').addEventListener('click', async function() {
                 const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
                 if (!currentUser) {
                     alert('ユーザー情報が見つかりません');
                     return;
                 }
                 
-                const attendanceData = getData(ATTENDANCE_KEY) || [];
-                const userAttendance = attendanceData.filter(record => record.name === currentUser.name);
-                
-                if (userAttendance.length === 0) {
-                    alert('エクスポートするデータがありません');
-                    return;
+                try {
+                    // 从Supabase获取用户的出勤数据
+                    const { data: attendanceData, error } = await supabase
+                        .from('attendance_details')
+                        .select('*')
+                        .eq('member_name', currentUser.name);
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    if (attendanceData.length === 0) {
+                        alert('エクスポートするデータがありません');
+                        return;
+                    }
+                    
+                    // CSVデータを生成
+                    let csv = '日付,現場名,チーム,駐車料金,高速料金,合計\n';
+                    attendanceData.forEach(record => {
+                        const parkingFee = record.parking_fee || 0;
+                        const highwayFee = record.highway_fee || 0;
+                        const total = parkingFee + highwayFee;
+                        csv += `${record.date},${record.site_name},${record.team_name},${parkingFee},${highwayFee},${total}\n`;
+                    });
+                    
+                    // ファイル名を生成
+                    const now = new Date();
+                    const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}`;
+                    const filename = `出勤データ_${currentUser.name}_${timestamp}.csv`;
+                    
+                    // ダウンロード
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    link.click();
+                } catch (error) {
+                    console.error('数据导出失败:', error);
+                    alert('データエクスポート中にエラーが発生しました');
                 }
-                
-                // CSVデータを生成
-                let csv = '日付,現場名,チーム,駐車料金,高速料金,合計\n';
-                userAttendance.forEach(record => {
-                    const total = record.parkingFee + record.highwayFee;
-                    csv += `${record.date},${record.site},${record.team},${record.parkingFee},${record.highwayFee},${total}\n`;
-                });
-                
-                // ファイル名を生成
-                const now = new Date();
-                const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}`;
-                const filename = `出勤データ_${currentUser.name}_${timestamp}.csv`;
-                
-                // ダウンロード
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                link.click();
             });
             
             // ログアウト処理

@@ -18,34 +18,25 @@ const initialData = {
     [ATTENDANCE_KEY]: []
 };
 
-// 智能数据获取函数 - 优先从Supabase获取，失败时使用本地缓存
+// 智能数据获取函数 - 完全从Supabase获取数据
 async function getData(key) {
     try {
-        // 首先尝试从Supabase获取最新データ
+        // 完全从Supabase获取最新数据
         let supabaseData = null;
         
         if (key === MEMBERS_KEY) {
+            // 获取成员详细信息（包括团队名称）
             const { data, error } = await supabase
-                .from('members')
-                .select('id, name, username, password, team_id');
+                .from('member_details')
+                .select('*');
             if (!error) {
-                // 获取团队信息以映射team_id到team名称
-                const { data: teamsData, error: teamsError } = await supabase
-                    .from('teams')
-                    .select('id, name');
-                
-                if (!teamsError) {
-                    const teamMap = Object.fromEntries(teamsData.map(t => [t.id, t.name]));
-                    supabaseData = data.map(member => ({
-                        ...member,
-                        team: teamMap[member.team_id] || '未知团队'
-                    }));
-                } else {
-                    supabaseData = data.map(member => ({
-                        ...member,
-                        team: '未知チーム'
-                    }));
-                }
+                supabaseData = data.map(member => ({
+                    id: member.id,
+                    name: member.name,
+                    username: member.username,
+                    password: member.password,
+                    team: member.team_name || '未知团队'
+                }));
             }
         } else if (key === TEAMS_KEY) {
             const { data, error } = await supabase
@@ -58,25 +49,36 @@ async function getData(key) {
                 .select('name');
             if (!error) supabaseData = data.map(s => s.name);
         } else if (key === ATTENDANCE_KEY) {
+            // 获取出勤详细信息（包括成员名称、现场名称、团队名称）
             const { data, error } = await supabase
-                .from('attendance_records')
+                .from('attendance_details')
                 .select('*');
-            if (!error) supabaseData = data;
+            if (!error) {
+                supabaseData = data.map(record => ({
+                    id: record.id,
+                    date: record.date,
+                    name: record.member_name || '未知成员',
+                    site: record.site_name || '未知现场',
+                    team: record.team_name || '未知チーム',
+                    parkingFee: record.parking_fee || 0,
+                    highwayFee: record.highway_fee || 0
+                }));
+            }
         }
         
-        // 如果从Supabase成功获取数据，更新本地存储
+        // 如果从Supabase成功获取数据，更新本地存储（用于离线情况）
         if (supabaseData !== null) {
             const currentData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
             currentData[key] = supabaseData;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
-            console.log(`✅ 从Supabase成功获取${key}データ`);
+            console.log(`✅ 从Supabase成功获取${key}数据`);
             return supabaseData;
         }
     } catch (error) {
-        console.warn(`⚠️ 从Supabase获取${key}データ失败，使用本地缓存:`, error.message);
+        console.warn(`⚠️ 从Supabase获取${key}数据失败:`, error.message);
     }
     
-    // 如果Supabase获取失败，使用本地存储数据
+    // 如果Supabase获取失败，使用本地存储数据作为后备
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
     // 确保返回的数据是数组格式
     const result = key ? (Array.isArray(data[key]) ? data[key] : []) : data;

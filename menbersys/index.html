@@ -150,7 +150,7 @@
                 if (!data[SITES_KEY]) data[SITES_KEY] = initialData[SITES_KEY];
                 if (!data[ATTENDANCE_KEY]) data[ATTENDANCE_KEY] = initialData[ATTENDANCE_KEY];
                 
-                // 如果请求特定键，返回该键的値，否则返回整个データ对象
+                // 如果请求特定键，返回该键の値，否则返回整个データ对象
                 return key ? (Array.isArray(data[key]) ? data[key] : []) : data;
             } catch (error) {
                 console.error('データ解析错误:', error);
@@ -255,7 +255,7 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').value = today;
             
-            // 现场选择項更新
+            // 现場选择項更新
             const siteSelect = document.getElementById('site');
             siteSelect.innerHTML = '<option value="">選択してください</option>';
             const sites = getData(SITES_KEY);
@@ -319,55 +319,110 @@
                     return;
                 }
 
-                // 出勤記録を保存到本地存储
-                const attendance = getData(ATTENDANCE_KEY);
-                attendance.push({
-                    date,
-                    site,
-                    team,
-                    name,
-                    parkingFee,
-                    highwayFee
-                });
-                saveData(ATTENDANCE_KEY, attendance);
-
-                // 同步到Supabase
+                // 直接同步到Supabase（不再使用本地存储）
                 try {
-                    const memberId = await getMemberIdByName(name);
-                    const siteId = await getSiteId(site);
-                    const teamId = await getTeamId(team);
+                    // 获取成员ID
+                    const { data: memberData, error: memberError } = await supabase
+                        .from('members')
+                        .select('id')
+                        .eq('name', name);
                     
-                    if (memberId && siteId && teamId) {
-                        const { data, error } = await supabase
-                            .from('attendance_records')
-                            .insert({
-                                date: date,
-                                member_id: memberId,
-                                site_id: siteId,
-                                team_id: teamId,
-                                parking_fee: parkingFee,
-                                highway_fee: highwayFee
-                            });
-                            
-                        if (error) {
-                            console.error('Supabase 同步失败:', error);
-                            alert('出勤已保存到本地，但云端同步失败');
-                        } else {
-                            console.log('出勤记录已同步到 Supabase');
-                        }
-                    } else {
-                        console.warn('无法找到对应的ID映射，跳過Supabase同步');
-                        alert('出勤已保存到本地，但云端同步需要データ映射');
+                    if (memberError) {
+                        throw new Error('成员情報获取失败: ' + memberError.message);
                     }
+                    
+                    if (!memberData || memberData.length === 0) {
+                        throw new Error('找不到指定のメンバー: ' + name);
+                    }
+                    
+                    if (memberData.length > 1) {
+                        console.warn('找到多个同名メンバー，使用第一个:', name);
+                    }
+                    
+                    const memberId = memberData[0].id;
+                    
+                    // 获取现场ID
+                    const { data: siteData, error: siteError } = await supabase
+                        .from('sites')
+                        .select('id')
+                        .eq('name', site);
+                    
+                    if (siteError) {
+                        throw new Error('现场情報获取失敗: ' + siteError.message);
+                    }
+                    
+                    if (!siteData || siteData.length === 0) {
+                        throw new Error('找不到指定の現場: ' + site);
+                    }
+                    
+                    if (siteData.length > 1) {
+                        console.warn('找到多个同名現場，使用第一个:', site);
+                    }
+                    
+                    const siteId = siteData[0].id;
+                    
+                    // 获取チームID
+                    const { data: teamData, error: teamError } = await supabase
+                        .from('teams')
+                        .select('id')
+                        .eq('name', team);
+                    
+                    if (teamError) {
+                        throw new Error('チーム情報获取失敗: ' + teamError.message);
+                    }
+                    
+                    if (!teamData || teamData.length === 0) {
+                        throw new Error('找不到指定のチーム: ' + team);
+                    }
+                    
+                    if (teamData.length > 1) {
+                        console.warn('找到多个同名チーム，使用第一个:', team);
+                    }
+                    
+                    const teamId = teamData[0].id;
+                    
+                    // 插入出勤记录到Supabase
+                    const { data, error } = await supabase
+                        .from('attendance_records')
+                        .insert({
+                            date: date,
+                            member_id: memberId,
+                            site_id: siteId,
+                            team_id: teamId,
+                            parking_fee: parkingFee,
+                            highway_fee: highwayFee
+                        });
+                    
+                    if (error) {
+                        throw new Error('出勤记录保存失敗: ' + error.message);
+                    }
+                    
+                    console.log('出勤记录已同步到 Supabase');
+                    
+                    // 更新本地存储（用于离線情况下的后备）
+                    try {
+                        const attendance = getData(ATTENDANCE_KEY);
+                        attendance.push({
+                            date,
+                            site,
+                            team,
+                            name,
+                            parkingFee,
+                            highwayFee
+                        });
+                        saveData(ATTENDANCE_KEY, attendance);
+                    } catch (storageError) {
+                        console.warn('本地存储更新失敗:', storageError);
+                    }
+                    
+                    // フォームリセット
+                    form.reset();
+                    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+                    alert('出勤が登録されました！');
                 } catch (error) {
-                    console.error('Supabase 同步过程中出错:', error);
-                    alert('出勤已保存到本地，但云端同步出错');
+                    console.error('出勤记录同期过程中出错:', error);
+                    alert('出勤记录保存失敗: ' + error.message);
                 }
-
-                // フォームリセット
-                form.reset();
-                document.getElementById('date').value = today;
-                alert('出勤が登録されました！');
             });
         }
     </script>
