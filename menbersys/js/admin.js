@@ -21,7 +21,7 @@ const initialData = {
 // 智能数据获取函数 - 优先从Supabase获取，失败时使用本地缓存
 async function getData(key) {
     try {
-        // 首先尝试从Supabase获取最新数据
+        // 首先尝试从Supabase获取最新データ
         let supabaseData = null;
         
         if (key === MEMBERS_KEY) {
@@ -43,7 +43,7 @@ async function getData(key) {
                 } else {
                     supabaseData = data.map(member => ({
                         ...member,
-                        team: '未知团队'
+                        team: '未知チーム'
                     }));
                 }
             }
@@ -69,19 +69,21 @@ async function getData(key) {
             const currentData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
             currentData[key] = supabaseData;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
-            console.log(`✅ 从Supabase成功获取${key}数据`);
+            console.log(`✅ 从Supabase成功获取${key}データ`);
             return supabaseData;
         }
     } catch (error) {
-        console.warn(`⚠️ 从Supabase获取${key}数据失败，使用本地缓存:`, error.message);
+        console.warn(`⚠️ 从Supabase获取${key}データ失败，使用本地缓存:`, error.message);
     }
     
     // 如果Supabase获取失败，使用本地存储数据
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
-    return key ? data[key] : data;
+    // 确保返回的数据是数组格式
+    const result = key ? (Array.isArray(data[key]) ? data[key] : []) : data;
+    return result;
 }
 
-// 智能数据保存函数 - 同时保存到本地和Supabase
+// 智能データ保存函数 - 同时保存到本地和Supabase
 async function saveData(key, value) {
     // 先保存到本地存储
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
@@ -108,7 +110,7 @@ async function saveData(key, value) {
                 }
             }
         } else if (key === TEAMS_KEY) {
-            // 同步团队数据到Supabase
+            // 同步チームデータ到Supabase
             for (const teamName of value) {
                 const { error } = await supabase
                     .from('teams')
@@ -116,7 +118,7 @@ async function saveData(key, value) {
                 if (error) throw error;
             }
         } else if (key === SITES_KEY) {
-            // 同步现场数据到Supabase
+            // 同步現場データ到Supabase
             for (const siteName of value) {
                 const { error } = await supabase
                     .from('sites')
@@ -125,31 +127,31 @@ async function saveData(key, value) {
             }
         }
         
-        console.log(`✅ ${key}数据已成功同步到Supabase`);
+        console.log(`✅ ${key}データ已成功同步到Supabase`);
     } catch (error) {
-        console.error(`❌ ${key}数据同步到Supabase失败:`, error);
-        // 即使云端同步失败，本地数据仍然保存成功
+        console.error(`❌ ${key}データ同步到Supabase失败:`, error);
+        // 即使云端同步失败，本地データ仍然保存成功
     }
 }
 
 // 数据映射辅助函数
 let teamMap = null;
 
-// 获取团队ID
+// 获取チームID
 async function getTeamId(teamName) {
     if (!teamMap) {
         const { data, error } = await supabase.from('teams').select('id, name');
         if (!error) {
             teamMap = Object.fromEntries(data.map(t => [t.name, t.id]));
         } else {
-            console.error('获取团队数据失败:', error);
+            console.error('获取チームデータ失败:', error);
             return null;
         }
     }
     return teamMap?.[teamName] || null;
 }
 
-// 获取团队名称
+// 获取チーム名称
 async function getTeamName(teamId) {
     try {
         const { data, error } = await supabase
@@ -161,19 +163,19 @@ async function getTeamName(teamId) {
         if (!error && data) {
             return data.name;
         }
-        return '未知团队';
+        return '未知チーム';
     } catch (error) {
-        console.error('获取团队名称失败:', error);
-        return '未知团队';
+        console.error('获取チーム名称失败:', error);
+        return '未知チーム';
     }
 }
 
-// 页面加载时测试 Supabase 连接
+// ページ読み込み時テスト Supabase 接続
 document.addEventListener('DOMContentLoaded', async function() {
     const statusDiv = document.getElementById('supabaseStatus');
     
     try {
-        // 测试连接 - 尝试获取一个简单的查询
+        // テスト接続 - 尝試获取一个簡単なクエリ
         const { data, error } = await supabase
             .from('teams')
             .select('id')
@@ -183,42 +185,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             throw error;
         }
         
-        // 显示成功连接消息
+        // 成功接続メッセージを表示
         statusDiv.style.display = 'block';
         statusDiv.style.backgroundColor = '#d4edda';
         statusDiv.style.color = '#155724';
         statusDiv.style.border = '1px solid #c3e6cb';
-        statusDiv.innerHTML = '✅ 成功连接云端数据库 (Supabase)';
+        statusDiv.innerHTML = '✅ 成功接続云端データベース (Supabase)';
         
     } catch (error) {
-        // 连接失败时显示错误消息
-        console.log('Supabase 连接测试失败:', error.message);
+        // 接続失敗時にエラーメッセージを表示
+        console.log('Supabase 接続テスト失敗:', error.message);
         statusDiv.style.display = 'block';
         statusDiv.style.backgroundColor = '#f8d7da';
         statusDiv.style.color = '#721c24';
         statusDiv.style.border = '1px solid #f5c6cb';
-        statusDiv.innerHTML = `❌ 数据库连接失败: ${error.message}`;
+        statusDiv.innerHTML = `❌ データベース接続失敗: ${error.message}`;
     }
     
-    // 初始化页面功能
+    // ページ機能の初期化
     await initializePage();
 });
 
-// 初始化页面功能
+// ページ機能の初期化
 async function initializePage() {
-    // 页面加载时同步所有数据
+    // ページ読み込み時にすべてのデータを同期
     try {
-        console.log('🔄 正在从Supabase同步数据...');
+        console.log('🔄 正在からSupabase同期データ...');
         
-        // 同步团队成员数据
+        // メンバー情報データを同期
         await getData(MEMBERS_KEY);
         await getData(TEAMS_KEY);
         await getData(SITES_KEY);
         await getData(ATTENDANCE_KEY);
         
-        console.log('✅ 数据同步完成');
+        console.log('✅ データ同期完了');
     } catch (error) {
-        console.warn('⚠️ 数据同步过程中出现错误，使用本地数据:', error);
+        console.warn('⚠️ データ同期中にエラーが発生しました、ローカルデータを使用します:', error);
     }
     
     // ログアウト処理
@@ -317,7 +319,7 @@ async function initializePage() {
         
         const members = await getData(MEMBERS_KEY);
         
-        // 检查用户名是否已存在（排除当前编辑的用户）
+        // 検查ユーザー名が既に存在するか（現在編集しているユーザーを除く）
         const existingUser = members.find(m => m.username === username && (id === '' || m.id != id));
         if (existingUser) {
             alert('このユーザー名は既に使用されています');
@@ -338,7 +340,7 @@ async function initializePage() {
         
         await saveData(MEMBERS_KEY, members);
 
-        // 同步到Supabase
+        // 同期到Supabase
         try {
             const teamId = await getTeamId(team);
             if (teamId) {
@@ -349,7 +351,7 @@ async function initializePage() {
                     team_id: teamId
                 };
                 
-                // 如果是更新现有用户，包含ID
+                // 既存ユーザーを更新する場合はIDを含める
                 if (id) {
                     const index = members.findIndex(m => m.id === parseInt(id));
                     if (index !== -1) {
@@ -362,18 +364,18 @@ async function initializePage() {
                     .upsert(memberData, { onConflict: 'username' });
                     
                 if (error) {
-                    console.error('Supabase 同步失败:', error);
-                    alert('成员已保存到本地，但云端同步失败');
+                    console.error('Supabase 同期失敗:', error);
+                    alert('メンバーはローカルに保存されましたが、クラウド同期に失敗しました');
                 } else {
-                    console.log('成员数据已同步到 Supabase');
+                    console.log('メンバー情報はSupabaseに同期されました');
                 }
             } else {
-                console.warn('无法找到对应的团队ID，跳过Supabase同步');
-                alert('成员已保存到本地，但云端同步需要团队映射');
+                console.warn('対応するチームIDが見つからないため、Supabase同期をスキップします');
+                alert('メンバーはローカルに保存されましたが、クラウド同期にはチームマッピングが必要です');
             }
         } catch (error) {
-            console.error('Supabase 同步过程中出错:', error);
-            alert('成员已保存到本地，但云端同步出错');
+            console.error('Supabase 同期中にエラーが発生しました:', error);
+            alert('メンバーはローカルに保存されましたが、クラウド同期中にエラーが発生しました');
         }
         
         document.getElementById('memberModal').style.display = 'none';
@@ -527,7 +529,7 @@ async function renderMembersTable() {
     
     // 編集ボタン
     document.querySelectorAll('#membersTable .btn-edit').forEach(btn => {
-        // 先移除已存在的事件监听器（如果有的话）
+        // 先移除既存のイベントリスナー（存在する場合）
         const clickHandler = async function() {
             const id = this.getAttribute('data-id');
             const members = await getData(MEMBERS_KEY);
@@ -556,15 +558,15 @@ async function renderMembersTable() {
             }
         };
         
-        // 移除旧的事件监听器
+        // 既存のイベントリスナーを削除
         btn.removeEventListener('click', clickHandler);
-        // 添加新的事件监听器
+        // 新しいイベントリスナーを追加
         btn.addEventListener('click', clickHandler);
     });
     
     // 削除ボタン
     document.querySelectorAll('#membersTable .btn-delete').forEach(btn => {
-        // 先移除已存在的事件监听器（如果有的话）
+        // 先移除既存のイベントリスナー（存在する場合）
         const clickHandler = async function() {
             if (confirm('このメンバーを削除しますか？')) {
                 const id = this.getAttribute('data-id');
@@ -572,7 +574,7 @@ async function renderMembersTable() {
                 const filteredMembers = members.filter(m => m.id !== parseInt(id));
                 await saveData(MEMBERS_KEY, filteredMembers);
                 
-                // 同步删除到Supabase
+                // 同期削除到Supabase
                 try {
                     const { error } = await supabase
                         .from('members')
@@ -580,23 +582,23 @@ async function renderMembersTable() {
                         .eq('id', id);
                     
                     if (error) {
-                        console.error('Supabase 删除失败:', error);
-                        alert('成员已从本地删除，但云端同步失败');
+                        console.error('Supabase 削除失敗:', error);
+                        alert('メンバーはローカルから削除されましたが、クラウド同期に失敗しました');
                     } else {
-                        console.log('成员数据已从 Supabase 删除');
+                        console.log('メンバー情報はSupabaseから削除されました');
                     }
                 } catch (error) {
-                    console.error('Supabase 删除过程中出错:', error);
-                    alert('成员已从本地删除，但云端同步出错');
+                    console.error('Supabase 削除中にエラーが発生しました:', error);
+                    alert('メンバーはローカルから削除されましたが、クラウド同期中にエラーが発生しました');
                 }
                 
                 await renderMembersTable();
             }
         };
         
-        // 移除旧的事件监听器
+        // 既存のイベントリスナーを削除
         btn.removeEventListener('click', clickHandler);
-        // 添加新的事件监听器
+        // 新しいイベントリスナーを追加
         btn.addEventListener('click', clickHandler);
     });
 }
@@ -627,7 +629,7 @@ async function renderTeamsTable() {
     
     // チーム編集ボタン
     document.querySelectorAll('#teamsTable .btn-edit').forEach(btn => {
-        // 先移除已存在的事件监听器（如果有的话）
+        // 先移除既存のイベントリスナー（存在する場合）
         const clickHandler = async function() {
             const oldTeamName = this.getAttribute('data-team');
             const newTeamName = prompt('新しいチーム名を入力してください', oldTeamName);
@@ -639,11 +641,11 @@ async function renderTeamsTable() {
                     return;
                 }
                 
-                // 更新团队名称
+                // 更新チーム名称
                 const updatedTeams = teams.map(t => t === oldTeamName ? newTeamName : t);
                 await saveData(TEAMS_KEY, updatedTeams);
                 
-                // 更新关联成员
+                // 更新関連メンバー
                 const members = await getData(MEMBERS_KEY);
                 const updatedMembers = members.map(m => {
                     if (m.team === oldTeamName) {
@@ -658,15 +660,15 @@ async function renderTeamsTable() {
             }
         };
         
-        // 移除旧的事件监听器
+        // 既存のイベントリスナーを削除
         btn.removeEventListener('click', clickHandler);
-        // 添加新的事件监听器
+        // 新しいイベントリスナーを追加
         btn.addEventListener('click', clickHandler);
     });
     
     // チーム削除ボタン
     document.querySelectorAll('#teamsTable .btn-delete').forEach(btn => {
-        // 先移除已存在的事件监听器（如果有的话）
+        // 先移除既存のイベントリスナー（存在する場合）
         const clickHandler = async function() {
             const team = this.getAttribute('data-team');
             const members = await getData(MEMBERS_KEY);
@@ -682,9 +684,9 @@ async function renderTeamsTable() {
                 const filteredTeams = teams.filter(t => t !== team);
                 await saveData(TEAMS_KEY, filteredTeams);
                 
-                // 同步删除到Supabase
+                // 同期削除到Supabase
                 try {
-                    // 首先获取团队ID
+                    // 首先チームIDを取得
                     const { data: teamData, error: teamError } = await supabase
                         .from('teams')
                         .select('id')
@@ -692,36 +694,36 @@ async function renderTeamsTable() {
                         .single();
                     
                     if (teamError) {
-                        console.error('获取团队ID失败:', teamError);
-                        alert('团队已从本地删除，但云端同步失败');
+                        console.error('チームID取得失敗:', teamError);
+                        alert('チームはローカルから削除されましたが、クラウド同期に失敗しました');
                         await renderTeamsTable();
                         return;
                     }
                     
-                    // 删除Supabase中的团队
+                    // Supabaseからチームを削除
                     const { error } = await supabase
                         .from('teams')
                         .delete()
                         .eq('id', teamData.id);
                     
                     if (error) {
-                        console.error('Supabase 删除团队失败:', error);
-                        alert('团队已从本地删除，但云端同步失败');
+                        console.error('Supabase チーム削除失敗:', error);
+                        alert('チームはローカルから削除されましたが、クラウド同期に失敗しました');
                     } else {
-                        console.log('团队数据已从 Supabase 删除');
+                        console.log('チーム情報はSupabaseから削除されました');
                     }
                 } catch (error) {
-                    console.error('Supabase 删除团队过程中出错:', error);
-                    alert('团队已从本地删除，但云端同步出错');
+                    console.error('Supabase チーム削除中にエラーが発生しました:', error);
+                    alert('チームはローカルから削除されましたが、クラウド同期中にエラーが発生しました');
                 }
                 
                 await renderTeamsTable();
             }
         };
         
-        // 移除旧的事件监听器
+        // 既存のイベントリスナーを削除
         btn.removeEventListener('click', clickHandler);
-        // 添加新的事件监听器
+        // 新しいイベントリスナーを追加
         btn.addEventListener('click', clickHandler);
     });
 }
@@ -748,29 +750,29 @@ async function renderSitesTable() {
     
     // 現地編集ボタン
     document.querySelectorAll('#sitesTable .btn-edit').forEach(btn => {
-        // 先移除已存在的事件监听器（如果有的话）
+        // 先移除既存のイベントリスナー（存在する場合）
         const clickHandler = async function() {
             const index = parseInt(this.getAttribute('data-index'));
             await editSite(index);
         };
         
-        // 移除旧的事件监听器
+        // 既存のイベントリスナーを削除
         btn.removeEventListener('click', clickHandler);
-        // 添加新的事件监听器
+        // 新しいイベントリスナーを追加
         btn.addEventListener('click', clickHandler);
     });
     
     // 現地削除ボタン
     document.querySelectorAll('#sitesTable .btn-delete').forEach(btn => {
-        // 先移除已存在的事件监听器（如果有的话）
+        // 先移除既存のイベントリスナー（存在する場合）
         const clickHandler = async function() {
             const index = parseInt(this.getAttribute('data-index'));
             await deleteSite(index);
         };
         
-        // 移除旧的事件监听器
+        // 既存のイベントリスナーを削除
         btn.removeEventListener('click', clickHandler);
-        // 添加新的事件监听器
+        // 新しいイベントリスナーを追加
         btn.addEventListener('click', clickHandler);
     });
 }
@@ -794,23 +796,23 @@ async function deleteSite(index) {
         sites.splice(index, 1);
         await saveData(SITES_KEY, sites);
         
-        // 同步删除到Supabase
+        // 同期削除到Supabase
         try {
-            // 删除Supabase中的现场
+            // Supabaseから現場を削除
             const { error } = await supabase
                 .from('sites')
                 .delete()
                 .eq('name', siteName);
             
             if (error) {
-                console.error('Supabase 删除现场失败:', error);
-                alert('现场已从本地删除，但云端同步失败');
+                console.error('Supabase 現場削除失敗:', error);
+                alert('現場はローカルから削除されましたが、クラウド同期に失敗しました');
             } else {
-                console.log('现场数据已从 Supabase 删除');
+                console.log('現場情報はSupabaseから削除されました');
             }
         } catch (error) {
-            console.error('Supabase 删除现场过程中出错:', error);
-            alert('现场已从本地删除，但云端同步出错');
+            console.error('Supabase 現場削除中にエラーが発生しました:', error);
+            alert('現場はローカルから削除されましたが、クラウド同期中にエラーが発生しました');
         }
         
         await renderSitesTable();
