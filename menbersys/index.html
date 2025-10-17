@@ -114,7 +114,7 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 数据存储键
+        // データ存储键
         const STORAGE_KEY = 'tky_attendance_system';
         const MEMBERS_KEY = 'members';
         const TEAMS_KEY = 'teams';
@@ -134,8 +134,29 @@
 
         // データ取得関数
         function getData(key) {
-            const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
-            return key ? data[key] : data;
+            try {
+                const storedData = localStorage.getItem(STORAGE_KEY);
+                let data;
+                
+                if (storedData) {
+                    data = JSON.parse(storedData);
+                } else {
+                    data = {};
+                }
+                
+                // 确保初始データ構造正确
+                if (!data[MEMBERS_KEY]) data[MEMBERS_KEY] = initialData[MEMBERS_KEY];
+                if (!data[TEAMS_KEY]) data[TEAMS_KEY] = initialData[TEAMS_KEY];
+                if (!data[SITES_KEY]) data[SITES_KEY] = initialData[SITES_KEY];
+                if (!data[ATTENDANCE_KEY]) data[ATTENDANCE_KEY] = initialData[ATTENDANCE_KEY];
+                
+                // 如果请求特定键，返回该键的値，否则返回整个データ对象
+                return key ? (Array.isArray(data[key]) ? data[key] : []) : data;
+            } catch (error) {
+                console.error('データ解析错误:', error);
+                // 返回初始データ或空数组
+                return key ? (initialData[key] || []) : initialData;
+            }
         }
 
         // データ保存関数
@@ -145,7 +166,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
 
-        // 数据映射辅助函数
+        // データ映射辅助函数
         let teamMap = null;
         let siteMap = null;
         let memberMap = null;
@@ -157,7 +178,7 @@
                 if (!error) {
                     teamMap = Object.fromEntries(data.map(t => [t.name, t.id]));
                 } else {
-                    console.error('获取团队数据失败:', error);
+                    console.error('获取团队データ失败:', error);
                     return null;
                 }
             }
@@ -171,7 +192,7 @@
                 if (!error) {
                     siteMap = Object.fromEntries(data.map(s => [s.name, s.id]));
                 } else {
-                    console.error('获取现场数据失败:', error);
+                    console.error('获取现场データ失败:', error);
                     return null;
                 }
             }
@@ -185,7 +206,7 @@
                 if (!error) {
                     memberMap = Object.fromEntries(data.map(m => [m.name, m.id]));
                 } else {
-                    console.error('获取成员数据失败:', error);
+                    console.error('获取成员データ失败:', error);
                     return null;
                 }
             }
@@ -216,43 +237,49 @@
                 
             } catch (error) {
                 // 连接失败时显示错误消息
-                console.log('Supabase 连接测试失败:', error.message);
+                console.log('Supabase 连接テスト失败:', error.message);
                 statusDiv.style.display = 'block';
                 statusDiv.style.backgroundColor = '#f8d7da';
                 statusDiv.style.color = '#721c24';
                 statusDiv.style.border = '1px solid #f5c6cb';
-                statusDiv.innerHTML = `❌ 数据库连接失败: ${error.message}`;
+                statusDiv.innerHTML = `❌ データベース接続失敗: ${error.message}`;
             }
             
             // 初始化原有的页面功能
             initializePage();
         });
         
-        // 初始化页面功能的函数
+        // 初始化页面功能の函数
         function initializePage() {
             // 日付フィールドに今日の日付を設定
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').value = today;
             
-            // 现场选择项更新
+            // 现场选择項更新
             const siteSelect = document.getElementById('site');
             siteSelect.innerHTML = '<option value="">選択してください</option>';
-            getData(SITES_KEY).forEach(site => {
-                const option = document.createElement('option');
-                option.value = site;
-                option.textContent = site;
-                siteSelect.appendChild(option);
-            });
+            const sites = getData(SITES_KEY);
+            if (Array.isArray(sites)) {
+                sites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site;
+                    option.textContent = site;
+                    siteSelect.appendChild(option);
+                });
+            }
 
-            // 团队选择项更新
+            // 团队选择項更新
             const teamSelect = document.getElementById('team');
             teamSelect.innerHTML = '<option value="">選択してください</option>';
-            getData(TEAMS_KEY).forEach(team => {
-                const option = document.createElement('option');
-                option.value = team;
-                option.textContent = team;
-                teamSelect.appendChild(option);
-            });
+            const teams = getData(TEAMS_KEY);
+            if (Array.isArray(teams)) {
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team;
+                    option.textContent = team;
+                    teamSelect.appendChild(option);
+                });
+            }
             
             // 管理者ログインボタン
             document.getElementById('adminLogin').addEventListener('click', function() {
@@ -329,8 +356,8 @@
                             console.log('出勤记录已同步到 Supabase');
                         }
                     } else {
-                        console.warn('无法找到对应的ID映射，跳过Supabase同步');
-                        alert('出勤已保存到本地，但云端同步需要数据映射');
+                        console.warn('无法找到对应的ID映射，跳過Supabase同步');
+                        alert('出勤已保存到本地，但云端同步需要データ映射');
                     }
                 } catch (error) {
                     console.error('Supabase 同步过程中出错:', error);
