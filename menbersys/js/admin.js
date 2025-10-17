@@ -10,11 +10,11 @@ const TEAMS_KEY = 'teams';
 const SITES_KEY = 'sites';
 const ATTENDANCE_KEY = 'attendance';
 
-// 初期データ
+// 初始数据
 const initialData = {
     [MEMBERS_KEY]: [],
-    [TEAMS_KEY]: [],
-    [SITES_KEY]: [],
+    [TEAMS_KEY]: ['チームA', 'チームB', 'チームC'],
+    [SITES_KEY]: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
     [ATTENDANCE_KEY]: []
 };
 
@@ -27,17 +27,35 @@ async function getData(key) {
         if (key === MEMBERS_KEY) {
             const { data, error } = await supabase
                 .from('members')
-                .select('*');
-            if (!error) supabaseData = data;
+                .select('id, name, username, password, team_id');
+            if (!error) {
+                // 获取团队信息以映射team_id到team名称
+                const { data: teamsData, error: teamsError } = await supabase
+                    .from('teams')
+                    .select('id, name');
+                
+                if (!teamsError) {
+                    const teamMap = Object.fromEntries(teamsData.map(t => [t.id, t.name]));
+                    supabaseData = data.map(member => ({
+                        ...member,
+                        team: teamMap[member.team_id] || '未知团队'
+                    }));
+                } else {
+                    supabaseData = data.map(member => ({
+                        ...member,
+                        team: '未知团队'
+                    }));
+                }
+            }
         } else if (key === TEAMS_KEY) {
             const { data, error } = await supabase
                 .from('teams')
-                .select('*');
+                .select('name');
             if (!error) supabaseData = data.map(t => t.name);
         } else if (key === SITES_KEY) {
             const { data, error } = await supabase
                 .from('sites')
-                .select('*');
+                .select('name');
             if (!error) supabaseData = data.map(s => s.name);
         } else if (key === ATTENDANCE_KEY) {
             const { data, error } = await supabase
@@ -80,6 +98,7 @@ async function saveData(key, value) {
                     const { error } = await supabase
                         .from('members')
                         .upsert({
+                            id: member.id,
                             name: member.name,
                             username: member.username,
                             password: member.password,
@@ -128,6 +147,25 @@ async function getTeamId(teamName) {
         }
     }
     return teamMap?.[teamName] || null;
+}
+
+// 获取团队名称
+async function getTeamName(teamId) {
+    try {
+        const { data, error } = await supabase
+            .from('teams')
+            .select('name')
+            .eq('id', teamId)
+            .single();
+        
+        if (!error && data) {
+            return data.name;
+        }
+        return '未知团队';
+    } catch (error) {
+        console.error('获取团队名称失败:', error);
+        return '未知团队';
+    }
 }
 
 // 页面加载时测试 Supabase 连接
@@ -182,6 +220,7 @@ async function initializePage() {
     } catch (error) {
         console.warn('⚠️ 数据同步过程中出现错误，使用本地数据:', error);
     }
+    
     // ログアウト処理
     document.getElementById('logout').addEventListener('click', function() {
         if (confirm('本当にログアウトしますか？')) {
@@ -278,6 +317,13 @@ async function initializePage() {
         
         const members = await getData(MEMBERS_KEY);
         
+        // 检查用户名是否已存在（排除当前编辑的用户）
+        const existingUser = members.find(m => m.username === username && (id === '' || m.id != id));
+        if (existingUser) {
+            alert('このユーザー名は既に使用されています');
+            return;
+        }
+        
         if (id) {
             // 既存メンバーを更新
             const index = members.findIndex(m => m.id === parseInt(id));
@@ -296,14 +342,24 @@ async function initializePage() {
         try {
             const teamId = await getTeamId(team);
             if (teamId) {
-                const { data, error } = await supabase
+                const memberData = {
+                    name: name,
+                    username: username,
+                    password: password,
+                    team_id: teamId
+                };
+                
+                // 如果是更新现有用户，包含ID
+                if (id) {
+                    const index = members.findIndex(m => m.id === parseInt(id));
+                    if (index !== -1) {
+                        memberData.id = parseInt(id);
+                    }
+                }
+                
+                const { error } = await supabase
                     .from('members')
-                    .upsert({
-                        name: name,
-                        username: username,
-                        password: password,
-                        team_id: teamId
-                    }, { onConflict: 'username' });
+                    .upsert(memberData, { onConflict: 'username' });
                     
                 if (error) {
                     console.error('Supabase 同步失败:', error);

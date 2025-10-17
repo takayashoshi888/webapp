@@ -56,22 +56,38 @@
             <button type="submit" class="login-btn">ユーザー登録</button>
         </form>
         
-        
-        
         <div class="back-to-main">
             <a href="user-login.html">← ログインページに戻る</a>
         </div>
     </div>
 
-    <script type="module">
+    <!-- 加载 Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase 配置
+        const supabaseUrl = 'https://xhqvbirifrdlmlnrwayp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 数据存储键
+        const STORAGE_KEY = 'tky_attendance_system';
+        const MEMBERS_KEY = 'members';
+        const TEAMS_KEY = 'teams';
+
+        // 初始数据
+        const initialData = {
+            [MEMBERS_KEY]: [
+                { id: 1, name: '山田太郎', username: 'yamada', password: 'password123', team: 'チームA' },
+                { id: 2, name: '佐藤花子', username: 'sato', password: 'password123', team: 'チームB' }
+            ],
+            [TEAMS_KEY]: ['チームA', 'チームB', 'チームC']
+        };
+
         // 页面加载时测试 Supabase 连接
         document.addEventListener('DOMContentLoaded', async function() {
             const statusDiv = document.getElementById('supabaseStatus');
             
             try {
-                // 动态导入 Supabase 客户端
-                const { default: supabase } = await import('./js/supabaseClient.js');
-                
                 // 测试连接 - 尝试获取一个简单的查询
                 const { data, error } = await supabase
                     .from('members')
@@ -95,14 +111,33 @@
                 statusDiv.style.display = 'none';
             }
             
-            // 初始化原有的用户注册功能
+            // 初始化页面功能
             initializeUserRegistration();
         });
-        
-        // 初始化用户注册功能的函数
+
+        // 获取团队ID的辅助函数
+        async function getTeamId(teamName) {
+            try {
+                const { data, error } = await supabase
+                    .from('teams')
+                    .select('id')
+                    .eq('name', teamName)
+                    .single();
+                
+                if (!error && data) {
+                    return data.id;
+                }
+                return null;
+            } catch (error) {
+                console.error('获取团队ID失败:', error);
+                return null;
+            }
+        }
+
+        // 初始化用户注册功能
         function initializeUserRegistration() {
             // 用户注册处理
-            document.getElementById('registerForm').addEventListener('submit', function(e) {
+            document.getElementById('registerForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const username = document.getElementById('username').value;
@@ -112,76 +147,97 @@
                 const team = document.getElementById('team').value;
                 const errorMessage = document.getElementById('errorMessage');
                 
+                // 隐藏错误消息
+                errorMessage.classList.remove('show');
+                
                 // 密码确认
                 if (password !== confirmPassword) {
-                    errorMessage.textContent = 'パスワードが一致しません';
-                    errorMessage.classList.add('show');
-                    
-                    // 3秒后隐藏错误消息
-                    setTimeout(() => {
-                        errorMessage.classList.remove('show');
-                    }, 3000);
+                    showError('パスワードが一致しません');
                     return;
                 }
                 
                 // 密码长度检查
                 if (password.length < 8) {
-                    errorMessage.textContent = 'パスワードは8文字以上である必要があります';
-                    errorMessage.classList.add('show');
-                    
-                    // 3秒后隐藏错误消息
-                    setTimeout(() => {
-                        errorMessage.classList.remove('show');
-                    }, 3000);
+                    showError('パスワードは8文字以上である必要があります');
                     return;
                 }
                 
-                // 用户名重复检查和注册
+                // 用户名不能为空
+                if (!username.trim()) {
+                    showError('ユーザー名を入力してください');
+                    return;
+                }
+                
+                // 姓名不能为空
+                if (!name.trim()) {
+                    showError('氏名を入力してください');
+                    return;
+                }
+                
+                // 团队选择检查
+                if (!team) {
+                    showError('チームを選択してください');
+                    return;
+                }
+                
                 try {
-                    // 从本地存储获取用户信息
-                    let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                    // 检查用户名是否已存在（Supabase）
+                    const { data: existingUser, error: checkError } = await supabase
+                        .from('members')
+                        .select('id')
+                        .eq('username', username)
+                        .single();
                     
-                    // 检查用户名是否已存在
-                    if (users.some(user => user.username === username)) {
-                        errorMessage.textContent = 'このユーザー名は既に使用されています';
-                        errorMessage.classList.add('show');
-                        
-                        // 3秒后隐藏错误消息
-                        setTimeout(() => {
-                            errorMessage.classList.remove('show');
-                        }, 3000);
+                    if (existingUser) {
+                        showError('このユーザー名は既に使用されています');
                         return;
                     }
                     
-                    // 添加新用户
-                    users.push({ username, password, name, team });
+                    // 获取团队ID
+                    const teamId = await getTeamId(team);
+                    if (!teamId) {
+                        showError('チーム情報の取得に失敗しました');
+                        return;
+                    }
                     
-                    // 保存到本地存储
-                    localStorage.setItem('registeredUsers', JSON.stringify(users));
+                    // 注册新用户到Supabase
+                    const { data: newUser, error: insertError } = await supabase
+                        .from('members')
+                        .insert({
+                            name: name,
+                            username: username,
+                            password: password,
+                            team_id: teamId
+                        })
+                        .select()
+                        .single();
                     
-                    // 同时在管理员面板的成员信息中添加
-                    // 管理员面板的数据存储键
-                    const STORAGE_KEY = 'tky_attendance_system';
-                    const MEMBERS_KEY = 'members';
+                    if (insertError) {
+                        throw new Error(insertError.message);
+                    }
                     
-                    // 获取管理员面板的数据
-                    let adminData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
-                        [MEMBERS_KEY]: [],
-                        teams: ['チームA', 'チームB', 'チームC'],
-                        sites: ['東京サイト', '大阪サイト', '名古屋サイト', '渋谷サイト'],
-                        attendance: []
-                    };
+                    // 同时更新本地存储以保持一致性
+                    let localData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || initialData;
+                    
+                    // 确保本地数据结构正确
+                    if (!localData[MEMBERS_KEY]) localData[MEMBERS_KEY] = [];
+                    if (!localData[TEAMS_KEY]) localData[TEAMS_KEY] = ['チームA', 'チームB', 'チームC'];
                     
                     // 生成新的成员ID
-                    const members = adminData[MEMBERS_KEY];
+                    const members = localData[MEMBERS_KEY];
                     const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
                     
-                    // 添加新成员
-                    members.push({ id: newId, name, team });
-                    adminData[MEMBERS_KEY] = members;
+                    // 添加新成员到本地存储
+                    members.push({ 
+                        id: newId, 
+                        name: name, 
+                        username: username, 
+                        password: password, 
+                        team: team 
+                    });
                     
                     // 保存到本地存储
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(adminData));
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(localData));
                     
                     // 注册成功消息
                     alert('ユーザー登録が完了しました！');
@@ -189,15 +245,22 @@
                     // 重定向到登录页面
                     window.location.href = 'user-login.html';
                 } catch (error) {
-                    errorMessage.textContent = '登録中にエラーが発生しました';
-                    errorMessage.classList.add('show');
-                    
-                    // 3秒后隐藏错误消息
-                    setTimeout(() => {
-                        errorMessage.classList.remove('show');
-                    }, 3000);
+                    console.error('注册错误:', error);
+                    showError('登録中にエラーが発生しました: ' + error.message);
                 }
             });
+        }
+        
+        // 显示错误消息的辅助函数
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            
+            // 3秒后隐藏错误消息
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 3000);
         }
     </script>
 </body>
