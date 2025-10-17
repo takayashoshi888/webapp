@@ -133,7 +133,17 @@
 
             // ページ読み込み時
             // ログイン状態をチェック
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            let currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (!currentUser) {
+                // 如果sessionStorage中没有，尝试从localStorage获取（向后兼容）
+                currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (currentUser) {
+                    // 如果在localStorage中找到，将其移动到sessionStorage
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.removeItem('currentUser');
+                }
+            }
+            
             if (!currentUser) {
                 window.location.href = 'index.html';
                 return;
@@ -192,7 +202,7 @@
             
             // データエクスポート
             document.getElementById('exportData').addEventListener('click', function() {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
                 if (!currentUser) {
                     alert('ユーザー情報が見つかりません');
                     return;
@@ -229,7 +239,7 @@
             // ログアウト処理
             document.getElementById('logout').addEventListener('click', function() {
                 if (confirm('本当にログアウトしますか？')) {
-                    localStorage.removeItem('currentUser');
+                    sessionStorage.removeItem('currentUser');
                     window.location.href = 'index.html';
                 }
             });
