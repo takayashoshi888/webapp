@@ -52,7 +52,7 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXZiaXJpZnJkbG1sbnJ3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MTYzNzQsImV4cCI6MjA3NjA5MjM3NH0.CFLPI0sTrO5CYezI2BZRPyaLFS_A7NdxBbZ08qpTlVc';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 数据存储键
+        // データ存储键
         const STORAGE_KEY = 'tky_attendance_system';
         const MEMBERS_KEY = 'members';
 
@@ -80,7 +80,7 @@
                 if (!error) {
                     memberMap = Object.fromEntries(data.map(m => [m.name, m]));
                 } else {
-                    console.error('获取成员数据失败:', error);
+                    console.error('获取成员データ失败:', error);
                     return null;
                 }
             }
@@ -102,14 +102,14 @@
                 return '未知团队';
             } catch (error) {
                 console.error('获取团队名称失败:', error);
-                return '未知团队';
+                return '未知チーム';
             }
         }
 
-        // 用户认证函数
+        // ユーザー認証関数
         async function authenticateUser(username, password) {
             try {
-                // 首先尝试 Supabase 认证
+                // 首先尝试 Supabase 認証
                 const { data, error } = await supabase
                     .from('members')
                     .select('*')
@@ -125,7 +125,7 @@
                     };
                 }
                 
-                // 如果 Supabase 认证失败，回退到本地认证
+                // 如果 Supabase 認証失敗，回退到本地認証
                 const localUsers = getData(MEMBERS_KEY);
                 const user = localUsers.find(u => u.username === username && u.password === password);
                 if (user) {
@@ -139,8 +139,8 @@
                 return null;
                 
             } catch (error) {
-                console.error('认证错误:', error);
-                // 出错时回退到本地认证
+                console.error('認証エラー:', error);
+                // 出错时回退到本地認証
                 const localUsers = getData(MEMBERS_KEY);
                 const user = localUsers.find(u => u.username === username && u.password === password);
                 return user ? {
@@ -151,12 +151,12 @@
             }
         }
 
-        // 页面加载时测试 Supabase 连接
+        // ページ読み込み時に Supabase 接続テスト
         document.addEventListener('DOMContentLoaded', async function() {
             const statusDiv = document.getElementById('supabaseStatus');
             
             try {
-                // 测试连接 - 尝试获取一个简单的查询
+                // 接続テスト - 簡単なクエリを試す
                 const { data, error } = await supabase
                     .from('teams')
                     .select('id')
@@ -166,26 +166,26 @@
                     throw error;
                 }
                 
-                // 显示成功连接消息
+                // 成功メッセージを表示
                 statusDiv.style.display = 'block';
                 statusDiv.style.backgroundColor = '#d4edda';
                 statusDiv.style.color = '#155724';
                 statusDiv.style.border = '1px solid #c3e6cb';
-                statusDiv.innerHTML = '✅ 成功连接云端数据库 (Supabase)';
+                statusDiv.innerHTML = '✅ 成功に接続しました (Supabase)';
                 
             } catch (error) {
-                // 连接失败时不显示错误，避免影响用户体验
-                console.log('Supabase 连接テスト失败:', error.message);
+                // 接続失敗時にはエラーを表示しない
+                console.log('Supabase 接続テスト失敗:', error.message);
                 statusDiv.style.display = 'none';
             }
             
-            // 初始化页面功能
+            // ページ機能を初期化
             initializePage();
         });
 
-        // 初始化页面功能
+        // ページ機能を初期化
         function initializePage() {
-            // 登录表单提交
+            // ログインフォームの送信
             document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
 
@@ -193,7 +193,7 @@
                 const password = document.getElementById('password').value;
                 const messageDiv = document.getElementById('loginMessage');
 
-                // 显示加载状态
+                // 認証中メッセージを表示
                 messageDiv.style.display = 'block';
                 messageDiv.style.backgroundColor = '#d1ecf1';
                 messageDiv.style.color = '#0c5460';
@@ -201,11 +201,11 @@
                 messageDiv.innerHTML = '認証中...';
 
                 try {
-                    // 认证用户
+                    // ユーザー認証
                     const user = await authenticateUser(username, password);
 
                     if (user) {
-                        // 登录成功
+                        // ログイン成功
                         messageDiv.style.backgroundColor = '#d4edda';
                         messageDiv.style.color = '#155724';
                         messageDiv.style.border = '1px solid #c3e6cb';
@@ -213,28 +213,28 @@
                             `✅ ログイン成功！\n` +
                             `ようこそ、${user.name}さん (${user.team})`;
 
-                        // 保存登录状态到sessionStorage
+                        // ログイン状態をsessionStorageに保存
                         sessionStorage.setItem('currentUser', JSON.stringify(user));
 
-                        // 3秒后跳转到主页面
+                        // 3秒後にユーザーデータページにリダイレクト
                         setTimeout(() => {
-                            window.location.href = 'index.html';
+                            window.location.href = 'user-data.html';
                         }, 3000);
 
                     } else {
-                        // 登录失败
+                        // ログイン失敗
                         messageDiv.style.backgroundColor = '#f8d7da';
                         messageDiv.style.color = '#721c24';
                         messageDiv.style.border = '1px solid #f5c6cb';
                         messageDiv.innerHTML = '❌ ユーザー名またはパスワードが正しくありません';
                     }
                 } catch (error) {
-                    // 认证过程中出错
-                    console.error('认证过程出错:', error);
+                    // 認証中にエラー
+                    console.error('認証中にエラー:', error);
                     messageDiv.style.backgroundColor = '#f8d7da';
                     messageDiv.style.color = '#721c24';
                     messageDiv.style.border = '1px solid #f5c6cb';
-                    messageDiv.innerHTML = '❌ 認証プロセスでエラーが発生しました';
+                    messageDiv.innerHTML = '❌ 認証中にエラーが発生しました';
                 }
             });
         }
