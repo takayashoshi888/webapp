@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel数据统计分析系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #2e59d9;
+            --accent-color: #f6c23e;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+        }
+        
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+        }
+        
+        .navbar-brand {
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .card {
+            border-radius: 0.35rem;
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        
+        .data-card {
+            border-left: 0.25rem solid var(--primary-color);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d1d3e2;
+            border-radius: 0.35rem;
+            padding: 2rem;
+            text-align: center;
+            background-color: #f8f9fc;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #fff;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            cursor: pointer;
+        }
+        
+        .table-responsive {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .summary-card {
+            border-left: 0.25rem solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chart-bar me-2"></i>Excel数据统计系统
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 文件上传区域 -->
+        <div class="card mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">上传Excel文件</h6>
+            </div>
+            <div class="card-body">
+                <div class="upload-area">
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx, .xls">
+                    <label for="fileInput" class="file-label">
+                        <div class="mb-3">
+                            <i class="fas fa-file-excel fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="mb-2">拖放文件到此处或点击上传</h5>
+                        <p class="text-muted small">支持.xlsx和.xls格式的Excel文件</p>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i> 选择文件
+                        </button>
+                    </label>
+                </div>
+                <div class="mt-3" id="fileInfo"></div>
+            </div>
+        </div>
+        
+        <!-- 数据预览 -->
+        <div class="card mb-4 d-none" id="previewSection">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">数据预览</h6>
+                <button class="btn btn-sm btn-primary" id="analyzeBtn">
+                    <i class="fas fa-chart-pie me-1"></i> 分析数据
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="previewTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <!-- 动态生成表头 -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态生成表格内容 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 分析结果 -->
+        <div class="d-none" id="analysisSection">
+            <!-- 汇总卡片 -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card data-card h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        总记录数</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-list fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card data-card h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        总出勤天数</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalAttendance">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card data-card h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        总费用</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalExpense">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 个人统计表格 -->
+            <div class="card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">个人统计</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="personStatsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>姓名</th>
+                                    <th>出勤天数</th>
+                                    <th>休息天数</th>
+                                    <th>总费用</th>
+                                    <th>平均费用</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 动态生成内容 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 图表展示 -->
+            <div class="row mb-4">
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">出勤天数分布</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="attendanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">费用分布</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="expenseChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 详细数据 -->
+            <div class="card mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">详细数据</h6>
+                    <button class="btn btn-sm btn-primary" id="exportBtn">
+                        <i class="fas fa-download me-1"></i> 导出结果
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="detailedDataTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <!-- 动态生成表头 -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 动态生成内容 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Font Awesome图标库 -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let rawData = [];
+        let processedData = [];
+        let attendanceChart = null;
+        let expenseChart = null;
+        
+        // 初始化函数
+        function init() {
+            // 文件上传事件监听
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+            
+            // 分析按钮事件
+            document.getElementById('analyzeBtn').addEventListener('click', analyzeData);
+            
+            // 导出按钮事件
+            document.getElementById('exportBtn').addEventListener('click', exportResults);
+            
+            // 拖放功能
+            const uploadArea = document.querySelector('.upload-area');
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#4e73df';
+                uploadArea.style.backgroundColor = '#fff';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#d1d3e2';
+                uploadArea.style.backgroundColor = '#f8f9fc';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#d1d3e2';
+                uploadArea.style.backgroundColor = '#f8f9fc';
+                
+                if (e.dataTransfer.files.length) {
+                    document.getElementById('fileInput').files = e.dataTransfer.files;
+                    handleFileUpload({ target: document.getElementById('fileInput') });
+                }
+            });
+        }
+        
+        // 处理文件上传
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('fileInfo').innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i> 已选择文件: ${file.name}
+                </div>
+            `;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // 获取第一个工作表
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // 转换为JSON
+                rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                // 显示预览
+                showDataPreview(rawData);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // 显示数据预览
+        function showDataPreview(data) {
+            if (data.length === 0) return;
+            
+            const previewTable = document.getElementById('previewTable');
+            previewTable.innerHTML = '';
+            
+            // 创建表头
+            const thead = previewTable.querySelector('thead');
+            const headerRow = document.createElement('tr');
+            
+            data[0].forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            
+            // 创建表格内容（最多显示10行）
+            const tbody = previewTable.querySelector('tbody');
+            const rowsToShow = Math.min(data.length - 1, 10);
+            
+            for (let i = 1; i <= rowsToShow; i++) {
+                const tr = document.createElement('tr');
+                
+                data[i].forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                
+                tbody.appendChild(tr);
+            }
+            
+            // 显示预览区域
+            document.getElementById('previewSection').classList.remove('d-none');
+        }
+        
+        // 分析数据
+        function analyzeData() {
+            if (rawData.length === 0) return;
+            
+            // 获取表头
+            const headers = rawData[0];
+            
+            // 确定各列的索引
+            const nameIndex = headers.findIndex(h => h.includes('姓名') || h.includes('名字') || h.includes('人员'));
+            const dateIndex = headers.findIndex(h => h.includes('日期') || h.includes('时间'));
+            const statusIndex = headers.findIndex(h => h.includes('状态') || h.includes('出勤'));
+            const expenseIndex = headers.findIndex(h => h.includes('费用') || h.includes('金额') || h.includes('支出'));
+            
+            if (nameIndex === -1) {
+                alert('无法识别姓名列，请确保表格中包含"姓名"或类似标题的列');
+                return;
+            }
+            
+            // 处理数据
+            processedData = [];
+            const personStats = {};
+            
+            // 跳过表头，从第1行开始
+            for (let i = 1; i < rawData.length; i++) {
+                const row = rawData[i];
+                if (!row[nameIndex]) continue; // 跳过空姓名行
+                
+                const name = row[nameIndex];
+                const date = dateIndex !== -1 ? row[dateIndex] : '';
+                const status = statusIndex !== -1 ? row[statusIndex] : '';
+                const expense = expenseIndex !== -1 ? parseFloat(row[expenseIndex]) || 0 : 0;
+                
+                // 添加到详细数据
+                processedData.push({
+                    name, date, status, expense
+                });
+                
+                // 统计个人数据
+                if (!personStats[name]) {
+                    personStats[name] = {
+                        name,
+                        attendance: 0,
+                        rest: 0,
+                        totalExpense: 0,
+                        records: 0
+                    };
+                }
+                
+                // 统计出勤/休息
+                if (status.includes('出勤') || status.includes('工作') || status === '是' || status === true) {
+                    personStats[name].attendance++;
+                } else if (status.includes('休息') || status.includes('休假') || status === '否' || status === false) {
+                    personStats[name].rest++;
+                }
+                
+                // 统计费用
+                personStats[name].totalExpense += expense;
+                personStats[name].records++;
+            }
+            
+            // 转换为数组并按姓名排序
+            const statsArray = Object.values(personStats).sort((a, b) => a.name.localeCompare(b.name));
+            
+            // 更新汇总数据
+            updateSummaryStats(statsArray);
+            
+            // 更新个人统计表格
+            updatePersonStatsTable(statsArray);
+            
+            // 更新图表
+            updateCharts(statsArray);
+            
+            // 更新详细数据表格
+            updateDetailedDataTable();
+            
+            // 显示分析结果
+            document.getElementById('analysisSection').classList.remove('d-none');
+            
+            // 滚动到分析结果
+            document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 更新汇总数据
+        function updateSummaryStats(stats) {
+            const totalRecords = processedData.length;
+            const totalAttendance = stats.reduce((sum, person) => sum + person.attendance, 0);
+            const totalExpense = stats.reduce((sum, person) => sum + person.totalExpense, 0);
+            
+            document.getElementById('totalRecords').textContent = totalRecords;
+            document.getElementById('totalAttendance').textContent = totalAttendance;
+            document.getElementById('totalExpense').textContent = totalExpense.toFixed(2);
+        }
+        
+        // 更新个人统计表格
+        function updatePersonStatsTable(stats) {
+            const tableBody = document.querySelector('#personStatsTable tbody');
+            tableBody.innerHTML = '';
+            
+            stats.forEach(person => {
+                const tr = document.createElement('tr');
+                const avgExpense = person.records > 0 ? person.totalExpense / person.records : 0;
+                
+                tr.innerHTML = `
+                    <td>${person.name}</td>
+                    <td>${person.attendance}</td>
+                    <td>${person.rest}</td>
+                    <td>${person.totalExpense.toFixed(2)}</td>
+                    <td>${avgExpense.toFixed(2)}</td>
+                `;
+                
+                tableBody.appendChild(tr);
+            });
+        }
+        
+        // 更新图表
+        function updateCharts(stats) {
+            // 销毁旧图表
+            if (attendanceChart) attendanceChart.destroy();
+            if (expenseChart) expenseChart.destroy();
+            
+            // 准备数据
+            const labels = stats.map(person => person.name);
+            const attendanceData = stats.map(person => person.attendance);
+            const expenseData = stats.map(person => person.totalExpense);
+            
+            // 出勤天数图表
+            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+            attendanceChart = new Chart(attendanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '出勤天数',
+                        data: attendanceData,
+                        backgroundColor: 'rgba(78, 115, 223, 0.5)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '天数'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 费用图表
+            const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+            expenseChart = new Chart(expenseCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '总费用',
+                        data: expenseData,
+                        backgroundColor: 'rgba(246, 194, 62, 0.5)',
+                        borderColor: 'rgba(246, 194, 62, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '金额'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新详细数据表格
+        function updateDetailedDataTable() {
+            const table = document.getElementById('detailedDataTable');
+            table.innerHTML = '';
+            
+            // 创建表头
+            const thead = document.createElement('thead');
+            thead.className = 'thead-light';
+            const headerRow = document.createElement('tr');
+            
+            ['姓名', '日期', '状态', '费用'].forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // 创建表格内容
+            const tbody = document.createElement('tbody');
+            
+            processedData.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                tr.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.date}</td>
+                    <td>${item.status}</td>
+                    <td>${item.expense.toFixed(2)}</td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+        }
+        
+        // 导出结果
+        function exportResults() {
+            if (processedData.length === 0) return;
+            
+            // 准备个人统计数据
+            const stats = {};
+            processedData.forEach(item => {
+                if (!stats[item.name]) {
+                    stats[item.name] = {
+                        attendance: 0,
+                        rest: 0,
+                        totalExpense: 0,
+                        records: 0
+                    };
+                }
+                
+                if (item.status.includes('出勤') || item.status.includes('工作') || item.status === '是' || item.status === true) {
+                    stats[item.name].attendance++;
+                } else if (item.status.includes('休息') || item.status.includes('休假') || item.status === '否' || item.status === false) {
+                    stats[item.name].rest++;
+                }
+                
+                stats[item.name].totalExpense += item.expense;
+                stats[item.name].records++;
+            });
+            
+            // 转换为数组
+            const statsArray = Object.entries(stats).map(([name, data]) => ({
+                name,
+                attendance: data.attendance,
+                rest: data.rest,
+                totalExpense: data.totalExpense,
+                averageExpense: data.records > 0 ? data.totalExpense / data.records : 0
+            }));
+            
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            
+            // 添加个人统计表
+            const statsWS = XLSX.utils.json_to_sheet(statsArray);
+            XLSX.utils.book_append_sheet(wb, statsWS, "个人统计");
+            
+            // 添加详细数据表
+            const detailedWS = XLSX.utils.json_to_sheet(processedData);
+            XLSX.utils.book_append_sheet(wb, detailedWS, "详细数据");
+            
+            // 导出文件
+            XLSX.writeFile(wb, "数据分析结果.xlsx");
+        }
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
