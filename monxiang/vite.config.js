@@ -7,8 +7,8 @@ export default defineConfig({
   server: {
     port: 3000
   },
-  // GitHub Pages 部署配置
-  base: "./",
+  // Vercel 部署配置
+  base: "/",
   // 优化构建配置
   build: {
     outDir: 'dist',
