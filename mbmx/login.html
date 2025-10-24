@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 梦想清单应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #FEFEFE 0%, #F8F9FA 100%);
+            min-height: 100vh;
+        }
+        .hero-title {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .login-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+        .login-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        .form-input {
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.1);
+        }
+        .login-btn {
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            transition: all 0.3s ease;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.3);
+        }
+        .social-btn {
+            transition: all 0.3s ease;
+        }
+        .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .login-content {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景动画画布 -->
+    <canvas id="background-canvas"></canvas>
+    
+    <!-- 主要内容 -->
+    <div class="min-h-screen flex items-center justify-center px-4 py-8">
+        <div class="login-card rounded-2xl shadow-xl p-8 max-w-md w-full">
+            <div class="floating-shapes" id="floating-shapes"></div>
+            
+            <div class="login-content">
+                <!-- Logo和标题 -->
+                <div class="text-center mb-8">
+                    <img src="resources/app-logo.png" alt="应用Logo" class="w-16 h-16 mx-auto mb-4">
+                    <h1 class="hero-title text-3xl font-bold mb-2">梦想清单</h1>
+                    <p class="text-gray-600">让梦想照进现实，让目标成为动力</p>
+                </div>
+
+                <!-- 登录表单 -->
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">用户名或邮箱</label>
+                        <input type="text" id="username" required 
+                               class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                               placeholder="请输入用户名或邮箱">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">密码</label>
+                        <input type="password" id="password" required 
+                               class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                               placeholder="请输入密码">
+                        <div class="flex justify-end mt-2">
+                            <a href="#" class="text-sm text-blue-500 hover:text-blue-700">忘记密码？</a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember-me" class="w-4 h-4 text-red-400 border-gray-300 rounded focus:ring-red-400">
+                        <label for="remember-me" class="ml-2 text-sm text-gray-600">记住我</label>
+                    </div>
+                    
+                    <button type="submit" class="login-btn w-full py-3 text-white font-medium rounded-lg">
+                        登录
+                    </button>
+                </form>
+
+                <!-- 分割线 -->
+                <div class="flex items-center my-6">
+                    <div class="flex-1 border-t border-gray-300"></div>
+                    <div class="px-4 text-sm text-gray-500">或</div>
+                    <div class="flex-1 border-t border-gray-300"></div>
+                </div>
+
+                <!-- 社交登录 -->
+                <div class="space-y-3 mb-6">
+                    <button class="social-btn w-full py-3 border border-gray-300 rounded-lg flex items-center justify-center space-x-3 hover:bg-gray-50">
+                        <span class="text-red-500">📧</span>
+                        <span class="text-gray-700">使用邮箱登录</span>
+                    </button>
+                    
+                    <button class="social-btn w-full py-3 border border-gray-300 rounded-lg flex items-center justify-center space-x-3 hover:bg-gray-50">
+                        <span class="text-blue-500">📱</span>
+                        <span class="text-gray-700">使用手机登录</span>
+                    </button>
+                </div>
+
+                <!-- 注册链接 -->
+                <div class="text-center">
+                    <p class="text-gray-600">
+                        还没有账号？
+                        <a href="#" class="text-blue-500 hover:text-blue-700 font-medium">立即注册</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="absolute bottom-4 left-0 right-0 text-center">
+        <p class="text-gray-500 text-sm">© 2025 梦想清单应用. 让梦想照进现实，让目标成为动力。</p>
+    </footer>
+
+    <script>
+        // 登录管理类
+        class LoginManager {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.initBackgroundAnimation();
+                this.initFloatingShapes();
+                this.animateElements();
+                this.checkLoginStatus();
+            }
+
+            bindEvents() {
+                // 表单提交
+                document.getElementById('login-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+
+                // 社交登录按钮
+                document.querySelectorAll('.social-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.handleSocialLogin(btn);
+                    });
+                });
+
+                // 注册链接
+                document.querySelector('a[href="#"]')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showRegistration();
+                });
+            }
+
+            handleLogin() {
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('remember-me').checked;
+
+                // 基础验证
+                if (!username || !password) {
+                    this.showNotification('请填写完整的登录信息', 'error');
+                    return;
+                }
+
+                // 模拟登录验证
+                this.simulateLogin(username, password, rememberMe);
+            }
+
+            simulateLogin(username, password, rememberMe) {
+                // 显示加载状态
+                const loginBtn = document.querySelector('.login-btn');
+                const originalText = loginBtn.textContent;
+                loginBtn.textContent = '登录中...';
+                loginBtn.disabled = true;
+
+                // 模拟网络延迟
+                setTimeout(() => {
+                    // 模拟登录成功（实际应用中应该调用API）
+                    const isValid = this.validateCredentials(username, password);
+                    
+                    if (isValid) {
+                        // 保存登录状态
+                        this.saveLoginState(username, rememberMe);
+                        
+                        // 显示成功消息
+                        this.showNotification('登录成功！正在跳转...');
+                        
+                        // 跳转到主页面
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    } else {
+                        // 显示错误消息
+                        this.showNotification('用户名或密码错误', 'error');
+                        
+                        // 重置按钮状态
+                        loginBtn.textContent = originalText;
+                        loginBtn.disabled = false;
+                    }
+                }, 1500);
+            }
+
+            validateCredentials(username, password) {
+                // 简单的验证逻辑（实际应用中应该调用后端API）
+                // 演示账号: admin/admin 或 user/user
+                const validCredentials = {
+                    'admin': 'admin',
+                    'user': 'user',
+                    'demo': 'demo'
+                };
+                
+                return validCredentials[username] === password;
+            }
+
+            saveLoginState(username, rememberMe) {
+                const loginData = {
+                    username: username,
+                    loginTime: new Date().toISOString(),
+                    isLoggedIn: true
+                };
+                
+                if (rememberMe) {
+                    localStorage.setItem('dreamListLogin', JSON.stringify(loginData));
+                } else {
+                    sessionStorage.setItem('dreamListLogin', JSON.stringify(loginData));
+                }
+            }
+
+            checkLoginStatus() {
+                // 检查是否已登录
+                const loginData = localStorage.getItem('dreamListLogin') || sessionStorage.getItem('dreamListLogin');
+                
+                if (loginData) {
+                    const data = JSON.parse(loginData);
+                    if (data.isLoggedIn) {
+                        // 已登录，直接跳转到主页面
+                        window.location.href = 'index.html';
+                    }
+                }
+            }
+
+            handleSocialLogin(button) {
+                const loginType = button.querySelector('span').textContent;
+                this.showNotification(`${loginType}功能开发中，敬请期待！`, 'info');
+            }
+
+            showRegistration() {
+                this.showNotification('注册功能开发中，请使用演示账号登录', 'info');
+                
+                // 自动填充演示账号
+                document.getElementById('username').value = 'demo';
+                document.getElementById('password').value = 'demo';
+            }
+
+            initBackgroundAnimation() {
+                const canvas = document.getElementById('background-canvas');
+                if (!canvas) return;
+
+                const sketch = (p) => {
+                    let particles = [];
+                    
+                    p.setup = () => {
+                        p.createCanvas(p.windowWidth, p.windowHeight);
+                        
+                        for (let i = 0; i < 50; i++) {
+                            particles.push({
+                                x: p.random(p.width),
+                                y: p.random(p.height),
+                                size: p.random(2, 6),
+                                speedX: p.random(-0.3, 0.3),
+                                speedY: p.random(-0.3, 0.3),
+                                color: p.random(['#FF6B6B', '#4ECDC4', '#FFD93D'])
+                            });
+                        }
+                    };
+                    
+                    p.draw = () => {
+                        p.clear();
+                        
+                        particles.forEach(particle => {
+                            p.fill(particle.color + '20');
+                            p.noStroke();
+                            p.circle(particle.x, particle.y, particle.size);
+                            
+                            particle.x += particle.speedX;
+                            particle.y += particle.speedY;
+                            
+                            if (particle.x < 0 || particle.x > p.width) particle.speedX *= -1;
+                            if (particle.y < 0 || particle.y > p.height) particle.speedY *= -1;
+                        });
+                    };
+                    
+                    p.windowResized = () => {
+                        p.resizeCanvas(p.windowWidth, p.windowHeight);
+                    };
+                };
+                
+                new p5(sketch, canvas);
+            }
+
+            initFloatingShapes() {
+                const container = document.getElementById('floating-shapes');
+                if (!container) return;
+
+                const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D'];
+                
+                for (let i = 0; i < 10; i++) {
+                    const shape = document.createElement('div');
+                    shape.style.position = 'absolute';
+                    shape.style.width = Math.random() * 30 + 15 + 'px';
+                    shape.style.height = shape.style.width;
+                    shape.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)] + '10';
+                    shape.style.borderRadius = Math.random() > 0.5 ? '50%' : '20%';
+                    shape.style.left = Math.random() * 100 + '%';
+                    shape.style.top = Math.random() * 100 + '%';
+                    
+                    container.appendChild(shape);
+
+                    anime({
+                        targets: shape,
+                        translateY: [0, -30, 0],
+                        translateX: [0, Math.random() * 20 - 10, 0],
+                        rotate: [0, 360],
+                        duration: Math.random() * 4000 + 3000,
+                        loop: true,
+                        easing: 'easeInOutSine',
+                        delay: Math.random() * 2000
+                    });
+                }
+            }
+
+            animateElements() {
+                // 页面加载动画
+                anime({
+                    targets: '.login-card',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    duration: 800,
+                    easing: 'easeOutQuart',
+                    delay: 200
+                });
+
+                anime({
+                    targets: '.login-content > *',
+                    translateY: [30, 0],
+                    opacity: [0, 1],
+                    delay: anime.stagger(100, {start: 400}),
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                });
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                const bgColor = type === 'error' ? 'bg-red-500' : 
+                               type === 'info' ? 'bg-blue-500' : 'bg-green-500';
+                notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                anime({
+                    targets: notification,
+                    translateX: [300, 0],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+
+                setTimeout(() => {
+                    anime({
+                        targets: notification,
+                        translateX: [0, 300],
+                        opacity: [1, 0],
+                        duration: 300,
+                        easing: 'easeInQuart',
+                        complete: () => {
+                            document.body.removeChild(notification);
+                        }
+                    });
+                }, 3000);
+            }
+        }
+
+        // 初始化登录管理器
+        document.addEventListener('DOMContentLoaded', () => {
+            window.loginManager = new LoginManager();
+        });
+    </script>
+</body>
+</html>

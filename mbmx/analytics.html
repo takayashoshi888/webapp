@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析 - 目标管理应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #FEFEFE 0%, #F8F9FA 100%);
+            min-height: 100vh;
+        }
+        .hero-title {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #FF6B6B;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            border-radius: 1px;
+        }
+        .progress-circle {
+            transform: rotate(-90deg);
+        }
+        .progress-circle-bg {
+            fill: none;
+            stroke: #E5E7EB;
+            stroke-width: 8;
+        }
+        .progress-circle-fill {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease-in-out;
+        }
+        .heatmap-cell {
+            transition: all 0.3s ease;
+        }
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+        }
+        #background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景动画 -->
+    <canvas id="background-animation"></canvas>
+    
+    <!-- 导航栏 -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <img src="resources/app-logo.png" alt="应用Logo" class="w-8 h-8">
+                    <span class="text-xl font-bold text-gray-800">梦想清单</span>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="flex space-x-8">
+                        <a href="index.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">目标管理</a>
+                        <a href="dreams.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">梦想清单</a>
+                        <a href="analytics.html" class="nav-link active text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">数据分析</a>
+                        <a href="settings.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">个人设置</a>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="visual-board-btn" class="bg-gradient-to-r from-purple-400 to-pink-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300">
+                            视觉化面板
+                        </button>
+                        <button id="logout-btn" class="text-gray-500 hover:text-gray-700 px-3 py-2 text-sm font-medium">
+                            登出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 标题区域 -->
+        <div class="text-center mb-12 animate-on-load">
+            <h1 class="hero-title text-4xl md:text-5xl font-bold mb-4">
+                数据分析中心
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                通过数据洞察你的成长轨迹，让每一步进步都有数据支撑。
+            </p>
+        </div>
+
+        <!-- 关键指标卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-on-load">
+            <div class="stat-card rounded-lg shadow-md p-6 text-center">
+                <div class="relative w-20 h-20 mx-auto mb-4">
+                    <svg class="progress-circle w-20 h-20">
+                        <circle class="progress-circle-bg" cx="40" cy="40" r="32"></circle>
+                        <circle id="goals-progress-circle" class="progress-circle-fill" cx="40" cy="40" r="32" 
+                                stroke="#FF6B6B" stroke-dasharray="201.06" stroke-dashoffset="201.06"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="goals-completion-rate" class="text-xl font-bold text-gray-800">0%</span>
+                    </div>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">目标完成率</h3>
+                <p class="text-sm text-gray-600">总体进度概览</p>
+            </div>
+
+            <div class="stat-card rounded-lg shadow-md p-6 text-center">
+                <div class="text-4xl font-bold text-blue-500 mb-2" id="total-goals-count">0</div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">总目标数</h3>
+                <p class="text-sm text-gray-600">已设定的目标</p>
+            </div>
+
+            <div class="stat-card rounded-lg shadow-md p-6 text-center">
+                <div class="text-4xl font-bold text-green-500 mb-2" id="completed-goals-count">0</div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">已完成</h3>
+                <p class="text-sm text-gray-600">成功实现的目标</p>
+            </div>
+
+            <div class="stat-card rounded-lg shadow-md p-6 text-center">
+                <div class="text-4xl font-bold text-yellow-500 mb-2" id="active-days-count">15</div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">活跃天数</h3>
+                <p class="text-sm text-gray-600">本月活跃记录</p>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <!-- 目标完成趋势图 -->
+            <div class="chart-container rounded-lg shadow-md p-6 animate-on-load">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">目标完成趋势</h3>
+                <div id="trend-chart" style="height: 300px;"></div>
+            </div>
+
+            <!-- 分类目标分布 -->
+            <div class="chart-container rounded-lg shadow-md p-6 animate-on-load">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">目标分类分布</h3>
+                <div id="category-chart" style="height: 300px;"></div>
+            </div>
+        </div>
+
+        <!-- 月度活跃度热力图 -->
+        <div class="chart-container rounded-lg shadow-md p-6 mb-12 animate-on-load">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">月度活跃度热力图</h3>
+            <div id="heatmap-container" class="overflow-x-auto">
+                <!-- 热力图将通过JavaScript生成 -->
+            </div>
+        </div>
+
+        <!-- 详细统计表格 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 目标完成排行 -->
+            <div class="chart-container rounded-lg shadow-md p-6 animate-on-load">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">分类完成率排行</h3>
+                <div id="completion-ranking" class="space-y-3">
+                    <!-- 排行数据将通过JavaScript生成 -->
+                </div>
+            </div>
+
+            <!-- 最近活动 -->
+            <div class="chart-container rounded-lg shadow-md p-6 animate-on-load">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">最近活动</h3>
+                <div id="recent-activities" class="space-y-3">
+                    <!-- 活动数据将通过JavaScript生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white/80 backdrop-blur-md mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-gray-600">© 2025 梦想清单应用. 让梦想照进现实，让目标成为动力。</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="main.js"></script>
+    
+    <script>
+        // 数据分析管理类
+        class AnalyticsManager {
+            constructor() {
+                this.goals = this.loadGoals();
+                this.dreams = this.loadDreams();
+                this.init();
+            }
+
+            init() {
+                this.updateKeyMetrics();
+                this.initCharts();
+                this.initHeatmap();
+                this.initRanking();
+                this.initRecentActivities();
+                this.initBackgroundAnimation();
+                this.animateElements();
+            }
+
+            loadGoals() {
+                const saved = localStorage.getItem('goals');
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            loadDreams() {
+                const saved = localStorage.getItem('dreams');
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            updateKeyMetrics() {
+                const totalGoals = this.goals.length;
+                const completedGoals = this.goals.filter(goal => goal.progress === 100).length;
+                const completionRate = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+
+                // 更新数字显示
+                document.getElementById('total-goals-count').textContent = totalGoals;
+                document.getElementById('completed-goals-count').textContent = completedGoals;
+                document.getElementById('goals-completion-rate').textContent = completionRate + '%';
+
+                // 更新进度环
+                const circle = document.getElementById('goals-progress-circle');
+                const circumference = 2 * Math.PI * 32; // r=32
+                const offset = circumference - (completionRate / 100) * circumference;
+                
+                setTimeout(() => {
+                    circle.style.strokeDashoffset = offset;
+                }, 500);
+            }
+
+            initCharts() {
+                this.initTrendChart();
+                this.initCategoryChart();
+            }
+
+            initTrendChart() {
+                const chart = echarts.init(document.getElementById('trend-chart'));
+                
+                // 生成模拟的趋势数据
+                const dates = [];
+                const completionData = [];
+                const today = new Date();
+                
+                for (let i = 29; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    dates.push(date.toISOString().split('T')[0]);
+                    completionData.push(Math.floor(Math.random() * 100));
+                }
+
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        borderColor: '#FF6B6B',
+                        textStyle: { color: '#333' }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: dates,
+                        axisLabel: { 
+                            color: '#666',
+                            formatter: function(value) {
+                                return value.split('-')[1] + '-' + value.split('-')[2];
+                            }
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: { color: '#666' },
+                        splitLine: { lineStyle: { color: '#E5E7EB' } }
+                    },
+                    series: [{
+                        data: completionData,
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: { color: '#FF6B6B', width: 3 },
+                        itemStyle: { color: '#FF6B6B' },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: 'rgba(255, 107, 107, 0.3)' },
+                                    { offset: 1, color: 'rgba(255, 107, 107, 0.05)' }
+                                ]
+                            }
+                        }
+                    }],
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true }
+                };
+
+                chart.setOption(option);
+                
+                // 响应式
+                window.addEventListener('resize', () => chart.resize());
+            }
+
+            initCategoryChart() {
+                const chart = echarts.init(document.getElementById('category-chart'));
+                
+                const categories = [
+                    { name: '健康', value: 0, color: '#FF6B6B' },
+                    { name: '事业', value: 0, color: '#4ECDC4' },
+                    { name: '学习', value: 0, color: '#FFD93D' },
+                    { name: '财务', value: 0, color: '#6C5CE7' },
+                    { name: '人际关系', value: 0, color: '#FD79A8' }
+                ];
+
+                // 统计各分类目标数量
+                this.goals.forEach(goal => {
+                    const category = categories.find(c => 
+                        (goal.category === 'health' && c.name === '健康') ||
+                        (goal.category === 'career' && c.name === '事业') ||
+                        (goal.category === 'learning' && c.name === '学习') ||
+                        (goal.category === 'finance' && c.name === '财务') ||
+                        (goal.category === 'relationships' && c.name === '人际关系')
+                    );
+                    if (category) category.value++;
+                });
+
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        borderColor: '#FF6B6B',
+                        textStyle: { color: '#333' }
+                    },
+                    series: [{
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['50%', '50%'],
+                        data: categories.filter(c => c.value > 0),
+                        itemStyle: {
+                            borderRadius: 8,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}: {c}',
+                            color: '#666'
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }]
+                };
+
+                chart.setOption(option);
+                
+                // 响应式
+                window.addEventListener('resize', () => chart.resize());
+            }
+
+            initHeatmap() {
+                const container = document.getElementById('heatmap-container');
+                const today = new Date();
+                const startDate = new Date(today.getFullYear(), 0, 1);
+                
+                // 生成整年的日期数据
+                const heatmapData = [];
+                const currentDate = new Date(startDate);
+                
+                while (currentDate <= today) {
+                    const intensity = Math.random();
+                    heatmapData.push({
+                        date: new Date(currentDate),
+                        intensity: intensity,
+                        count: Math.floor(intensity * 10)
+                    });
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                // 创建热力图HTML
+                const heatmapHTML = this.createHeatmapHTML(heatmapData);
+                container.innerHTML = heatmapHTML;
+            }
+
+            createHeatmapHTML(data) {
+                const weeks = [];
+                const currentWeek = [];
+                let weekIndex = 0;
+                
+                data.forEach((day, index) => {
+                    currentWeek.push(day);
+                    
+                    if (currentWeek.length === 7 || index === data.length - 1) {
+                        weeks.push([...currentWeek]);
+                        currentWeek.length = 0;
+                    }
+                });
+
+                let html = '<div class="flex flex-col space-y-1">';
+                
+                // 月份标签
+                html += '<div class="flex mb-2 text-xs text-gray-600">';
+                const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+                months.forEach(month => {
+                    html += `<div class="w-12 text-center">${month}</div>`;
+                });
+                html += '</div>';
+
+                // 星期标签
+                html += '<div class="flex items-start">';
+                html += '<div class="flex flex-col mr-2 text-xs text-gray-600">';
+                ['日', '一', '二', '三', '四', '五', '六'].forEach(day => {
+                    html += `<div class="h-3 flex items-center">${day}</div>`;
+                });
+                html += '</div>';
+
+                // 热力图格子
+                html += '<div class="grid grid-cols-53 gap-1">';
+                
+                for (let week = 0; week < 53; week++) {
+                    for (let day = 0; day < 7; day++) {
+                        const dayData = data[week * 7 + day];
+                        if (dayData) {
+                            const intensity = dayData.intensity;
+                            const bgColor = this.getHeatmapColor(intensity);
+                            html += `<div class="heatmap-cell w-3 h-3 rounded-sm cursor-pointer" 
+                                          style="background-color: ${bgColor}" 
+                                          title="${dayData.date.toISOString().split('T')[0]}: ${dayData.count} 个活动">
+                                   </div>`;
+                        } else {
+                            html += '<div class="w-3 h-3 rounded-sm bg-gray-100"></div>';
+                        }
+                    }
+                }
+                
+                html += '</div></div></div>';
+                
+                return html;
+            }
+
+            getHeatmapColor(intensity) {
+                const colors = [
+                    '#E5E7EB', // 0 activity
+                    '#C6E48B', // low
+                    '#7BC96F', // medium-low
+                    '#239A3B', // medium
+                    '#196127'  // high
+                ];
+                return colors[Math.floor(intensity * (colors.length - 1)) + 1];
+            }
+
+            initRanking() {
+                const container = document.getElementById('completion-ranking');
+                const categories = [
+                    { name: '健康', icon: '❤️', color: '#FF6B6B' },
+                    { name: '事业', icon: '💼', color: '#4ECDC4' },
+                    { name: '学习', icon: '📚', color: '#FFD93D' },
+                    { name: '财务', icon: '💰', color: '#6C5CE7' },
+                    { name: '人际关系', icon: '👥', color: '#FD79A8' }
+                ];
+
+                const rankings = categories.map(category => {
+                    const categoryGoals = this.goals.filter(goal => {
+                        return (category.name === '健康' && goal.category === 'health') ||
+                               (category.name === '事业' && goal.category === 'career') ||
+                               (category.name === '学习' && goal.category === 'learning') ||
+                               (category.name === '财务' && goal.category === 'finance') ||
+                               (category.name === '人际关系' && goal.category === 'relationships');
+                    });
+                    
+                    const completed = categoryGoals.filter(goal => goal.progress === 100).length;
+                    const total = categoryGoals.length;
+                    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+                    
+                    return { ...category, rate, completed, total };
+                }).sort((a, b) => b.rate - a.rate);
+
+                container.innerHTML = rankings.map((rank, index) => `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" 
+                                 style="background-color: ${rank.color}">
+                                ${index + 1}
+                            </div>
+                            <span class="text-2xl">${rank.icon}</span>
+                            <span class="font-medium text-gray-800">${rank.name}</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold" style="color: ${rank.color}">${rank.rate}%</div>
+                            <div class="text-xs text-gray-500">${rank.completed}/${rank.total}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            initRecentActivities() {
+                const container = document.getElementById('recent-activities');
+                
+                // 生成模拟的活动数据
+                const activities = [
+                    { type: 'goal_completed', title: '完成目标', description: '每天运动30分钟', time: '2小时前', icon: '✅' },
+                    { type: 'goal_created', title: '创建目标', description: '学习新技能', time: '1天前', icon: '🎯' },
+                    { type: 'dream_completed', title: '实现梦想', description: '学会一门新语言', time: '3天前', icon: '🌟' },
+                    { type: 'progress_update', title: '进度更新', description: '储蓄计划 60%', time: '5天前', icon: '📈' },
+                    { type: 'goal_created', title: '创建目标', description: '职业发展规划', time: '1周前', icon: '🎯' }
+                ];
+
+                container.innerHTML = activities.map(activity => `
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-lg">
+                            ${activity.icon}
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800">${activity.title}</div>
+                            <div class="text-sm text-gray-600">${activity.description}</div>
+                        </div>
+                        <div class="text-xs text-gray-500">${activity.time}</div>
+                    </div>
+                `).join('');
+            }
+
+            initBackgroundAnimation() {
+                const canvas = document.getElementById('background-animation');
+                if (!canvas) return;
+
+                const sketch = (p) => {
+                    let particles = [];
+                    
+                    p.setup = () => {
+                        p.createCanvas(p.windowWidth, p.windowHeight);
+                        
+                        for (let i = 0; i < 30; i++) {
+                            particles.push({
+                                x: p.random(p.width),
+                                y: p.random(p.height),
+                                size: p.random(1, 4),
+                                speedX: p.random(-0.3, 0.3),
+                                speedY: p.random(-0.3, 0.3),
+                                color: p.random(['#FF6B6B', '#4ECDC4', '#FFD93D'])
+                            });
+                        }
+                    };
+                    
+                    p.draw = () => {
+                        p.clear();
+                        
+                        particles.forEach(particle => {
+                            p.fill(particle.color + '30');
+                            p.noStroke();
+                            p.circle(particle.x, particle.y, particle.size);
+                            
+                            particle.x += particle.speedX;
+                            particle.y += particle.speedY;
+                            
+                            if (particle.x < 0 || particle.x > p.width) particle.speedX *= -1;
+                            if (particle.y < 0 || particle.y > p.height) particle.speedY *= -1;
+                        });
+                    };
+                    
+                    p.windowResized = () => {
+                        p.resizeCanvas(p.windowWidth, p.windowHeight);
+                    };
+                };
+                
+                new p5(sketch, canvas);
+            }
+
+            animateElements() {
+                // 页面加载动画
+                anime({
+                    targets: '.animate-on-load',
+                    translateY: [30, 0],
+                    opacity: [0, 1],
+                    delay: anime.stagger(100),
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                });
+
+                // 统计卡片动画
+                anime({
+                    targets: '.stat-card',
+                    scale: [0.9, 1],
+                    opacity: [0, 1],
+                    delay: anime.stagger(150, {start: 300}),
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                });
+            }
+        }
+
+        // 初始化数据分析管理器
+        document.addEventListener('DOMContentLoaded', () => {
+            window.analyticsManager = new AnalyticsManager();
+        });
+    </script>
+</body>
+</html>

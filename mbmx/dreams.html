@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>梦想清单 - 目标管理应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #FEFEFE 0%, #F8F9FA 100%);
+            min-height: 100vh;
+        }
+        .hero-title {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .dream-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+            cursor: grab;
+        }
+        .dream-card:active {
+            cursor: grabbing;
+        }
+        .dream-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        .timeline-zone {
+            min-height: 200px;
+            border: 2px dashed #E5E7EB;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .timeline-zone.drag-over {
+            border-color: #FF6B6B;
+            background-color: rgba(255, 107, 107, 0.05);
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #FF6B6B;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            border-radius: 1px;
+        }
+        .floating-add-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .floating-add-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+        }
+        .modal-overlay {
+            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .dream-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .celebration-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            pointer-events: none;
+        }
+        .timeframe-short { border-left: 4px solid #4ECDC4; }
+        .timeframe-medium { border-left: 4px solid #FFD93D; }
+        .timeframe-long { border-left: 4px solid #FF6B6B; }
+        
+        .dream-canvas {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(78, 205, 196, 0.05) 100%);
+            border-radius: 16px;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .dream-content {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <img src="resources/app-logo.png" alt="应用Logo" class="w-8 h-8">
+                    <span class="text-xl font-bold text-gray-800">梦想清单</span>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="flex space-x-8">
+                        <a href="index.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">目标管理</a>
+                        <a href="dreams.html" class="nav-link active text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">梦想清单</a>
+                        <a href="analytics.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">数据分析</a>
+                        <a href="settings.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">个人设置</a>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="visual-board-btn" class="bg-gradient-to-r from-purple-400 to-pink-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300">
+                            视觉化面板
+                        </button>
+                        <button id="logout-btn" class="text-gray-500 hover:text-gray-700 px-3 py-2 text-sm font-medium">
+                            登出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 标题区域 -->
+        <div class="text-center mb-12 animate-on-load">
+            <h1 class="hero-title text-4xl md:text-5xl font-bold mb-4">
+                我的梦想清单
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                将梦想可视化，为未来绘制蓝图。每一个伟大的成就都始于一个梦想。
+            </p>
+        </div>
+
+        <!-- 梦想画布区域 -->
+        <div class="dream-canvas mb-8 animate-on-load">
+            <div class="floating-shapes" id="floating-shapes"></div>
+            <div class="dream-content p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">梦想可视化</h2>
+                    <button id="add-dream-btn" class="bg-gradient-to-r from-red-400 to-teal-400 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-300">
+                        <span class="mr-2">✨</span>
+                        添加梦想
+                    </button>
+                </div>
+                
+                <!-- 时间轴区域 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 短期梦想 -->
+                    <div class="timeline-zone timeframe-short p-6" data-timeframe="short">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">短期梦想</h3>
+                            <p class="text-sm text-gray-600">3个月内可实现</p>
+                        </div>
+                        <div id="short-dreams" class="space-y-4 min-h-[200px]">
+                            <!-- 短期梦想卡片将在这里显示 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 中期梦想 -->
+                    <div class="timeline-zone timeframe-medium p-6" data-timeframe="medium">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">中期梦想</h3>
+                            <p class="text-sm text-gray-600">3-12个月内可实现</p>
+                        </div>
+                        <div id="medium-dreams" class="space-y-4 min-h-[200px]">
+                            <!-- 中期梦想卡片将在这里显示 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 长期梦想 -->
+                    <div class="timeline-zone timeframe-long p-6" data-timeframe="long">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">长期梦想</h3>
+                            <p class="text-sm text-gray-600">1年以上规划</p>
+                        </div>
+                        <div id="long-dreams" class="space-y-4 min-h-[200px]">
+                            <!-- 长期梦想卡片将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 梦想统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-on-load">
+            <div class="bg-white/80 backdrop-blur-md rounded-lg shadow-md p-6 text-center">
+                <div class="text-3xl font-bold text-blue-500 mb-2" id="total-dreams">0</div>
+                <div class="text-gray-600">总梦想数</div>
+            </div>
+            <div class="bg-white/80 backdrop-blur-md rounded-lg shadow-md p-6 text-center">
+                <div class="text-3xl font-bold text-green-500 mb-2" id="short-dreams-count">0</div>
+                <div class="text-gray-600">短期梦想</div>
+            </div>
+            <div class="bg-white/80 backdrop-blur-md rounded-lg shadow-md p-6 text-center">
+                <div class="text-3xl font-bold text-yellow-500 mb-2" id="medium-dreams-count">0</div>
+                <div class="text-gray-600">中期梦想</div>
+            </div>
+            <div class="bg-white/80 backdrop-blur-md rounded-lg shadow-md p-6 text-center">
+                <div class="text-3xl font-bold text-red-500 mb-2" id="long-dreams-count">0</div>
+                <div class="text-gray-600">长期梦想</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 浮动添加按钮 -->
+    <button class="floating-add-btn flex items-center justify-center text-white text-2xl" id="floating-add-dream-btn">
+        ✨
+    </button>
+
+    <!-- 添加梦想模态框 -->
+    <div id="dream-modal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center">
+        <div id="dream-modal-content" class="modal-content rounded-lg shadow-xl max-w-lg w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800">添加新梦想</h3>
+                    <button id="close-dream-modal-btn" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                </div>
+                
+                <form id="dream-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">梦想标题</label>
+                        <input type="text" name="title" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="输入你的梦想...">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">详细描述</label>
+                        <textarea name="description" rows="4" required
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="描述你的梦想细节..."></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">时间框架</label>
+                            <select name="timeframe" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">选择时间框架</option>
+                                <option value="short">短期 (3个月内)</option>
+                                <option value="medium">中期 (3-12个月)</option>
+                                <option value="long">长期 (1年以上)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">梦想分类</label>
+                            <select name="category" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">选择分类</option>
+                                <option value="personal">个人成长</option>
+                                <option value="career">职业发展</option>
+                                <option value="travel">旅行探索</option>
+                                <option value="lifestyle">生活方式</option>
+                                <option value="creative">创意项目</option>
+                                <option value="health">健康生活</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">梦想图片URL</label>
+                        <input type="url" name="image" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="输入图片链接 (可选)">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">预期实现日期</label>
+                        <input type="date" name="targetDate" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" id="close-dream-modal-btn-2"
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            取消
+                        </button>
+                        <button type="submit"
+                                class="flex-1 px-4 py-2 bg-gradient-to-r from-red-400 to-teal-400 text-white rounded-lg hover:shadow-lg transition-all duration-300">
+                            创建梦想
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 庆祝动画容器 -->
+    <div id="celebration-container"></div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white/80 backdrop-blur-md mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-gray-600">© 2025 梦想清单应用. 让梦想照进现实，让目标成为动力。</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="main.js"></script>
+    
+    <script>
+        // 梦想管理类
+        class DreamManager {
+            constructor() {
+                this.dreams = this.loadDreams();
+                this.draggedElement = null;
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.renderDreams();
+                this.updateStats();
+                this.initFloatingShapes();
+                this.initDragAndDrop();
+            }
+
+            loadDreams() {
+                const saved = localStorage.getItem('dreams');
+                return saved ? JSON.parse(saved) : this.getDefaultDreams();
+            }
+
+            saveDreams() {
+                localStorage.setItem('dreams', JSON.stringify(this.dreams));
+            }
+
+            getDefaultDreams() {
+                return [
+                    {
+                        id: '1',
+                        title: '学会一门新语言',
+                        description: '掌握基础的日语会话能力，能够进行日常交流',
+                        timeframe: 'short',
+                        category: 'personal',
+                        image: 'https://kimi-web-img.moonshot.cn/img/media.slidesgo.com/d8588b34e07714548dcc68501b3fae156c723573.jpg',
+                        targetDate: '2025-06-30',
+                        createdAt: '2025-03-01',
+                        completed: false
+                    },
+                    {
+                        id: '2',
+                        title: '环游欧洲',
+                        description: '探访10个欧洲国家，体验不同的文化和风景',
+                        timeframe: 'medium',
+                        category: 'travel',
+                        image: 'https://kimi-web-img.moonshot.cn/img/thumbs.dreamstime.com/8cf84fb303330cae8e01f37d90c63117c3313221.jpg',
+                        targetDate: '2026-06-30',
+                        createdAt: '2025-02-15',
+                        completed: false
+                    },
+                    {
+                        id: '3',
+                        title: '创办自己的公司',
+                        description: '建立一家专注于创新科技产品的创业公司',
+                        timeframe: 'long',
+                        category: 'career',
+                        image: 'https://kimi-web-img.moonshot.cn/img/zaided.com/06d49a2f55a629b64bd63d5f849cfc9a5d417f19.jpg',
+                        targetDate: '2027-12-31',
+                        createdAt: '2025-01-01',
+                        completed: false
+                    }
+                ];
+            }
+
+            addDream(dreamData) {
+                const dream = {
+                    id: Date.now().toString(),
+                    ...dreamData,
+                    createdAt: new Date().toISOString().split('T')[0],
+                    completed: false
+                };
+                this.dreams.push(dream);
+                this.saveDreams();
+                this.renderDreams();
+                this.updateStats();
+                this.showNotification('梦想添加成功！');
+            }
+
+            updateDream(id, updates) {
+                const index = this.dreams.findIndex(dream => dream.id === id);
+                if (index !== -1) {
+                    this.dreams[index] = { ...this.dreams[index], ...updates };
+                    this.saveDreams();
+                    this.renderDreams();
+                    this.updateStats();
+                }
+            }
+
+            deleteDream(id) {
+                this.dreams = this.dreams.filter(dream => dream.id !== id);
+                this.saveDreams();
+                this.renderDreams();
+                this.updateStats();
+                this.showNotification('梦想已删除');
+            }
+
+            renderDreams() {
+                const shortContainer = document.getElementById('short-dreams');
+                const mediumContainer = document.getElementById('medium-dreams');
+                const longContainer = document.getElementById('long-dreams');
+
+                // 清空容器
+                shortContainer.innerHTML = '';
+                mediumContainer.innerHTML = '';
+                longContainer.innerHTML = '';
+
+                // 按时间框架分组
+                const shortDreams = this.dreams.filter(dream => dream.timeframe === 'short');
+                const mediumDreams = this.dreams.filter(dream => dream.timeframe === 'medium');
+                const longDreams = this.dreams.filter(dream => dream.timeframe === 'long');
+
+                // 渲染各时间框架的梦想
+                shortDreams.forEach(dream => {
+                    shortContainer.appendChild(this.createDreamCard(dream));
+                });
+                mediumDreams.forEach(dream => {
+                    mediumContainer.appendChild(this.createDreamCard(dream));
+                });
+                longDreams.forEach(dream => {
+                    longContainer.appendChild(this.createDreamCard(dream));
+                });
+
+                // 添加动画效果
+                anime({
+                    targets: '.dream-card',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    delay: anime.stagger(100),
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                });
+            }
+
+            createDreamCard(dream) {
+                const card = document.createElement('div');
+                card.className = `dream-card rounded-lg shadow-md p-4 ${dream.completed ? 'opacity-75' : ''}`;
+                card.draggable = true;
+                card.dataset.dreamId = dream.id;
+                card.dataset.timeframe = dream.timeframe;
+
+                const categoryIcons = {
+                    personal: '🌱',
+                    career: '🚀',
+                    travel: '✈️',
+                    lifestyle: '🏡',
+                    creative: '🎨',
+                    health: '💪'
+                };
+
+                const categoryNames = {
+                    personal: '个人成长',
+                    career: '职业发展',
+                    travel: '旅行探索',
+                    lifestyle: '生活方式',
+                    creative: '创意项目',
+                    health: '健康生活'
+                };
+
+                card.innerHTML = `
+                    ${dream.image ? `<img src="${dream.image}" alt="${dream.title}" class="dream-image mb-4">` : ''}
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-500">${categoryIcons[dream.category]} ${categoryNames[dream.category]}</span>
+                        ${dream.completed ? '<span class="text-green-500 text-sm">✅ 已完成</span>' : ''}
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">${dream.title}</h4>
+                    <p class="text-sm text-gray-600 mb-3 line-clamp-3">${dream.description}</p>
+                    <div class="flex justify-between items-center text-xs text-gray-500 mb-3">
+                        <span>目标日期: ${dream.targetDate}</span>
+                        <span>创建于: ${dream.createdAt}</span>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="complete-dream-btn flex-1 px-3 py-1 text-xs rounded-md ${dream.completed ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'} hover:opacity-80" 
+                                data-dream-id="${dream.id}" ${dream.completed ? 'disabled' : ''}>
+                            ${dream.completed ? '已完成' : '标记完成'}
+                        </button>
+                        <button class="delete-dream-btn px-3 py-1 text-xs rounded-md bg-red-100 text-red-700 hover:opacity-80" 
+                                data-dream-id="${dream.id}">
+                            删除
+                        </button>
+                    </div>
+                `;
+
+                return card;
+            }
+
+            updateStats() {
+                const totalDreams = this.dreams.length;
+                const shortDreams = this.dreams.filter(dream => dream.timeframe === 'short').length;
+                const mediumDreams = this.dreams.filter(dream => dream.timeframe === 'medium').length;
+                const longDreams = this.dreams.filter(dream => dream.timeframe === 'long').length;
+
+                document.getElementById('total-dreams').textContent = totalDreams;
+                document.getElementById('short-dreams-count').textContent = shortDreams;
+                document.getElementById('medium-dreams-count').textContent = mediumDreams;
+                document.getElementById('long-dreams-count').textContent = longDreams;
+            }
+
+            bindEvents() {
+                // 添加梦想按钮
+                document.getElementById('add-dream-btn').addEventListener('click', () => this.showAddDreamModal());
+                document.getElementById('floating-add-dream-btn').addEventListener('click', () => this.showAddDreamModal());
+
+                // 模态框关闭按钮
+                document.getElementById('close-dream-modal-btn').addEventListener('click', () => this.hideModal());
+                document.getElementById('close-dream-modal-btn-2').addEventListener('click', () => this.hideModal());
+
+                // 表单提交
+                document.getElementById('dream-form').addEventListener('submit', (e) => this.handleDreamForm(e));
+
+                // 事件委托处理梦想操作
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('complete-dream-btn')) {
+                        this.completeDream(e.target.dataset.dreamId);
+                    }
+                    if (e.target.classList.contains('delete-dream-btn')) {
+                        this.deleteDream(e.target.dataset.dreamId);
+                    }
+                });
+
+                // 模态框背景点击关闭
+                document.getElementById('dream-modal').addEventListener('click', (e) => {
+                    if (e.target.id === 'dream-modal') {
+                        this.hideModal();
+                    }
+                });
+            }
+
+            showAddDreamModal() {
+                const modal = document.getElementById('dream-modal');
+                const form = document.getElementById('dream-form');
+                
+                form.reset();
+                form.dataset.mode = 'add';
+                
+                modal.classList.remove('hidden');
+                anime({
+                    targets: '#dream-modal-content',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+            }
+
+            hideModal() {
+                const modal = document.getElementById('dream-modal');
+                anime({
+                    targets: '#dream-modal-content',
+                    scale: [1, 0.8],
+                    opacity: [1, 0],
+                    duration: 200,
+                    easing: 'easeInQuart',
+                    complete: () => {
+                        modal.classList.add('hidden');
+                    }
+                });
+            }
+
+            handleDreamForm(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                
+                const dreamData = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    timeframe: formData.get('timeframe'),
+                    category: formData.get('category'),
+                    image: formData.get('image') || '',
+                    targetDate: formData.get('targetDate')
+                };
+                
+                this.addDream(dreamData);
+                this.hideModal();
+            }
+
+            completeDream(id) {
+                this.updateDream(id, { completed: true });
+                this.showCelebration();
+                this.showNotification('恭喜！梦想已实现！');
+            }
+
+            showCelebration() {
+                const celebration = document.createElement('div');
+                celebration.className = 'celebration-animation';
+                celebration.innerHTML = '🎉✨🎊🌟🎈';
+                
+                document.getElementById('celebration-container').appendChild(celebration);
+
+                anime({
+                    targets: celebration,
+                    scale: [0, 2, 1],
+                    rotate: [0, 360],
+                    opacity: [0, 1, 0],
+                    duration: 2000,
+                    easing: 'easeOutQuart',
+                    complete: () => {
+                        document.getElementById('celebration-container').removeChild(celebration);
+                    }
+                });
+            }
+
+            initFloatingShapes() {
+                const container = document.getElementById('floating-shapes');
+                if (!container) return;
+
+                const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D'];
+                
+                for (let i = 0; i < 15; i++) {
+                    const shape = document.createElement('div');
+                    shape.style.position = 'absolute';
+                    shape.style.width = Math.random() * 20 + 10 + 'px';
+                    shape.style.height = shape.style.width;
+                    shape.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)] + '20';
+                    shape.style.borderRadius = Math.random() > 0.5 ? '50%' : '20%';
+                    shape.style.left = Math.random() * 100 + '%';
+                    shape.style.top = Math.random() * 100 + '%';
+                    
+                    container.appendChild(shape);
+
+                    // 添加浮动动画
+                    anime({
+                        targets: shape,
+                        translateY: [0, -20, 0],
+                        translateX: [0, Math.random() * 20 - 10, 0],
+                        rotate: [0, 360],
+                        duration: Math.random() * 3000 + 2000,
+                        loop: true,
+                        easing: 'easeInOutSine',
+                        delay: Math.random() * 2000
+                    });
+                }
+            }
+
+            initDragAndDrop() {
+                // 拖拽功能初始化
+                document.addEventListener('dragstart', (e) => {
+                    if (e.target.classList.contains('dream-card')) {
+                        this.draggedElement = e.target;
+                        e.target.style.opacity = '0.5';
+                    }
+                });
+
+                document.addEventListener('dragend', (e) => {
+                    if (e.target.classList.contains('dream-card')) {
+                        e.target.style.opacity = '';
+                        this.draggedElement = null;
+                    }
+                });
+
+                document.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+
+                document.addEventListener('dragenter', (e) => {
+                    if (e.target.classList.contains('timeline-zone')) {
+                        e.target.classList.add('drag-over');
+                    }
+                });
+
+                document.addEventListener('dragleave', (e) => {
+                    if (e.target.classList.contains('timeline-zone')) {
+                        e.target.classList.remove('drag-over');
+                    }
+                });
+
+                document.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const zone = e.target.closest('.timeline-zone');
+                    if (zone && this.draggedElement) {
+                        const newTimeframe = zone.dataset.timeframe;
+                        const dreamId = this.draggedElement.dataset.dreamId;
+                        
+                        // 更新梦想的时间框架
+                        this.updateDream(dreamId, { timeframe: newTimeframe });
+                        
+                        zone.classList.remove('drag-over');
+                        this.showNotification('梦想时间框架已更新！');
+                    }
+                });
+            }
+
+            showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                anime({
+                    targets: notification,
+                    translateX: [300, 0],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+
+                setTimeout(() => {
+                    anime({
+                        targets: notification,
+                        translateX: [0, 300],
+                        opacity: [1, 0],
+                        duration: 300,
+                        easing: 'easeInQuart',
+                        complete: () => {
+                            document.body.removeChild(notification);
+                        }
+                    });
+                }, 3000);
+            }
+        }
+
+        // 初始化梦想管理器
+        document.addEventListener('DOMContentLoaded', () => {
+            window.dreamManager = new DreamManager();
+        });
+    </script>
+</body>
+</html>

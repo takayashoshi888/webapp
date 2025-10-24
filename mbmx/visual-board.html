@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视觉化面板 - 梦想清单应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #FEFEFE 0%, #F8F9FA 100%);
+            min-height: 100vh;
+        }
+        .hero-title {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .vision-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+        }
+        .vision-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        .vision-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #FF6B6B;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            border-radius: 1px;
+        }
+        .floating-add-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .floating-add-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+        }
+        .modal-overlay {
+            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .category-filter {
+            transition: all 0.3s ease;
+        }
+        .category-filter.active {
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            color: white;
+        }
+        .vision-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .fullscreen-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .fullscreen-image {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .masonry-layout {
+            column-count: 3;
+            column-gap: 1.5rem;
+            column-fill: balance;
+        }
+        @media (max-width: 768px) {
+            .masonry-layout {
+                column-count: 2;
+            }
+        }
+        @media (max-width: 480px) {
+            .masonry-layout {
+                column-count: 1;
+            }
+        }
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <img src="resources/app-logo.png" alt="应用Logo" class="w-8 h-8">
+                    <span class="text-xl font-bold text-gray-800">梦想清单</span>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="flex space-x-8">
+                        <a href="index.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">目标管理</a>
+                        <a href="dreams.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">梦想清单</a>
+                        <a href="analytics.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">数据分析</a>
+                        <a href="settings.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">个人设置</a>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">视觉化面板</span>
+                        <button id="logout-btn" class="text-gray-500 hover:text-gray-700 px-3 py-2 text-sm font-medium">
+                            登出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 标题区域 -->
+        <div class="text-center mb-12 animate-on-load">
+            <h1 class="hero-title text-4xl md:text-5xl font-bold mb-4">
+                我的视觉化面板
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                收集和展示你想要的事物，用图片激发内心的渴望和动力。
+            </p>
+        </div>
+
+        <!-- 分类筛选器 -->
+        <div class="flex flex-wrap justify-center gap-3 mb-8 animate-on-load">
+            <button class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" data-category="all">
+                全部
+            </button>
+            <button class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" data-category="travel">
+                🌍 旅行
+            </button>
+            <button class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" data-category="lifestyle">
+                🏡 生活方式
+            </button>
+            <button class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" data-category="career">
+                💼 职业发展
+            </button>
+            <button class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" data-category="health">
+                💪 健康生活
+            </button>
+            <button class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" data-category="creative">
+                🎨 创意艺术
+            </button>
+            <button class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300" data-category="relationship">
+                💕 人际关系
+            </button>
+        </div>
+
+        <!-- 视图切换 -->
+        <div class="flex justify-between items-center mb-6 animate-on-load">
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600">视图模式:</span>
+                <div class="flex bg-gray-200 rounded-lg p-1">
+                    <button id="grid-view-btn" class="px-3 py-1 rounded-md text-sm bg-white shadow-sm">网格</button>
+                    <button id="masonry-view-btn" class="px-3 py-1 rounded-md text-sm">瀑布流</button>
+                </div>
+            </div>
+            <div class="text-sm text-gray-600">
+                共 <span id="total-count">0</span> 个项目
+            </div>
+        </div>
+
+        <!-- 视觉化内容展示 -->
+        <div id="vision-container" class="masonry-layout animate-on-load">
+            <!-- 视觉化项目将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <!-- 浮动添加按钮 -->
+    <button class="floating-add-btn flex items-center justify-center text-white text-2xl" id="add-vision-btn">
+        🖼️
+    </button>
+
+    <!-- 添加视觉化项目模态框 -->
+    <div id="vision-modal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center">
+        <div id="vision-modal-content" class="modal-content rounded-lg shadow-xl max-w-lg w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800">添加视觉化项目</h3>
+                    <button id="close-vision-modal-btn" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                </div>
+                
+                <form id="vision-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">标题</label>
+                        <input type="text" name="title" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="给你的视觉化项目起个名字...">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">描述</label>
+                        <textarea name="description" rows="3" required
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="描述这个视觉化项目对你的意义..."></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">分类</label>
+                            <select name="category" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">选择分类</option>
+                                <option value="travel">旅行</option>
+                                <option value="lifestyle">生活方式</option>
+                                <option value="career">职业发展</option>
+                                <option value="health">健康生活</option>
+                                <option value="creative">创意艺术</option>
+                                <option value="relationship">人际关系</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">优先级</label>
+                            <select name="priority" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">选择优先级</option>
+                                <option value="high">高</option>
+                                <option value="medium">中</option>
+                                <option value="low">低</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">图片链接</label>
+                        <input type="url" name="imageUrl" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="输入图片URL链接...">
+                        <div class="mt-2 text-xs text-gray-500">
+                            💡 支持直接粘贴图片链接，或使用图片托管服务如 imgur.com、postimages.org 等
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" id="close-vision-modal-btn-2"
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            取消
+                        </button>
+                        <button type="submit"
+                                class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-400 to-pink-400 text-white rounded-lg hover:shadow-lg transition-all duration-300">
+                            添加项目
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全屏图片查看器 -->
+    <div id="fullscreen-viewer" class="fullscreen-viewer">
+        <img id="fullscreen-image" class="fullscreen-image" src="" alt="">
+        <button id="close-fullscreen" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300">×</button>
+        <div class="absolute bottom-4 left-4 text-white">
+            <h3 id="fullscreen-title" class="text-xl font-bold mb-2"></h3>
+            <p id="fullscreen-description" class="text-sm opacity-90"></p>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white/80 backdrop-blur-md mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-gray-600">© 2025 梦想清单应用. 让梦想照进现实，让目标成为动力。</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="main.js"></script>
+    
+    <script>
+        // 视觉化面板管理类
+        class VisualBoardManager {
+            constructor() {
+                this.visions = this.loadVisions();
+                this.currentFilter = 'all';
+                this.currentView = 'masonry';
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.renderVisions();
+                this.updateStats();
+                this.animateElements();
+            }
+
+            loadVisions() {
+                const saved = localStorage.getItem('visions');
+                return saved ? JSON.parse(saved) : this.getDefaultVisions();
+            }
+
+            saveVisions() {
+                localStorage.setItem('visions', JSON.stringify(this.visions));
+            }
+
+            getDefaultVisions() {
+                return [
+                    {
+                        id: '1',
+                        title: '马尔代夫度假',
+                        description: '碧蓝的海水，白色的沙滩，完美的热带度假胜地',
+                        imageUrl: 'https://kimi-web-img.moonshot.cn/img/thumbs.dreamstime.com/8cf84fb303330cae8e01f37d90c63117c3313221.jpg',
+                        category: 'travel',
+                        priority: 'high',
+                        createdAt: '2025-03-01',
+                        tags: ['海滩', '度假', '热带']
+                    },
+                    {
+                        id: '2',
+                        title: '现代简约公寓',
+                        description: '宽敞明亮的生活空间，极简设计风格',
+                        imageUrl: 'https://kimi-web-img.moonshot.cn/img/learningcentre.officeinteriors.ca/87388c892e139ce4841b6d8d8ea511002331bf49.png',
+                        category: 'lifestyle',
+                        priority: 'medium',
+                        createdAt: '2025-03-02',
+                        tags: ['家居', '设计', '简约']
+                    },
+                    {
+                        id: '3',
+                        title: '创业成功庆祝',
+                        description: '与团队一起庆祝公司取得的重大成就',
+                        imageUrl: 'https://kimi-web-img.moonshot.cn/img/zaided.com/06d49a2f55a629b64bd63d5f849cfc9a5d417f19.jpg',
+                        category: 'career',
+                        priority: 'high',
+                        createdAt: '2025-03-03',
+                        tags: ['事业', '成功', '团队']
+                    },
+                    {
+                        id: '4',
+                        title: '瑜伽晨练时光',
+                        description: '在美丽的环境中练习瑜伽，保持身心健康',
+                        imageUrl: 'https://kimi-web-img.moonshot.cn/img/media.slidesgo.com/d8588b34e07714548dcc68501b3fae156c723573.jpg',
+                        category: 'health',
+                        priority: 'medium',
+                        createdAt: '2025-03-04',
+                        tags: ['瑜伽', '健康', '运动']
+                    },
+                    {
+                        id: '5',
+                        title: '艺术工作室',
+                        description: '充满创意的艺术空间，激发无限想象力',
+                        imageUrl: 'https://kimi-web-img.moonshot.cn/img/img.zcool.cn/3e1f90ddc369e2173e12ed55ec2db226d941bab3.jpg',
+                        category: 'creative',
+                        priority: 'low',
+                        createdAt: '2025-03-05',
+                        tags: ['艺术', '创作', '工作室']
+                    }
+                ];
+            }
+
+            addVision(visionData) {
+                const vision = {
+                    id: Date.now().toString(),
+                    ...visionData,
+                    createdAt: new Date().toISOString().split('T')[0],
+                    tags: visionData.tags ? visionData.tags.split(',').map(tag => tag.trim()) : []
+                };
+                this.visions.push(vision);
+                this.saveVisions();
+                this.renderVisions();
+                this.updateStats();
+                this.showNotification('视觉化项目添加成功！');
+            }
+
+            updateVision(id, updates) {
+                const index = this.visions.findIndex(vision => vision.id === id);
+                if (index !== -1) {
+                    this.visions[index] = { ...this.visions[index], ...updates };
+                    this.saveVisions();
+                    this.renderVisions();
+                    this.updateStats();
+                }
+            }
+
+            deleteVision(id) {
+                this.visions = this.visions.filter(vision => vision.id !== id);
+                this.saveVisions();
+                this.renderVisions();
+                this.updateStats();
+                this.showNotification('项目已删除');
+            }
+
+            filterVisions(category) {
+                this.currentFilter = category;
+                this.renderVisions();
+                this.updateFilterButtons(category);
+            }
+
+            getFilteredVisions() {
+                if (this.currentFilter === 'all') {
+                    return this.visions;
+                }
+                return this.visions.filter(vision => vision.category === this.currentFilter);
+            }
+
+            renderVisions() {
+                const container = document.getElementById('vision-container');
+                if (!container) return;
+
+                const visions = this.getFilteredVisions();
+                
+                container.className = this.currentView === 'masonry' ? 'masonry-layout animate-on-load' : 'vision-grid animate-on-load';
+                
+                container.innerHTML = visions.map(vision => this.createVisionCard(vision)).join('');
+                
+                // 添加动画效果
+                anime({
+                    targets: '.vision-card',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    delay: anime.stagger(100),
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                });
+            }
+
+            createVisionCard(vision) {
+                const categoryIcons = {
+                    travel: '🌍',
+                    lifestyle: '🏡',
+                    career: '💼',
+                    health: '💪',
+                    creative: '🎨',
+                    relationship: '💕'
+                };
+
+                const priorityColors = {
+                    high: '#FF6B6B',
+                    medium: '#FFD93D',
+                    low: '#4ECDC4'
+                };
+
+                return `
+                    <div class="masonry-item">
+                        <div class="vision-card rounded-lg shadow-md p-4" data-vision-id="${vision.id}">
+                            <div class="relative mb-4">
+                                <img src="${vision.imageUrl}" alt="${vision.title}" class="vision-image cursor-pointer" 
+                                     onclick="window.visualBoardManager.openFullscreen('${vision.imageUrl}', '${vision.title}', '${vision.description}')">
+                                <div class="absolute top-2 right-2">
+                                    <span class="w-3 h-3 rounded-full inline-block" style="background-color: ${priorityColors[vision.priority]}"></span>
+                                </div>
+                                <div class="absolute top-2 left-2">
+                                    <span class="bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                                        ${categoryIcons[vision.category]} ${this.getCategoryName(vision.category)}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">${vision.title}</h3>
+                            <p class="text-sm text-gray-600 mb-3 line-clamp-3">${vision.description}</p>
+                            
+                            ${vision.tags && vision.tags.length > 0 ? `
+                                <div class="flex flex-wrap gap-1 mb-3">
+                                    ${vision.tags.map(tag => `<span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">${tag}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="flex justify-between items-center text-xs text-gray-500 mb-3">
+                                <span>创建于: ${vision.createdAt}</span>
+                                <span class="capitalize">${vision.priority === 'high' ? '高' : vision.priority === 'medium' ? '中' : '低'}优先级</span>
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button class="edit-vision-btn flex-1 px-3 py-1 text-xs rounded-md bg-blue-100 text-blue-700 hover:opacity-80" 
+                                        data-vision-id="${vision.id}">
+                                    编辑
+                                </button>
+                                <button class="delete-vision-btn px-3 py-1 text-xs rounded-md bg-red-100 text-red-700 hover:opacity-80" 
+                                        data-vision-id="${vision.id}">
+                                    删除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getCategoryName(category) {
+                const names = {
+                    travel: '旅行',
+                    lifestyle: '生活方式',
+                    career: '职业发展',
+                    health: '健康生活',
+                    creative: '创意艺术',
+                    relationship: '人际关系'
+                };
+                return names[category] || category;
+            }
+
+            updateStats() {
+                const totalCount = this.getFilteredVisions().length;
+                document.getElementById('total-count').textContent = totalCount;
+            }
+
+            bindEvents() {
+                // 添加视觉化项目按钮
+                document.getElementById('add-vision-btn').addEventListener('click', () => this.showAddVisionModal());
+                
+                // 模态框关闭按钮
+                document.getElementById('close-vision-modal-btn').addEventListener('click', () => this.hideModal());
+                document.getElementById('close-vision-modal-btn-2').addEventListener('click', () => this.hideModal());
+                
+                // 表单提交
+                document.getElementById('vision-form').addEventListener('submit', (e) => this.handleVisionForm(e));
+                
+                // 分类筛选器
+                document.querySelectorAll('.category-filter').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const category = e.target.dataset.category;
+                        this.filterVisions(category);
+                    });
+                });
+                
+                // 视图切换
+                document.getElementById('grid-view-btn').addEventListener('click', () => this.switchView('grid'));
+                document.getElementById('masonry-view-btn').addEventListener('click', () => this.switchView('masonry'));
+                
+                // 全屏查看器
+                document.getElementById('close-fullscreen').addEventListener('click', () => this.closeFullscreen());
+                document.getElementById('fullscreen-viewer').addEventListener('click', (e) => {
+                    if (e.target.id === 'fullscreen-viewer') {
+                        this.closeFullscreen();
+                    }
+                });
+                
+                // 事件委托处理视觉化项目操作
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('edit-vision-btn')) {
+                        this.editVision(e.target.dataset.visionId);
+                    }
+                    if (e.target.classList.contains('delete-vision-btn')) {
+                        this.deleteVision(e.target.dataset.visionId);
+                    }
+                });
+                
+                // 模态框背景点击关闭
+                document.getElementById('vision-modal').addEventListener('click', (e) => {
+                    if (e.target.id === 'vision-modal') {
+                        this.hideModal();
+                    }
+                });
+            }
+
+            showAddVisionModal() {
+                const modal = document.getElementById('vision-modal');
+                const form = document.getElementById('vision-form');
+                
+                form.reset();
+                form.dataset.mode = 'add';
+                
+                modal.classList.remove('hidden');
+                anime({
+                    targets: '#vision-modal-content',
+                    scale: [0.8, 1],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+            }
+
+            hideModal() {
+                const modal = document.getElementById('vision-modal');
+                anime({
+                    targets: '#vision-modal-content',
+                    scale: [1, 0.8],
+                    opacity: [1, 0],
+                    duration: 200,
+                    easing: 'easeInQuart',
+                    complete: () => {
+                        modal.classList.add('hidden');
+                    }
+                });
+            }
+
+            handleVisionForm(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                
+                const visionData = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    category: formData.get('category'),
+                    priority: formData.get('priority'),
+                    imageUrl: formData.get('imageUrl'),
+                    tags: formData.get('tags') || ''
+                };
+                
+                this.addVision(visionData);
+                this.hideModal();
+            }
+
+            updateFilterButtons(activeCategory) {
+                document.querySelectorAll('.category-filter').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                
+                const activeBtn = document.querySelector(`[data-category="${activeCategory}"]`);
+                if (activeBtn) {
+                    activeBtn.classList.add('active');
+                    activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                }
+            }
+
+            switchView(view) {
+                this.currentView = view;
+                
+                // 更新按钮状态
+                document.getElementById('grid-view-btn').className = view === 'grid' ? 
+                    'px-3 py-1 rounded-md text-sm bg-white shadow-sm' : 'px-3 py-1 rounded-md text-sm';
+                document.getElementById('masonry-view-btn').className = view === 'masonry' ? 
+                    'px-3 py-1 rounded-md text-sm bg-white shadow-sm' : 'px-3 py-1 rounded-md text-sm';
+                
+                this.renderVisions();
+            }
+
+            openFullscreen(imageUrl, title, description) {
+                const viewer = document.getElementById('fullscreen-viewer');
+                const image = document.getElementById('fullscreen-image');
+                const titleEl = document.getElementById('fullscreen-title');
+                const descEl = document.getElementById('fullscreen-description');
+                
+                image.src = imageUrl;
+                titleEl.textContent = title;
+                descEl.textContent = description;
+                
+                viewer.style.display = 'flex';
+                
+                anime({
+                    targets: viewer,
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+            }
+
+            closeFullscreen() {
+                const viewer = document.getElementById('fullscreen-viewer');
+                
+                anime({
+                    targets: viewer,
+                    opacity: [1, 0],
+                    duration: 200,
+                    easing: 'easeInQuart',
+                    complete: () => {
+                        viewer.style.display = 'none';
+                    }
+                });
+            }
+
+            editVision(id) {
+                this.showNotification('编辑功能开发中，敬请期待！', 'info');
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                const bgColor = type === 'error' ? 'bg-red-500' : 
+                               type === 'info' ? 'bg-blue-500' : 'bg-green-500';
+                notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                anime({
+                    targets: notification,
+                    translateX: [300, 0],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+
+                setTimeout(() => {
+                    anime({
+                        targets: notification,
+                        translateX: [0, 300],
+                        opacity: [1, 0],
+                        duration: 300,
+                        easing: 'easeInQuart',
+                        complete: () => {
+                            document.body.removeChild(notification);
+                        }
+                    });
+                }, 3000);
+            }
+
+            animateElements() {
+                // 页面加载动画
+                anime({
+                    targets: '.animate-on-load',
+                    translateY: [30, 0],
+                    opacity: [0, 1],
+                    delay: anime.stagger(100),
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                });
+            }
+        }
+
+        // 初始化视觉化面板管理器
+        document.addEventListener('DOMContentLoaded', () => {
+            window.visualBoardManager = new VisualBoardManager();
+        });
+    </script>
+</body>
+</html>

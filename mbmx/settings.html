@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人设置 - 目标管理应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #FEFEFE 0%, #F8F9FA 100%);
+            min-height: 100vh;
+        }
+        .hero-title {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .setting-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .setting-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #FF6B6B;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            border-radius: 1px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #FF6B6B;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            margin: 0 auto;
+        }
+        .export-btn {
+            transition: all 0.3s ease;
+        }
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <img src="resources/app-logo.png" alt="应用Logo" class="w-8 h-8">
+                    <span class="text-xl font-bold text-gray-800">梦想清单</span>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="flex space-x-8">
+                        <a href="index.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">目标管理</a>
+                        <a href="dreams.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">梦想清单</a>
+                        <a href="analytics.html" class="nav-link text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">数据分析</a>
+                        <a href="settings.html" class="nav-link active text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">个人设置</a>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="visual-board-btn" class="bg-gradient-to-r from-purple-400 to-pink-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-300">
+                            视觉化面板
+                        </button>
+                        <button id="logout-btn" class="text-gray-500 hover:text-gray-700 px-3 py-2 text-sm font-medium">
+                            登出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 标题区域 -->
+        <div class="text-center mb-12 animate-on-load">
+            <h1 class="hero-title text-4xl md:text-5xl font-bold mb-4">
+                个人设置
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                个性化你的应用体验，管理账户信息和偏好设置。
+            </p>
+        </div>
+
+        <!-- 用户信息卡片 -->
+        <div class="setting-card rounded-lg shadow-md p-8 mb-8 animate-on-load">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">个人信息</h2>
+            
+            <div class="flex flex-col items-center mb-8">
+                <div class="profile-avatar mb-4">
+                    <span id="user-initial">用</span>
+                </div>
+                <button class="text-sm text-blue-500 hover:text-blue-700">更换头像</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+                    <input type="text" id="username" value="梦想追逐者" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">邮箱地址</label>
+                    <input type="email" id="email" value="user@example.com" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">注册日期</label>
+                    <input type="text" value="2025年1月1日" readonly 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">总使用天数</label>
+                    <input type="text" value="45 天" readonly 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                </div>
+            </div>
+            
+            <div class="flex justify-center mt-8">
+                <button id="save-profile-btn" 
+                        class="bg-gradient-to-r from-red-400 to-teal-400 text-white px-8 py-2 rounded-lg hover:shadow-lg transition-all duration-300">
+                    保存个人信息
+                </button>
+            </div>
+        </div>
+
+        <!-- 应用设置 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- 通知设置 -->
+            <div class="setting-card rounded-lg shadow-md p-6 animate-on-load">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">通知设置</h3>
+                
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-gray-800">目标提醒</div>
+                            <div class="text-sm text-gray-600">接收目标截止提醒</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="goal-reminders" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-gray-800">进度更新</div>
+                            <div class="text-sm text-gray-600">每日进度总结通知</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="progress-updates" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-gray-800">成就通知</div>
+                            <div class="text-sm text-gray-600">目标完成和里程碑提醒</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="achievement-notifications" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-gray-800">邮件通知</div>
+                            <div class="text-sm text-gray-600">重要更新邮件提醒</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="email-notifications">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 显示设置 -->
+            <div class="setting-card rounded-lg shadow-md p-6 animate-on-load">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">显示设置</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">主题模式</label>
+                        <select id="theme-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="light">浅色模式</option>
+                            <option value="dark">深色模式</option>
+                            <option value="auto">跟随系统</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">语言设置</label>
+                        <select id="language-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="zh-CN">简体中文</option>
+                            <option value="zh-TW">繁体中文</option>
+                            <option value="en-US">English</option>
+                            <option value="ja-JP">日本語</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-gray-800">动画效果</div>
+                            <div class="text-sm text-gray-600">启用界面动画和过渡效果</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="animation-effects" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-gray-800">紧凑模式</div>
+                            <div class="text-sm text-gray-600">减少界面间距，显示更多内容</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="compact-mode">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据管理 -->
+        <div class="setting-card rounded-lg shadow-md p-8 mb-8 animate-on-load">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">数据管理</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-500 mb-2" id="total-goals-data">0</div>
+                    <div class="text-gray-600">目标数据</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-500 mb-2" id="total-dreams-data">0</div>
+                    <div class="text-gray-600">梦想数据</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-yellow-500 mb-2" id="data-size">~ 50KB</div>
+                    <div class="text-gray-600">数据大小</div>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button id="export-data-btn" class="export-btn bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                    📤 导出数据
+                </button>
+                <button id="import-data-btn" class="export-btn bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+                    📥 导入数据
+                </button>
+                <button id="backup-data-btn" class="export-btn bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600">
+                    💾 备份数据
+                </button>
+                <button id="clear-data-btn" class="export-btn bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600">
+                    🗑️ 清空数据
+                </button>
+            </div>
+        </div>
+
+        <!-- 关于应用 -->
+        <div class="setting-card rounded-lg shadow-md p-8 animate-on-load">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">关于应用</h3>
+            
+            <div class="text-center mb-6">
+                <img src="resources/app-logo.png" alt="应用Logo" class="w-16 h-16 mx-auto mb-4">
+                <h4 class="text-lg font-semibold text-gray-800">梦想清单</h4>
+                <p class="text-gray-600">版本 1.0.0</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h5 class="font-medium text-gray-800 mb-2">功能特性</h5>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• 目标管理与进度追踪</li>
+                        <li>• 梦想可视化时间轴</li>
+                        <li>• 数据统计与分析</li>
+                        <li>• 本地数据存储</li>
+                        <li>• 响应式设计</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5 class="font-medium text-gray-800 mb-2">技术特性</h5>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• 现代Web技术栈</li>
+                        <li>• 流畅动画效果</li>
+                        <li>• 离线使用支持</li>
+                        <li>• 数据导入导出</li>
+                        <li>• 隐私保护设计</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <p class="text-sm text-gray-600 mb-4">
+                    让梦想照进现实，让目标成为动力。
+                </p>
+                <div class="flex justify-center space-x-4">
+                    <button class="text-blue-500 hover:text-blue-700 text-sm">使用帮助</button>
+                    <button class="text-blue-500 hover:text-blue-700 text-sm">反馈建议</button>
+                    <button class="text-blue-500 hover:text-blue-700 text-sm">隐私政策</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="file-input" accept=".json" style="display: none;">
+
+    <!-- 页脚 -->
+    <footer class="bg-white/80 backdrop-blur-md mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-gray-600">© 2025 梦想清单应用. 让梦想照进现实，让目标成为动力。</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="main.js"></script>
+    
+    <script>
+        // 设置管理类
+        class SettingsManager {
+            constructor() {
+                this.settings = this.loadSettings();
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.loadUserData();
+                this.updateDataStats();
+                this.animateElements();
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem('app-settings');
+                return saved ? JSON.parse(saved) : {
+                    theme: 'light',
+                    language: 'zh-CN',
+                    goalReminders: true,
+                    progressUpdates: true,
+                    achievementNotifications: true,
+                    emailNotifications: false,
+                    animationEffects: true,
+                    compactMode: false
+                };
+            }
+
+            saveSettings() {
+                localStorage.setItem('app-settings', JSON.stringify(this.settings));
+            }
+
+            loadUserData() {
+                const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+                const dreams = JSON.parse(localStorage.getItem('dreams') || '[]');
+                
+                document.getElementById('total-goals-data').textContent = goals.length;
+                document.getElementById('total-dreams-data').textContent = dreams.length;
+                
+                // 计算数据大小（粗略估算）
+                const dataSize = Math.round((JSON.stringify(goals).length + JSON.stringify(dreams).length) / 1024);
+                document.getElementById('data-size').textContent = `~ ${dataSize}KB`;
+            }
+
+            updateDataStats() {
+                const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+                const dreams = JSON.parse(localStorage.getItem('dreams') || '[]');
+                
+                document.getElementById('total-goals-data').textContent = goals.length;
+                document.getElementById('total-dreams-data').textContent = dreams.length;
+                
+                const dataSize = Math.round((JSON.stringify(goals).length + JSON.stringify(dreams).length) / 1024);
+                document.getElementById('data-size').textContent = `~ ${dataSize}KB`;
+            }
+
+            bindEvents() {
+                // 个人信息保存
+                document.getElementById('save-profile-btn').addEventListener('click', () => {
+                    this.saveProfile();
+                });
+
+                // 设置切换
+                document.getElementById('goal-reminders').addEventListener('change', (e) => {
+                    this.settings.goalReminders = e.target.checked;
+                    this.saveSettings();
+                });
+
+                document.getElementById('progress-updates').addEventListener('change', (e) => {
+                    this.settings.progressUpdates = e.target.checked;
+                    this.saveSettings();
+                });
+
+                document.getElementById('achievement-notifications').addEventListener('change', (e) => {
+                    this.settings.achievementNotifications = e.target.checked;
+                    this.saveSettings();
+                });
+
+                document.getElementById('email-notifications').addEventListener('change', (e) => {
+                    this.settings.emailNotifications = e.target.checked;
+                    this.saveSettings();
+                });
+
+                document.getElementById('animation-effects').addEventListener('change', (e) => {
+                    this.settings.animationEffects = e.target.checked;
+                    this.saveSettings();
+                });
+
+                document.getElementById('compact-mode').addEventListener('change', (e) => {
+                    this.settings.compactMode = e.target.checked;
+                    this.saveSettings();
+                });
+
+                document.getElementById('theme-select').addEventListener('change', (e) => {
+                    this.settings.theme = e.target.value;
+                    this.saveSettings();
+                    this.applyTheme(e.target.value);
+                });
+
+                document.getElementById('language-select').addEventListener('change', (e) => {
+                    this.settings.language = e.target.value;
+                    this.saveSettings();
+                });
+
+                // 数据管理按钮
+                document.getElementById('export-data-btn').addEventListener('click', () => {
+                    this.exportData();
+                });
+
+                document.getElementById('import-data-btn').addEventListener('click', () => {
+                    document.getElementById('file-input').click();
+                });
+
+                document.getElementById('backup-data-btn').addEventListener('click', () => {
+                    this.backupData();
+                });
+
+                document.getElementById('clear-data-btn').addEventListener('click', () => {
+                    this.clearData();
+                });
+
+                // 文件导入
+                document.getElementById('file-input').addEventListener('change', (e) => {
+                    this.importData(e.target.files[0]);
+                });
+            }
+
+            saveProfile() {
+                const username = document.getElementById('username').value;
+                const email = document.getElementById('email').value;
+                
+                if (!username.trim()) {
+                    this.showNotification('请输入用户名', 'error');
+                    return;
+                }
+                
+                if (!email.trim() || !this.isValidEmail(email)) {
+                    this.showNotification('请输入有效的邮箱地址', 'error');
+                    return;
+                }
+
+                // 更新用户头像首字母
+                document.getElementById('user-initial').textContent = username.charAt(0).toUpperCase();
+                
+                this.showNotification('个人信息保存成功！');
+            }
+
+            isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+
+            applyTheme(theme) {
+                // 这里可以实现主题切换逻辑
+                console.log('Applying theme:', theme);
+            }
+
+            exportData() {
+                const data = {
+                    goals: JSON.parse(localStorage.getItem('goals') || '[]'),
+                    dreams: JSON.parse(localStorage.getItem('dreams') || '[]'),
+                    settings: this.settings,
+                    exportDate: new Date().toISOString()
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `dream-list-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                URL.revokeObjectURL(url);
+                this.showNotification('数据导出成功！');
+            }
+
+            importData(file) {
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (data.goals) {
+                            localStorage.setItem('goals', JSON.stringify(data.goals));
+                        }
+                        if (data.dreams) {
+                            localStorage.setItem('dreams', JSON.stringify(data.dreams));
+                        }
+                        if (data.settings) {
+                            this.settings = { ...this.settings, ...data.settings };
+                            this.saveSettings();
+                        }
+                        
+                        this.updateDataStats();
+                        this.showNotification('数据导入成功！');
+                        
+                        // 刷新页面以应用新数据
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                        
+                    } catch (error) {
+                        this.showNotification('数据格式错误，导入失败', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            backupData() {
+                // 创建完整备份
+                const backupData = {
+                    goals: localStorage.getItem('goals'),
+                    dreams: localStorage.getItem('dreams'),
+                    settings: localStorage.getItem('app-settings'),
+                    backupDate: new Date().toISOString(),
+                    version: '1.0.0'
+                };
+
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `dream-list-full-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                URL.revokeObjectURL(url);
+                this.showNotification('完整备份创建成功！');
+            }
+
+            clearData() {
+                if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                    if (confirm('请再次确认，这将删除所有目标和梦想数据！')) {
+                        localStorage.removeItem('goals');
+                        localStorage.removeItem('dreams');
+                        localStorage.removeItem('app-settings');
+                        
+                        this.showNotification('数据已清空');
+                        
+                        // 延迟刷新页面
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    }
+                }
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+                notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                anime({
+                    targets: notification,
+                    translateX: [300, 0],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+
+                setTimeout(() => {
+                    anime({
+                        targets: notification,
+                        translateX: [0, 300],
+                        opacity: [1, 0],
+                        duration: 300,
+                        easing: 'easeInQuart',
+                        complete: () => {
+                            document.body.removeChild(notification);
+                        }
+                    });
+                }, 3000);
+            }
+
+            animateElements() {
+                // 页面加载动画
+                anime({
+                    targets: '.animate-on-load',
+                    translateY: [30, 0],
+                    opacity: [0, 1],
+                    delay: anime.stagger(100),
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                });
+
+                // 设置卡片动画
+                anime({
+                    targets: '.setting-card',
+                    scale: [0.95, 1],
+                    opacity: [0, 1],
+                    delay: anime.stagger(150, {start: 200}),
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                });
+            }
+        }
+
+        // 初始化设置管理器
+        document.addEventListener('DOMContentLoaded', () => {
+            window.settingsManager = new SettingsManager();
+        });
+    </script>
+</body>
+</html>
