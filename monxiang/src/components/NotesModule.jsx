@@ -1,33 +1,69 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Plus, Folder, Tag, Search, FileText, LogOut } from 'lucide-react'
+import { supabase, TABLES } from '../lib/supabase'
+import { useUserData } from '../hooks/useSupabase'
 
 const NotesModule = () => {
-  const [notes, setNotes] = useState([
-    { 
-      id: 1, 
-      title: '项目规划要点', 
-      content: '1. 确定项目目标\n2. 制定时间计划\n3. 分配资源', 
-      folder: '工作', 
-      tags: ['规划', '项目'], 
-      createdAt: '2025-10-20',
-      updatedAt: '2025-10-20'
-    },
-    { 
-      id: 2, 
-      title: '学习笔记', 
-      content: 'React Hooks 使用技巧...', 
-      folder: '学习', 
-      tags: ['React', '前端'], 
-      createdAt: '2025-10-19',
-      updatedAt: '2025-10-21'
-    }
-  ])
-  const [folders, setFolders] = useState(['工作', '学习', '生活'])
-  const [tags, setTags] = useState(['规划', '项目', 'React', '前端'])
+  const user = useUserData()
+  const [notes, setNotes] = useState([])
+  const [folders, setFolders] = useState([])
+  const [tags, setTags] = useState([])
   const [activeNote, setActiveNote] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFolder, setSelectedFolder] = useState('all')
   const [selectedTag, setSelectedTag] = useState('all')
+  const [loading, setLoading] = useState(true)
+
+  // 获取笔记数据
+  useEffect(() => {
+    if (user) {
+      fetchNotes()
+      fetchFoldersAndTags()
+    }
+  }, [user])
+
+  const fetchNotes = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from(TABLES.NOTES)
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+      
+      if (error) throw error
+      
+      setNotes(data || [])
+    } catch (error) {
+      console.error('获取笔记失败:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchFoldersAndTags = async () => {
+    try {
+      // 获取用户的所有笔记以提取文件夹和标签
+      const { data, error } = await supabase
+        .from(TABLES.NOTES)
+        .select('folder, tags')
+        .eq('user_id', user.id)
+      
+      if (error) throw error
+      
+      // 提取唯一的文件夹
+      const allFolders = data.map(note => note.folder).filter(folder => folder)
+      const uniqueFolders = [...new Set(allFolders)]
+      setFolders(uniqueFolders)
+      
+      // 提取唯一的标签
+      const allTags = data.flatMap(note => note.tags || [])
+      const uniqueTags = [...new Set(allTags)]
+      setTags(uniqueTags)
+    } catch (error) {
+      console.error('获取文件夹和标签失败:', error)
+    }
+  }
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut()
@@ -35,46 +71,104 @@ const NotesModule = () => {
     else window.location.reload()
   }
 
-  const [newNote, setNewNote] = useState({ 
-    title: '', 
-    content: '', 
-    folder: '', 
-    tags: [] 
-  })
-
-  const addNote = () => {
-    if (newNote.title.trim() && newNote.content.trim()) {
-      const now = new Date().toISOString().split('T')[0]
-      setNotes([...notes, { 
-        id: Date.now(), 
-        ...newNote, 
-        createdAt: now,
-        updatedAt: now
-      }])
-      
-      // 更新文件夹和标签
-      if (newNote.folder && !folders.includes(newNote.folder)) {
-        setFolders([...folders, newNote.folder])
-      }
-      newNote.tags.forEach(tag => {
-        if (!tags.includes(tag)) {
-          setTags([...tags, tag])
+  const addNote = async () => {
+    if (activeNote && activeNote.title.trim() && activeNote.content.trim()) {
+      try {
+        const newNoteData = {
+          user_id: user.id,
+          title: activeNote.title,
+          content: activeNote.content,
+          folder: activeNote.folder || '',
+          tags: activeNote.tags || [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
-      })
-      
-      setNewNote({ title: '', content: '', folder: '', tags: [] })
-      setActiveNote(null)
+        
+        const { data, error } = await supabase
+          .from(TABLES.NOTES)
+          .insert([newNoteData])
+          .select()
+        
+        if (error) throw error
+        
+        if (data && data[0]) {
+          setNotes(prev => [data[0], ...prev])
+          // 更新文件夹和标签
+          if (data[0].folder && !folders.includes(data[0].folder)) {
+            setFolders(prev => [...prev, data[0].folder])
+          }
+          data[0].tags.forEach(tag => {
+            if (tag && !tags.includes(tag)) {
+              setTags(prev => [...prev, tag])
+            }
+          })
+        }
+        
+        setActiveNote(null)
+      } catch (error) {
+        console.error('创建笔记失败:', error)
+      }
     }
   }
 
-  const updateNote = () => {
-    if (activeNote && activeNote.title.trim() && activeNote.content.trim()) {
-      setNotes(notes.map(note => 
-        note.id === activeNote.id 
-          ? { ...activeNote, updatedAt: new Date().toISOString().split('T')[0] }
-          : note
-      ))
-      setActiveNote(null)
+  const updateNote = async () => {
+    if (activeNote && activeNote.id && activeNote.title.trim() && activeNote.content.trim()) {
+      try {
+        const updatedNoteData = {
+          title: activeNote.title,
+          content: activeNote.content,
+          folder: activeNote.folder || '',
+          tags: activeNote.tags || [],
+          updated_at: new Date().toISOString()
+        }
+        
+        const { data, error } = await supabase
+          .from(TABLES.NOTES)
+          .update(updatedNoteData)
+          .eq('id', activeNote.id)
+          .eq('user_id', user.id)
+          .select()
+        
+        if (error) throw error
+        
+        if (data && data[0]) {
+          setNotes(prev => prev.map(note => 
+            note.id === activeNote.id ? data[0] : note
+          ))
+          // 更新文件夹和标签
+          if (data[0].folder && !folders.includes(data[0].folder)) {
+            setFolders(prev => [...prev, data[0].folder])
+          }
+          data[0].tags.forEach(tag => {
+            if (tag && !tags.includes(tag)) {
+              setTags(prev => [...prev, tag])
+            }
+          })
+        }
+        
+        setActiveNote(null)
+      } catch (error) {
+        console.error('更新笔记失败:', error)
+      }
+    }
+  }
+
+  const deleteNote = async (noteId) => {
+    try {
+      const { error } = await supabase
+        .from(TABLES.NOTES)
+        .delete()
+        .eq('id', noteId)
+        .eq('user_id', user.id)
+      
+      if (error) throw error
+      
+      setNotes(prev => prev.filter(note => note.id !== noteId))
+      if (activeNote && activeNote.id === noteId) {
+        setActiveNote(null)
+      }
+    } catch (error) {
+      console.error('删除笔记失败:', error)
     }
   }
 
@@ -82,9 +176,17 @@ const NotesModule = () => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          note.content.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFolder = selectedFolder === 'all' || note.folder === selectedFolder
-    const matchesTag = selectedTag === 'all' || note.tags.includes(selectedTag)
+    const matchesTag = selectedTag === 'all' || (note.tags && note.tags.includes(selectedTag))
     return matchesSearch && matchesFolder && matchesTag
   })
+
+  if (!user) {
+    return (
+      <div className="card h-full flex items-center justify-center">
+        <p>请先登录以使用笔记功能</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-[calc(100vh-200px)]">
@@ -142,22 +244,36 @@ const NotesModule = () => {
 
         {/* 笔记列表 */}
         <div className="overflow-y-auto h-[calc(100%-140px)]">
-          {filteredNotes.map(note => (
-            <button
-              key={note.id}
-              onClick={() => setActiveNote({...note})}
-              className={`w-full text-left p-3 border-b hover:bg-gray-50 transition-colors ${
-                activeNote?.id === note.id ? 'bg-blue-50 border-blue-200' : ''
-              }`}
-            >
-              <div className="font-medium truncate">{note.title}</div>
-              <div className="text-sm text-gray-500 truncate mt-1">{note.content}</div>
-              <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
-                <span>{note.folder}</span>
-                <span>{note.updatedAt}</span>
+          {loading ? (
+            <div className="p-4 text-center">加载中...</div>
+          ) : (
+            filteredNotes.map(note => (
+              <div key={note.id} className="relative">
+                <button
+                  onClick={() => setActiveNote({...note})}
+                  className={`w-full text-left p-3 border-b hover:bg-gray-50 transition-colors ${
+                    activeNote?.id === note.id ? 'bg-blue-50 border-blue-200' : ''
+                  }`}
+                >
+                  <div className="font-medium truncate">{note.title}</div>
+                  <div className="text-sm text-gray-500 truncate mt-1">{note.content.substring(0, 50)}...</div>
+                  <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
+                    <span>{note.folder}</span>
+                    <span>{new Date(note.updated_at).toLocaleDateString()}</span>
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteNote(note.id)
+                  }}
+                  className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-xs"
+                >
+                  删除
+                </button>
               </div>
-            </button>
-          ))}
+            ))
+          )}
         </div>
 
         {/* 新建笔记按钮 */}
@@ -169,8 +285,8 @@ const NotesModule = () => {
               content: '', 
               folder: folders[0] || '', 
               tags: [],
-              createdAt: '',
-              updatedAt: ''
+              created_at: '',
+              updated_at: ''
             })}
             className="w-full bg-[#3A86FF] hover:bg-[#3A86FF]/90 text-white py-2 rounded-lg flex items-center justify-center space-x-2"
           >
@@ -210,11 +326,12 @@ const NotesModule = () => {
                   {folders.map(folder => (
                     <option key={folder} value={folder}>{folder}</option>
                   ))}
+                  <option value="">无文件夹</option>
                 </select>
                 <input
                   type="text"
                   placeholder="标签（用逗号分隔）"
-                  value={activeNote.tags.join(', ')}
+                  value={activeNote.tags ? activeNote.tags.join(', ') : ''}
                   onChange={(e) => setActiveNote({...activeNote, tags: e.target.value.split(',').map(t => t.trim()).filter(t => t)})}
                   className="p-2 border border-gray-300 rounded-lg"
                 />
@@ -232,6 +349,7 @@ const NotesModule = () => {
               <button 
                 onClick={activeNote.id ? updateNote : addNote}
                 className="btn-primary"
+                disabled={!activeNote.title.trim() || !activeNote.content.trim()}
               >
                 {activeNote.id ? '保存' : '创建'}
               </button>
