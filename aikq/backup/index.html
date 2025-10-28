@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI自动考勤应用</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- 顶部导航栏 -->
+    <nav class="bg-blue-600 text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-calendar-check-o text-xl"></i>
+                <h1 class="text-xl font-bold">AI自动考勤应用</h1>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <button id="nav-dashboard" class="nav-btn flex items-center space-x-1 hover:text-blue-200 transition-colors">
+                    <i class="fa fa-home"></i>
+                    <span>打卡页面</span>
+                </button>
+                <button id="nav-history" class="nav-btn flex items-center space-x-1 hover:text-blue-200 transition-colors">
+                    <i class="fa fa-history"></i>
+                    <span>历史记录</span>
+                </button>
+                <button id="nav-report" class="nav-btn flex items-center space-x-1 hover:text-blue-200 transition-colors">
+                    <i class="fa fa-bar-chart"></i>
+                    <span>报表统计</span>
+                </button>
+                <button id="nav-settings" class="nav-btn flex items-center space-x-1 hover:text-blue-200 transition-colors">
+                    <i class="fa fa-cog"></i>
+                    <span>设置</span>
+                </button>
+            </div>
+            <button id="mobile-menu-btn" class="md:hidden text-white focus:outline-none">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-blue-700">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-2">
+                <button id="mobile-nav-dashboard" class="mobile-nav-btn text-left py-2 px-4 hover:bg-blue-600 rounded flex items-center space-x-2">
+                    <i class="fa fa-home"></i>
+                    <span>打卡页面</span>
+                </button>
+                <button id="mobile-nav-history" class="mobile-nav-btn text-left py-2 px-4 hover:bg-blue-600 rounded flex items-center space-x-2">
+                    <i class="fa fa-history"></i>
+                    <span>历史记录</span>
+                </button>
+                <button id="mobile-nav-report" class="mobile-nav-btn text-left py-2 px-4 hover:bg-blue-600 rounded flex items-center space-x-2">
+                    <i class="fa fa-bar-chart"></i>
+                    <span>报表统计</span>
+                </button>
+                <button id="mobile-nav-settings" class="mobile-nav-btn text-left py-2 px-4 hover:bg-blue-600 rounded flex items-center space-x-2">
+                    <i class="fa fa-cog"></i>
+                    <span>设置</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 提示消息区域 -->
+        <div id="notification" class="fixed top-4 right-4 max-w-sm bg-white rounded-lg shadow-lg p-4 transform translate-x-full transition-transform duration-300 flex items-center z-50">
+            <div id="notification-icon" class="mr-3 text-xl"></div>
+            <div id="notification-message"></div>
+        </div>
+
+        <!-- 登录/设置页面 -->
+        <section id="settings-page" class="page-content bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">个人信息设置</h2>
+            <form id="settings-form" class="space-y-4">
+                <div>
+                    <label for="name" class="block text-gray-700 mb-2">姓名</label>
+                    <input type="text" id="name" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="请输入您的姓名" required>
+                </div>
+                <div>
+                    <label for="site" class="block text-gray-700 mb-2">现场名称</label>
+                    <input type="text" id="site" name="site" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="请输入现场名称" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    保存设置
+                </button>
+            </form>
+        </section>
+
+        <!-- 打卡页面 -->
+        <section id="dashboard-page" class="page-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">欢迎回来，<span id="user-name" class="text-blue-600"></span></h2>
+                    <p class="text-gray-600" id="current-date"></p>
+                    <p class="text-gray-600">现场：<span id="user-site"></span></p>
+                </div>
+                
+                <div class="bg-blue-50 rounded-lg p-6 text-center mb-6">
+                    <p class="text-gray-700 mb-2">累计出勤天数</p>
+                    <p class="text-4xl font-bold text-blue-600" id="total-attendance">0</p>
+                </div>
+                
+                <button id="check-in-btn" class="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-lg font-medium">
+                    <i class="fa fa-check-circle mr-2"></i>出勤打卡
+                </button>
+            </div>
+        </section>
+
+        <!-- 历史记录页面 -->
+        <section id="history-page" class="page-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">考勤历史记录</h2>
+                
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <div>
+                        <label for="filter-year" class="block text-gray-700 mb-2">年份</label>
+                        <select id="filter-year" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- 动态生成年份选项 -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-month" class="block text-gray-700 mb-2">月份</label>
+                        <select id="filter-month" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="0">全部</option>
+                            <option value="1">1月</option>
+                            <option value="2">2月</option>
+                            <option value="3">3月</option>
+                            <option value="4">4月</option>
+                            <option value="5">5月</option>
+                            <option value="6">6月</option>
+                            <option value="7">7月</option>
+                            <option value="8">8月</option>
+                            <option value="9">9月</option>
+                            <option value="10">10月</option>
+                            <option value="11">11月</option>
+                            <option value="12">12月</option>
+                        </select>
+                    </div>
+                    <div class="self-end">
+                        <button id="filter-btn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            <i class="fa fa-filter mr-1"></i> 筛选
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700">
+                                <th class="py-3 px-4 text-left">日期</th>
+                                <th class="py-3 px-4 text-left">姓名</th>
+                                <th class="py-3 px-4 text-left">现场名称</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <!-- 历史记录将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="no-history-message" class="text-center py-8 text-gray-500 hidden">
+                    <i class="fa fa-calendar-o text-4xl mb-2"></i>
+                    <p>暂无考勤记录</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 报表统计页面 -->
+        <section id="report-page" class="page-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">月度出勤报表</h2>
+                
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <div>
+                        <label for="report-year" class="block text-gray-700 mb-2">年份</label>
+                        <select id="report-year" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- 动态生成年份选项 -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="report-month" class="block text-gray-700 mb-2">月份</label>
+                        <select id="report-month" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">1月</option>
+                            <option value="2">2月</option>
+                            <option value="3">3月</option>
+                            <option value="4">4月</option>
+                            <option value="5">5月</option>
+                            <option value="6">6月</option>
+                            <option value="7">7月</option>
+                            <option value="8">8月</option>
+                            <option value="9">9月</option>
+                            <option value="10">10月</option>
+                            <option value="11">11月</option>
+                            <option value="12">12月</option>
+                        </select>
+                    </div>
+                    <div class="self-end flex space-x-2">
+                        <button id="generate-report-btn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            <i class="fa fa-refresh mr-1"></i> 生成报表
+                        </button>
+                        <button id="export-pdf-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            <i class="fa fa-file-pdf-o mr-1"></i> 导出PDF
+                        </button>
+                        <button id="share-report-btn" class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                            <i class="fa fa-share-alt mr-1"></i> 分享报表
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                    <div class="flex flex-wrap justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">统计信息</h3>
+                            <p class="text-gray-600">姓名：<span id="report-name"></span></p>
+                            <p class="text-gray-600">现场：<span id="report-site"></span></p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-700">本月总出勤天数</p>
+                            <p class="text-3xl font-bold text-blue-600" id="report-attendance-count">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">出勤日历</h3>
+                    <div id="calendar" class="grid grid-cols-7 gap-2" style="page-break-inside: avoid;">
+                        <!-- 日历将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <div id="chart-container" style="page-break-inside: avoid;">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">出勤统计图表</h3>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200">
+                        <canvas id="attendance-chart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 AI自动考勤应用 | 设计与开发</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
