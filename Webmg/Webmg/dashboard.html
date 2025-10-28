@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>控制面板 - Web应用管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+        }
+
+        /* 侧边导航样式 */
+        .sidebar {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 212, 255, 0.2);
+            width: 12rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 2px 8px;
+            padding: 10px 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(0, 212, 255, 0.08);
+            transform: translateX(2px);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #00d4ff 0%, #6c5ce7 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            background: rgba(15, 15, 35, 0.5);
+            backdrop-filter: blur(10px);
+            margin-left: 12rem;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* 卡片样式 */
+        .dashboard-card {
+            background: rgba(26, 26, 46, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.4);
+        }
+
+        /* 统计卡片 */
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(108, 92, 231, 0.1) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(108, 92, 231, 0.2) 100%);
+            transform: scale(1.02);
+        }
+
+        /* 状态指示器 */
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-running { background-color: #00b894; }
+        .status-stopped { background-color: #fdcb6e; }
+        .status-error { background-color: #e84393; }
+
+        /* 渐变文本 */
+        .gradient-text {
+            background: linear-gradient(135deg, #00d4ff 0%, #6c5ce7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #6c5ce7 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(108, 92, 231, 0.2);
+            border: 1px solid #6c5ce7;
+            border-radius: 8px;
+            color: #6c5ce7;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(108, 92, 231, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* 图表容器 */
+        .chart-container {
+            height: 300px;
+            width: 100%;
+        }
+
+        /* 活动时间轴 */
+        .timeline-item {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            background: #00d4ff;
+            border-radius: 50%;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 14px;
+            width: 2px;
+            height: calc(100% + 2px);
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 16rem;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            /* 移动端优化 */
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .dashboard-card {
+                margin-bottom: 1rem;
+            }
+            
+            .grid {
+                gap: 1rem;
+            }
+        }
+        
+        /* 平板设备优化 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar {
+                width: 10rem;
+            }
+            
+            .main-content {
+                margin-left: 10rem;
+            }
+            
+            .nav-item {
+                padding: 8px 10px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(26, 26, 46, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.5);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="flex h-screen">
+        <!-- 侧边导航栏 -->
+        <div class="sidebar w-48 fixed left-0 top-0 h-full z-20">
+            <div class="p-6">
+                <!-- Logo -->
+                <div class="flex items-center mb-6">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-white font-bold text-base">Web应用管理</h2>
+                        <p class="text-gray-400 text-xs">管理系统</p>
+                    </div>
+                </div>
+
+                <!-- 导航菜单 -->
+                <nav class="space-y-1">
+                    <a href="dashboard.html" class="nav-item active flex items-center px-3 py-2 text-white">
+                        <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                        </svg>
+                        控制面板
+                    </a>
+                    
+                    <a href="apps.html" class="nav-item flex items-center px-3 py-2 text-gray-300 hover:text-white">
+                        <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        应用管理
+                    </a>
+                    
+                    <a href="platforms.html" class="nav-item flex items-center px-3 py-2 text-gray-300 hover:text-white">
+                        <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.439 2.39L7 13"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 11l4-4m0 0l4-4m-4 4H7"></path>
+                        </svg>
+                        部署平台
+                    </a>
+                    
+                    <a href="databases.html" class="nav-item flex items-center px-3 py-2 text-gray-300 hover:text-white">
+                        <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                        </svg>
+                        数据库管理
+                    </a>
+                </nav>
+            </div>
+
+            <!-- 用户信息 -->
+            <div class="absolute bottom-0 left-0 right-0 p-6">
+                <div class="flex items-center">
+                    <img src="resources/user-avatar.png" alt="用户头像" class="w-8 h-8 rounded-full mr-3">
+                    <div class="flex-1">
+                        <p class="text-white text-sm font-medium" id="username">管理员</p>
+                        <p class="text-gray-400 text-xs">Admin</p>
+                    </div>
+                    <button onclick="handleLogout()" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content flex-1 overflow-y-auto">
+            <!-- 顶部导航栏 -->
+            <div class="bg-gray-900 bg-opacity-50 backdrop-filter backdrop-blur-lg border-b border-gray-700 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button class="md:hidden text-white mr-4" onclick="toggleSidebar()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <h1 class="text-2xl font-bold text-white">控制面板</h1>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <button class="relative text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5-5-5h5v-12"></path>
+                            </svg>
+                            <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                        </button>
+                        
+                        <div class="flex items-center">
+                            <img src="resources/user-avatar.png" alt="用户头像" class="w-8 h-8 rounded-full mr-3">
+                            <div>
+                                <p class="text-white text-sm font-medium" id="header-username">管理员</p>
+                                <p class="text-gray-400 text-xs">在线</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主要内容 -->
+            <div class="p-6">
+                <!-- 统计卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card p-6 fade-in">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">总应用数</p>
+                                <p class="text-3xl font-bold text-white count-up" data-count="12">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-green-400 text-sm">↗ 新增2个应用</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card p-6 fade-in">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">运行中</p>
+                                <p class="text-3xl font-bold text-white count-up" data-count="8">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-green-400 text-sm">运行正常</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card p-6 fade-in">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">部署平台</p>
+                                <p class="text-3xl font-bold text-white count-up" data-count="5">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.439 2.39L7 13"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-blue-400 text-sm">3个平台在线</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card p-6 fade-in">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm mb-1">数据库</p>
+                                <p class="text-3xl font-bold text-white count-up" data-count="6">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-yellow-400 text-sm">4个数据库连接</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表和快速操作 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- 应用状态分布 -->
+                    <div class="dashboard-card p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-white mb-4">应用状态分布</h3>
+                        <div id="app-status-chart" class="chart-container"></div>
+                    </div>
+
+                    <!-- 系统资源使用 -->
+                    <div class="dashboard-card p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-white mb-4">系统资源使用</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">CPU使用率</span>
+                                    <span class="text-white">65%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-blue-400 to-purple-500 h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">内存使用率</span>
+                                    <span class="text-white">78%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" style="width: 78%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">磁盘使用率</span>
+                                    <span class="text-white">42%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-yellow-400 to-red-500 h-2 rounded-full" style="width: 42%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 快速操作 -->
+                    <div class="dashboard-card p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-white mb-4">快速操作</h3>
+                        <div class="space-y-3">
+                            <button class="btn-primary w-full py-3 text-sm" onclick="window.location.href='apps.html'">
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                创建新应用
+                            </button>
+                            <button class="btn-secondary w-full py-3 text-sm" onclick="window.location.href='platforms.html'">
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                配置平台
+                            </button>
+                            <button class="btn-secondary w-full py-3 text-sm" onclick="window.location.href='databases.html'">
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                </svg>
+                                管理数据库
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近活动和应用列表 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 最近活动 -->
+                    <div class="dashboard-card p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-white mb-4">最近活动</h3>
+                        <div class="space-y-4">
+                            <div class="timeline-item">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-white text-sm font-medium">部署成功</p>
+                                        <p class="text-gray-400 text-xs mt-1">电商管理系统 v2.1.0 部署到 AWS</p>
+                                    </div>
+                                    <span class="text-gray-500 text-xs">2小时前</span>
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-white text-sm font-medium">应用创建</p>
+                                        <p class="text-gray-400 text-xs mt-1">新建博客平台应用</p>
+                                    </div>
+                                    <span class="text-gray-500 text-xs">5小时前</span>
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-white text-sm font-medium">配置更新</p>
+                                        <p class="text-gray-400 text-xs mt-1">API网关数据库连接配置</p>
+                                    </div>
+                                    <span class="text-gray-500 text-xs">1天前</span>
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-white text-sm font-medium">监控告警</p>
+                                        <p class="text-gray-400 text-xs mt-1">电商系统CPU使用率过高</p>
+                                    </div>
+                                    <span class="text-gray-500 text-xs">2天前</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 应用列表 -->
+                    <div class="dashboard-card p-6 fade-in">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-white">最近使用的应用</h3>
+                            <a href="apps.html" class="text-blue-400 hover:text-blue-300 text-sm">查看全部</a>
+                        </div>
+                        <div class="space-y-3" id="recent-apps">
+                            <!-- 应用列表将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDashboard();
+            loadRecentApps();
+            initializeCharts();
+        });
+
+        // 初始化控制面板
+        function initializeDashboard() {
+            // 检查用户登录状态
+            console.log('=== Dashboard认证检查 ===');
+            console.log('检查dataManager是否存在:', typeof dataManager);
+            
+            if (typeof dataManager === 'undefined') {
+                console.error('dataManager未定义，延迟检查...');
+                setTimeout(() => {
+                    if (typeof dataManager !== 'undefined') {
+                        initializeDashboard();
+                    } else {
+                        console.error('dataManager仍然未定义，跳转到登录页');
+                        window.location.href = 'index.html';
+                    }
+                }, 1000);
+                return;
+            }
+            
+            const currentUser = dataManager.getCurrentUser();
+            console.log('当前用户:', currentUser);
+            
+            if (!currentUser) {
+                console.log('用户未登录，跳转到登录页');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            console.log('用户已登录:', currentUser.username);
+            // 更新用户名显示
+            document.getElementById('username').textContent = currentUser.username;
+            document.getElementById('header-username').textContent = currentUser.username;
+
+            // 初始化动画
+            if (typeof animationManager !== 'undefined') {
+                animationManager.pageLoadAnimation();
+            }
+        }
+
+        // 加载最近使用的应用
+        function loadRecentApps() {
+            const apps = dataManager.getApplications();
+            const recentAppsContainer = document.getElementById('recent-apps');
+            
+            // 显示前3个应用
+            const recentApps = apps.slice(0, 3);
+            
+            recentAppsContainer.innerHTML = recentApps.map(app => `
+                <div class="flex items-center justify-between p-3 bg-gray-800 bg-opacity-50 rounded-lg hover:bg-opacity-70 transition-all cursor-pointer" onclick="viewAppDetail(${app.id})">
+                    <div class="flex items-center">
+                        <div class="text-2xl mr-3">${app.icon}</div>
+                        <div>
+                            <p class="text-white text-sm font-medium">${app.name}</p>
+                            <p class="text-gray-400 text-xs">${app.framework} • ${app.platform}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="status-indicator status-${app.status}"></span>
+                        <span class="text-xs text-gray-400 capitalize">${app.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 查看应用详情
+        function viewAppDetail(appId) {
+            const app = dataManager.getApplication(appId);
+            if (app) {
+                modalManager.showAppDetailModal(app);
+            }
+        }
+
+        // 初始化图表
+        function initializeCharts() {
+            // 应用状态分布饼图
+            const apps = dataManager.getApplications();
+            const statusData = [
+                { value: apps.filter(app => app.status === 'running').length, name: '运行中', itemStyle: { color: '#00b894' } },
+                { value: apps.filter(app => app.status === 'stopped').length, name: '已停止', itemStyle: { color: '#fdcb6e' } },
+                { value: apps.filter(app => app.status === 'error').length, name: '错误', itemStyle: { color: '#e84393' } }
+            ];
+
+            chartManager.createAppStatusChart('app-status-chart', statusData);
+        }
+
+        // 侧边栏切换（移动端）
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // 注销功能
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                dataManager.logout();
+                window.location.href = 'index.html';
+            }
+        }
+
+        // 响应式处理
+        window.addEventListener('resize', () => {
+            chartManager.resizeCharts();
+        });
+    </script>
+</body>
+</html>
