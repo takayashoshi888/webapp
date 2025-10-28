@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理中心</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container" id="admin-content">
+        <header>
+            <h1>管理中心</h1>
+            <a href="/" class="nav-link">返回打卡页面</a>
+        </header>
+
+        <!-- Site Management -->
+        <section id="site-management">
+            <h2>现场管理</h2>
+            <form id="site-form">
+                <input type="hidden" id="site-id">
+                <div class="form-group">
+                    <label for="site-name">现场名称:</label>
+                    <input type="text" id="site-name" placeholder="输入现场名称" required>
+                </div>
+                <button type="submit">保存现场</button>
+            </form>
+            <table id="admin-table">
+                <thead>
+                    <tr>
+                        <th>现场名称</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="site-list">
+                    <!-- Site list will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </section>
+
+        <hr style="margin: 40px 0;">
+
+        <!-- User Management -->
+        <section id="user-management">
+            <h2>人员管理</h2>
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="form-group">
+                    <label for="user-name">姓名:</label>
+                    <input type="text" id="user-name" placeholder="输入姓名" required>
+                </div>
+                <button type="submit">保存人员</button>
+            </form>
+            <table id="admin-table">
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list">
+                    <!-- User list will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </section>
+
+        <hr style="margin: 40px 0;">
+
+        <!-- Export Section -->
+        <section id="export-section">
+            <h2>月末统计和导出</h2>
+            <div class="form-group">
+                <label for="month-select">选择月份:</label>
+                <input type="month" id="month-select" name="month">
+            </div>
+            <button id="export-csv-btn">导出CSV</button>
+        </section>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
