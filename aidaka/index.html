@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现场考勤管理系统</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="stylesheet" href="css/styles.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 欢迎页面 -->
+    <div id="welcome-screen" class="screen active">
+        <div class="welcome-container">
+            <div class="welcome-content">
+                <h1 class="welcome-title">欢迎你，老板</h1>
+                <div class="loading-spinner"></div>
+                <div class="welcome-progress">
+                    <div class="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 打卡页面 -->
+    <div id="checkin-screen" class="screen">
+        <header class="app-header">
+            <h1>现场出勤管理</h1>
+            <button id="view-data-btn" class="view-data-btn">
+                <i class="fas fa-database"></i>
+                查看数据
+            </button>
+        </header>
+        
+        <main class="checkin-container">
+            <div class="user-info-card">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="user-name" placeholder="请输入您的姓名">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <input type="text" id="site-name" placeholder="请输入现场名称">
+                </div>
+                <button class="save-info-btn">保存信息</button>
+            </div>
+            
+            <div class="checkin-button-container">
+                <button id="checkin-btn" class="checkin-btn">
+                    <i class="fas fa-fingerprint"></i>
+                    <span>开始出勤</span>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 管理页面 -->
+    <div id="management-screen" class="screen">
+        <header class="management-header">
+            <div class="user-status">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <div class="user-name" id="header-user-name">用户</div>
+                    <div class="week-day" id="week-day">星期一</div>
+                    <div class="site-name" id="header-site-name">现场</div>
+                </div>
+                <div class="online-indicator"></div>
+                <button id="logout-btn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+        
+        <main class="management-container">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button id="prev-month" class="nav-btn"><i class="fas fa-chevron-left"></i></button>
+                    <h2 id="current-month">2023年11月</h2>
+                    <button id="next-month" class="nav-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="day-header">日</div>
+                    <div class="day-header">一</div>
+                    <div class="day-header">二</div>
+                    <div class="day-header">三</div>
+                    <div class="day-header">四</div>
+                    <div class="day-header">五</div>
+                    <div class="day-header">六</div>
+                    <!-- 日期将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <div class="nav-cards">
+                <div class="nav-card" data-page="site-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>现场设置</span>
+                </div>
+                <div class="nav-card" data-page="attendance-records">
+                    <i class="fas fa-clock"></i>
+                    <span>打卡记录</span>
+                </div>
+                <div class="nav-card" data-page="data-statistics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>数据统计</span>
+                </div>
+                <div class="nav-card" data-page="more-functions">
+                    <i class="fas fa-th-large"></i>
+                    <span>更多功能</span>
+                </div>
+                <div class="nav-card" data-page="notes">
+                    <i class="fas fa-sticky-note"></i>
+                    <span>笔记功能</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 现场设置页面 -->
+    <div id="site-settings-screen" class="screen">
+        <header class="subpage-header">
+            <button class="back-btn"><i class="fas fa-arrow-left"></i></button>
+            <h1>现场设置</h1>
+        </header>
+        
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="搜索现场">
+        </div>
+        
+        <div class="site-list">
+            <!-- 现场列表将通过JavaScript动态生成 -->
+        </div>
+        
+        <button id="add-site-btn" class="fab-btn">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- 打卡记录页面 -->
+    <div id="attendance-records-screen" class="screen">
+        <header class="subpage-header">
+            <button class="back-btn"><i class="fas fa-arrow-left"></i></button>
+            <h1>打卡记录</h1>
+        </header>
+        
+        <div class="date-filter">
+            <button id="start-date-btn">
+                <i class="fas fa-calendar-alt"></i>
+                <span id="start-date">开始日期</span>
+            </button>
+            <span>至</span>
+            <button id="end-date-btn">
+                <i class="fas fa-calendar-alt"></i>
+                <span id="end-date">结束日期</span>
+            </button>
+        </div>
+        
+        <div class="records-list">
+            <!-- 记录将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <!-- 数据统计页面 -->
+    <div id="data-statistics-screen" class="screen">
+        <header class="subpage-header">
+            <button class="back-btn"><i class="fas fa-arrow-left"></i></button>
+            <h1>数据统计</h1>
+        </header>
+        
+        <div class="month-selector">
+            <button id="prev-stats-month"><i class="fas fa-chevron-left"></i></button>
+            <span id="stats-month">2023年11月</span>
+            <button id="next-stats-month"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-number" id="attendance-days">0</div>
+                <div class="stat-label">本月出勤天数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="late-count">0</div>
+                <div class="stat-label">迟到次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="work-hours">0</div>
+                <div class="stat-label">工时统计</div>
+            </div>
+        </div>
+        
+        <div class="charts-container">
+            <div class="chart-card">
+                <h3>出勤趋势</h3>
+                <canvas id="attendance-chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>现场分布</h3>
+                <canvas id="site-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 更多功能页面 -->
+    <div id="more-functions-screen" class="screen">
+        <header class="subpage-header">
+            <button class="back-btn"><i class="fas fa-arrow-left"></i></button>
+            <h1>更多功能</h1>
+        </header>
+        
+        <div class="function-list">
+            <div class="function-item" id="ai-assistant">
+                <div class="function-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="function-info">
+                    <h3>AI助手</h3>
+                    <p>智能查询和分析</p>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="function-item" id="export-report">
+                <div class="function-icon">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="function-info">
+                    <h3>导出报表</h3>
+                    <p>生成PDF报表</p>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="function-item" id="share-data">
+                <div class="function-icon">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+                <div class="function-info">
+                    <h3>分享数据</h3>
+                    <p>分享考勤报告</p>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="function-item" id="ai-summary">
+                <div class="function-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="function-info">
+                    <h3>AI总结</h3>
+                    <p>智能生成总结</p>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 笔记功能页面 -->
+    <div id="notes-screen" class="screen">
+        <header class="subpage-header">
+            <button class="back-btn"><i class="fas fa-arrow-left"></i></button>
+            <h1>笔记功能</h1>
+            <button id="add-note-btn" class="add-btn">
+                <i class="fas fa-plus"></i>
+            </button>
+        </header>
+        
+        <div class="notes-list">
+            <!-- 笔记将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <!-- AI助手弹窗 -->
+    <div id="ai-assistant-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>AI助手</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-container">
+                    <div class="ai-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="ai-message">
+                            您好！我是您的AI助手，可以帮您查询和分析考勤数据。请问有什么可以帮助您的吗？
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="user-query" placeholder="请输入您的问题...">
+                        <button id="send-query"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                    <div class="quick-queries">
+                        <button class="quick-query-btn">本月迟到次数</button>
+                        <button class="quick-query-btn">最常去的现场</button>
+                        <button class="quick-query-btn">本周工作时长</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加现场弹窗 -->
+    <div id="add-site-modal" class="modal">
+        <div class="modal-content slide-up">
+            <div class="modal-header">
+                <h3>添加现场</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="new-site-name">现场名称</label>
+                    <input type="text" id="new-site-name" placeholder="请输入现场名称">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn">取消</button>
+                <button class="confirm-btn">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加笔记弹窗 -->
+    <div id="add-note-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-sticky-note"></i> 添加笔记</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="note-form">
+                    <div class="input-group">
+                        <label for="note-title">标题</label>
+                        <input type="text" id="note-title" placeholder="请输入笔记标题" maxlength="50">
+                        <div class="char-count">
+                            <span id="title-count">0</span> / 50
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="note-content">内容</label>
+                        <textarea id="note-content" placeholder="请输入笔记内容" rows="6" maxlength="500"></textarea>
+                        <div class="char-count">
+                            <span id="content-count">0</span> / 500
+                        </div>
+                    </div>
+                    <div class="note-actions">
+                        <button id="add-note-attach" class="note-action-btn" type="button">
+                            <i class="fas fa-paperclip"></i> 添加附件
+                        </button>
+                        <button id="add-note-tag" class="note-action-btn" type="button">
+                            <i class="fas fa-tag"></i> 添加标签
+                        </button>
+                    </div>
+                    
+                    <!-- 附件上传区域 -->
+                    <div class="attachment-section" id="attachment-section" style="display: none;">
+                        <div class="attachment-header">
+                            <h4><i class="fas fa-file-upload"></i> 上传附件</h4>
+                            <button type="button" class="close-attachment" id="close-attachment">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="attachment-dropzone" id="attachment-dropzone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖拽文件到此处或点击选择文件</p>
+                            <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display: none;">
+                            <button type="button" class="file-select-btn" id="file-select-btn">选择文件</button>
+                        </div>
+                        <div class="attachment-list" id="attachment-list"></div>
+                        <div class="attachment-tips">
+                            <small>支持图片、文档、压缩包等格式，单个文件最大10MB</small>
+                        </div>
+                    </div>
+                    
+                    <!-- 标签管理区域 -->
+                    <div class="tag-section" id="tag-section" style="display: none;">
+                        <div class="tag-header">
+                            <h4><i class="fas fa-tags"></i> 管理标签</h4>
+                            <button type="button" class="close-tag" id="close-tag">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="tag-input-group">
+                            <input type="text" id="tag-input" placeholder="输入标签名称（按回车添加）" maxlength="20">
+                            <button type="button" class="add-tag-btn" id="add-tag-btn">添加</button>
+                        </div>
+                        <div class="tag-list" id="tag-list">
+                            <div class="tag-item">
+                                <span>工作笔记</span>
+                                <button type="button" class="remove-tag" data-tag="工作笔记">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="popular-tags">
+                            <small>常用标签：</small>
+                            <button type="button" class="quick-tag" data-tag="重要">重要</button>
+                            <button type="button" class="quick-tag" data-tag="待办">待办</button>
+                            <button type="button" class="quick-tag" data-tag="已完成">已完成</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn">取消</button>
+                <button id="save-note-btn" class="save-note-btn">
+                    <i class="fas fa-save"></i> 保存笔记
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑打卡记录弹窗 -->
+    <div id="edit-record-modal" class="modal edit-record-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> 编辑打卡记录</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="edit-record-form">
+                    <div class="input-group">
+                        <label for="edit-record-name">姓名</label>
+                        <input type="text" id="edit-record-name" placeholder="请输入姓名">
+                    </div>
+                    <div class="input-group">
+                        <label for="edit-record-site">现场名称</label>
+                        <input type="text" id="edit-record-site" placeholder="请输入现场名称">
+                    </div>
+                    <div class="input-group">
+                        <label for="edit-record-date">日期</label>
+                        <input type="date" id="edit-record-date">
+                    </div>
+                    <div class="input-group">
+                        <label for="edit-record-time">时间</label>
+                        <input type="time" id="edit-record-time">
+                    </div>
+                    <div class="input-group">
+                        <label for="edit-record-status">状态</label>
+                        <select id="edit-record-status">
+                            <option value="normal">正常打卡</option>
+                            <option value="early">提前打卡</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn">取消</button>
+                <button id="save-record-btn" class="save-btn">
+                    <i class="fas fa-save"></i> 保存修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-screen="checkin-screen">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="nav-item" data-screen="attendance-records-screen">
+            <i class="fas fa-clock"></i>
+            <span>记录</span>
+        </div>
+        <div class="nav-item" data-screen="data-statistics-screen">
+            <i class="fas fa-chart-bar"></i>
+            <span>统计</span>
+        </div>
+        <div class="nav-item" data-screen="more-functions-screen">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/app.js?v=3"></script>
+</body>
+</html>
