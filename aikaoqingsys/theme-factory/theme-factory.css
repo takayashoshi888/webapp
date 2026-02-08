@@ -1,0 +1,227 @@
+/* ==================== 
+   Theme Factory CSS
+   ==================== */
+
+/* CSS Variables Root */
+:root {
+  /* Theme Colors - Default Purple-Blue */
+  --theme-primary: #667eea;
+  --theme-secondary: #764ba2;
+  --theme-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --theme-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --theme-accent: #764ba2;
+  --theme-particle: #667eea;
+  
+  /* Light Theme Base */
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8f9fa;
+  
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  
+  --border-color: rgba(0, 0, 0, 0.08);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  
+  /* Status Colors */
+  --success: #48bb78;
+  --warning: #ed8936;
+  --error: #f56565;
+  --info: #4299e1;
+  
+  /* Glass Effect */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* ==================== 
+   Color Themes
+   ==================== */
+
+/* Orange-Red Theme */
+[data-color-theme="orange-red"] {
+  --theme-primary: #f97316;
+  --theme-secondary: #ef4444;
+  --theme-gradient: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+  --theme-bg: linear-gradient(135deg, #fdba74 0%, #f97316 50%, #ef4444 100%);
+  --theme-accent: #ef4444;
+  --theme-particle: #f97316;
+}
+
+/* Blue Gradient Theme */
+[data-color-theme="blue-gradient"] {
+  --theme-primary: #3b82f6;
+  --theme-secondary: #06b6d4;
+  --theme-gradient: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  --theme-bg: linear-gradient(135deg, #93c5fd 0%, #3b82f6 50%, #06b6d4 100%);
+  --theme-accent: #06b6d4;
+  --theme-particle: #3b82f6;
+}
+
+/* Green Gradient Theme */
+[data-color-theme="green-gradient"] {
+  --theme-primary: #22c55e;
+  --theme-secondary: #10b981;
+  --theme-gradient: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  --theme-bg: linear-gradient(135deg, #86efac 0%, #22c55e 50%, #10b981 100%);
+  --theme-accent: #10b981;
+  --theme-particle: #22c55e;
+}
+
+/* Pink Theme */
+[data-color-theme="pink"] {
+  --theme-primary: #ec4899;
+  --theme-secondary: #d946ef;
+  --theme-gradient: linear-gradient(135deg, #ec4899 0%, #d946ef 100%);
+  --theme-bg: linear-gradient(135deg, #f9a8d4 0%, #ec4899 50%, #d946ef 100%);
+  --theme-accent: #d946ef;
+  --theme-particle: #ec4899;
+}
+
+/* Deep Blue Theme */
+[data-color-theme="deep-blue"] {
+  --theme-primary: #1e3a8a;
+  --theme-secondary: #3b82f6;
+  --theme-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  --theme-bg: linear-gradient(135deg, #60a5fa 0%, #1e3a8a 50%, #1e40af 100%);
+  --theme-accent: #3b82f6;
+  --theme-particle: #1e3a8a;
+}
+
+/* Gold Orange Theme */
+[data-color-theme="gold-orange"] {
+  --theme-primary: #f59e0b;
+  --theme-secondary: #ea580c;
+  --theme-gradient: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  --theme-bg: linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #ea580c 100%);
+  --theme-accent: #ea580c;
+  --theme-particle: #f59e0b;
+}
+
+/* ==================== 
+   Dark Mode
+   ==================== */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ==================== 
+   Base Styles
+   ==================== */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==================== 
+   Utility Classes
+   ==================== */
+
+/* Glass Effect */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Brand Button */
+.btn-primary {
+  background: var(--theme-gradient);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Card */
+.card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-color);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: var(--theme-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ==================== 
+   Animations
+   ==================== */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+.animate-fadeIn { animation: fadeIn 0.3s ease; }

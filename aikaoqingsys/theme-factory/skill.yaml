@@ -1,0 +1,139 @@
+# Theme Factory Skill
+
+This skill provides comprehensive theming capabilities for web applications, including:
+- Color theme management
+- Light/Dark mode switching
+- CSS custom properties (variables)
+- Theme persistence
+- Dynamic theme switching
+
+## Capabilities
+
+### 1. Create Color Theme System
+Define a complete color theme system with:
+- Primary and secondary colors
+- Gradients
+- Background colors
+- Text colors
+- Status colors (success, warning, error, info)
+- Border and shadow colors
+
+### 2. Implement Theme Switching
+Add theme switching functionality:
+- Toggle between light/dark modes
+- Switch between color themes
+- Smooth transitions and animations
+- Persist theme preference
+
+### 3. CSS Variables Management
+Manage CSS custom properties:
+- Define theme variables
+- Create scoped themes
+- Use CSS :root for global variables
+- Use data-theme attributes for theme switching
+
+### 4. UI Components
+Create theme-aware UI components:
+- Buttons with gradient backgrounds
+- Cards and glass-morphism effects
+- Form elements with focus states
+- Navigation and sidebars
+- Charts and data visualizations
+
+## Usage
+
+```javascript
+// Initialize theme
+initializeTheme();
+
+// Switch to a color theme
+setColorTheme('orange-red');
+
+// Toggle dark mode
+toggleTheme();
+
+// Check current theme
+const currentTheme = document.documentElement.getAttribute('data-theme');
+```
+
+## Theme Structure
+
+### CSS Variables
+```css
+:root {
+  --theme-primary: #667eea;
+  --theme-secondary: #764ba2;
+  --theme-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-primary: #f0f2f5;
+  --text-primary: #1a202c;
+  /* ... more variables */
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --text-primary: #f1f5f9;
+  /* ... more dark theme variables */
+}
+```
+
+### JavaScript API
+
+#### initializeTheme()
+Load saved theme from localStorage.
+
+#### setColorTheme(themeName, save = true)
+Apply a color theme by name.
+
+#### toggleTheme()
+Switch between light and dark modes.
+
+#### getCurrentTheme()
+Returns the current theme name.
+
+## Example Themes
+
+### Default Purple-Blue
+```css
+--theme-primary: #667eea;
+--theme-secondary: #764ba2;
+--theme-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+```
+
+### Orange-Red
+```css
+--theme-primary: #f97316;
+--theme-secondary: #ef4444;
+--theme-gradient: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+```
+
+### Blue Gradient
+```css
+--theme-primary: #3b82f6;
+--theme-secondary: #06b6d4;
+--theme-gradient: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+```
+
+### Green Gradient
+```css
+--theme-primary: #22c55e;
+--theme-secondary: #10b981;
+--theme-gradient: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+```
+
+## Files Generated
+
+- `styles.css` - Theme variables and component styles
+- `app.js` - Theme switching logic
+- HTML components with theme support
+
+## Best Practices
+
+1. Use CSS variables for all colors
+2. Define themes using data attributes
+3. Add smooth transitions (0.3s ease)
+4. Persist theme in localStorage
+5. Update charts and visualizations on theme change
+6. Support system preference detection
+7. Add theme toggle UI
+8. Provide visual feedback on theme change

@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-color-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能考勤管理系统 Pro</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF and plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- html2canvas for Chinese/Japanese PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 主题控制面板 -->
+    <div class="theme-controls">
+        <button class="theme-toggle" onclick="toggleTheme()" title="切换明暗主题">
+            <i class="fas fa-sun" id="themeIcon"></i>
+        </button>
+        <button class="color-theme-toggle" onclick="toggleColorThemePanel()" title="选择配色主题">
+            <i class="fas fa-palette" id="colorThemeIcon"></i>
+        </button>
+    </div>
+
+    <!-- 配色主题选择面板 -->
+    <div id="colorThemePanel" class="color-theme-panel">
+        <div class="panel-header">
+            <span>选择主题配色</span>
+            <button onclick="toggleColorThemePanel()" class="close-panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="theme-options">
+            <button class="theme-option" data-theme="default" onclick="setColorTheme('default')" title="默认紫蓝">
+                <div class="theme-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <span>默认</span>
+            </button>
+            <button class="theme-option" data-theme="orange-red" onclick="setColorTheme('orange-red')" title="橘红渐变">
+                <div class="theme-preview" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);"></div>
+                <span>橘红</span>
+            </button>
+            <button class="theme-option" data-theme="blue-gradient" onclick="setColorTheme('blue-gradient')" title="渐变蓝色">
+                <div class="theme-preview" style="background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);"></div>
+                <span>蓝青</span>
+            </button>
+            <button class="theme-option" data-theme="green-gradient" onclick="setColorTheme('green-gradient')" title="渐变绿色">
+                <div class="theme-preview" style="background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);"></div>
+                <span>绿色</span>
+            </button>
+            <button class="theme-option" data-theme="pink" onclick="setColorTheme('pink')" title="粉红渐变">
+                <div class="theme-preview" style="background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%);"></div>
+                <span>粉红</span>
+            </button>
+            <button class="theme-option" data-theme="deep-blue" onclick="setColorTheme('deep-blue')" title="深蓝渐变">
+                <div class="theme-preview" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"></div>
+                <span>深蓝</span>
+            </button>
+            <button class="theme-option" data-theme="gold-orange" onclick="setColorTheme('gold-orange')" title="金橙渐变">
+                <div class="theme-preview" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);"></div>
+                <span>金橙</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 粒子背景 -->
+    <div id="particles" class="particles"></div>
+
+    <!-- 消息提示容器 -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-text">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 登录页面 -->
+    <div id="loginPage" class="page active">
+        <div class="auth-container">
+            <div class="auth-card glass">
+                <div class="auth-header">
+                    <div class="logo-animation">
+                        <div class="logo-ring ring-1"></div>
+                        <div class="logo-ring ring-2"></div>
+                        <div class="logo-ring ring-3"></div>
+                        <i class="fas fa-clock logo-icon"></i>
+                    </div>
+                    <h1 class="auth-title">智能考勤管理系统</h1>
+                    <p class="auth-subtitle">Smart Attendance Management System</p>
+                </div>
+                
+                <form id="loginForm" class="auth-form">
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="loginUsername" placeholder="用户名" required autocomplete="username">
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="loginPassword" placeholder="密码" required autocomplete="current-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="form-options">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="rememberMe">
+                            <span class="checkmark"></span>
+                            <span class="checkbox-label">记住我</span>
+                        </label>
+                        <a href="#" class="forgot-link" onclick="showPage('forgotPage')">忘记密码?</a>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary btn-glow">
+                        <span class="btn-content">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>登录系统</span>
+                        </span>
+                        <div class="btn-loading">
+                            <div class="loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+                
+                <div class="auth-footer">
+                    <p>还没有账号? <a href="#" onclick="showPage('registerPage')" class="link-primary">立即注册</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册页面 -->
+    <div id="registerPage" class="page">
+        <div class="auth-container">
+            <div class="auth-card glass">
+                <div class="auth-header">
+                    <div class="logo-animation">
+                        <div class="logo-ring ring-1"></div>
+                        <div class="logo-ring ring-2"></div>
+                        <i class="fas fa-user-plus logo-icon"></i>
+                    </div>
+                    <h1 class="auth-title">创建账号</h1>
+                    <p class="auth-subtitle">Join Smart Attendance System</p>
+                </div>
+                
+                <form id="registerForm" class="auth-form">
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="regUsername" placeholder="用户名 (3-20位)" required minlength="3" maxlength="20">
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="regEmail" placeholder="电子邮箱" required>
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="regPassword" placeholder="密码 (至少6位)" required minlength="6">
+                        <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="strength-bar">
+                            <div class="strength-fill"></div>
+                        </div>
+                        <span class="strength-text">密码强度</span>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="regConfirmPassword" placeholder="确认密码" required>
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary btn-glow">
+                        <span class="btn-content">
+                            <i class="fas fa-user-plus"></i>
+                            <span>注册账号</span>
+                        </span>
+                        <div class="btn-loading">
+                            <div class="loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+                
+                <div class="auth-footer">
+                    <p>已有账号? <a href="#" onclick="showPage('loginPage')" class="link-primary">立即登录</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 忘记密码页面 -->
+    <div id="forgotPage" class="page">
+        <div class="auth-container">
+            <div class="auth-card glass">
+                <div class="auth-header">
+                    <div class="logo-animation">
+                        <i class="fas fa-key logo-icon"></i>
+                    </div>
+                    <h1 class="auth-title">重置密码</h1>
+                    <p class="auth-subtitle">Reset Your Password</p>
+                </div>
+                
+                <form id="forgotForm" class="auth-form">
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="forgotUsername" placeholder="用户名" required>
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="forgotEmail" placeholder="注册邮箱" required>
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="forgotNewPassword" placeholder="新密码 (至少6位)" required minlength="6">
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="forgotConfirmPassword" placeholder="确认新密码" required>
+                        <span class="input-focus"></span>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary btn-glow">
+                        <span class="btn-content">
+                            <i class="fas fa-key"></i>
+                            <span>重置密码</span>
+                        </span>
+                        <div class="btn-loading">
+                            <div class="loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+                
+                <div class="auth-footer">
+                    <p><a href="#" onclick="showPage('loginPage')" class="link-primary">返回登录</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div id="mainPage" class="page">
+        <!-- 侧边栏导航 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <i class="fas fa-clock brand-icon"></i>
+                    <span class="brand-text">考勤Pro</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+                    <i class="fas fa-home"></i>
+                    <span>总览</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="records" onclick="switchTab('records')">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>考勤记录</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="statistics" onclick="switchTab('statistics')">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>统计分析</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="export" onclick="switchTab('export')">
+                    <i class="fas fa-file-export"></i>
+                    <span>数据导出</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name" id="userName">用户</span>
+                        <span class="user-role">管理员</span>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>退出</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 顶部栏 -->
+            <header class="top-bar glass">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="top-bar-right">
+                    <div class="date-display" id="currentDate"></div>
+                    <div class="notifications">
+                        <button class="notification-btn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">0</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 仪表盘 -->
+            <div id="dashboard" class="tab-content active">
+                <div class="page-header">
+                    <h2 class="page-title">
+                        <i class="fas fa-home"></i>
+                        数据总览
+                    </h2>
+                    <p class="page-desc">实时查看您的考勤数据统计</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-row">
+                    <div class="stat-card glass gradient-blue">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">本月记录</span>
+                            <span class="stat-value" id="dashTotalRecords">0</span>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>实时</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card glass gradient-purple">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">总人次</span>
+                            <span class="stat-value" id="dashTotalPeople">0</span>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>累计</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card glass gradient-green">
+                        <div class="stat-icon">
+                            <i class="fas fa-yen-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">本月费用</span>
+                            <span class="stat-value" id="dashTotalAmount">¥0</span>
+                        </div>
+                        <div class="stat-trend">
+                            <span>日元</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card glass gradient-orange">
+                        <div class="stat-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">现场数量</span>
+                            <span class="stat-value" id="dashTotalSites">0</span>
+                        </div>
+                        <div class="stat-trend">
+                            <span>个</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="charts-row">
+                    <div class="chart-card glass">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-line"></i> 费用趋势</h3>
+                            <select class="chart-filter" id="trendFilter" onchange="updateTrendChart()">
+                                <option value="7">近7天</option>
+                                <option value="30" selected>近30天</option>
+                                <option value="90">近3个月</option>
+                            </select>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card glass">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-pie"></i> 费用构成</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近记录 -->
+                <div class="recent-section">
+                    <div class="section-card glass">
+                        <div class="section-header">
+                            <h3><i class="fas fa-history"></i> 最近记录</h3>
+                            <a href="#" class="view-all" onclick="switchTab('records')">查看全部 <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="recent-list" id="recentRecords">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 考勤记录 -->
+            <div id="records" class="tab-content">
+                <div class="page-header">
+                    <h2 class="page-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        考勤记录
+                    </h2>
+                    <p class="page-desc">管理和查询您的考勤记录</p>
+                </div>
+
+                <!-- 添加记录表单 -->
+                <div class="form-card glass">
+                    <div class="form-header">
+                        <h3><i class="fas fa-plus-circle"></i> 新增考勤记录</h3>
+                    </div>
+                    <form id="addRecordForm" class="record-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar"></i> 日期</label>
+                                <input type="date" id="recDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-user"></i> 姓名</label>
+                                <input type="text" id="recName" placeholder="输入姓名" required>
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-users"></i> 人数</label>
+                                <input type="number" id="recCount" min="1" placeholder="输入人数" required>
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-map-marker-alt"></i> 现场名称</label>
+                                <input type="text" id="recSite" placeholder="输入现场名称" required>
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-parking"></i> 停车费 (¥)</label>
+                                <input type="number" id="recParking" min="0" step="10" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-road"></i> 高速费 (¥)</label>
+                                <input type="number" id="recHighway" min="0" step="10" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="resetRecordForm()">
+                                <i class="fas fa-undo"></i> 重置
+                            </button>
+                            <button type="submit" class="btn-primary btn-glow">
+                                <i class="fas fa-plus"></i> 添加记录
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 记录列表 -->
+                <div class="table-card glass">
+                    <div class="table-header">
+                        <h3><i class="fas fa-list"></i> 记录列表</h3>
+                        <div class="table-filters">
+                            <div class="filter-group">
+                                <i class="fas fa-calendar"></i>
+                                <input type="month" id="listFilterMonth" onchange="filterRecordList()">
+                            </div>
+                            <div class="filter-group">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="listFilterName" placeholder="搜索姓名..." onkeyup="filterRecordList()">
+                            </div>
+                            <button class="btn-icon" onclick="refreshRecordList()" title="刷新">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="recordTable">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>姓名</th>
+                                    <th>人数</th>
+                                    <th>现场</th>
+                                    <th>停车费</th>
+                                    <th>高速费</th>
+                                    <th>费用合计</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordTableBody">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-empty" id="recordEmpty">
+                        <i class="fas fa-inbox"></i>
+                        <p>暂无考勤记录</p>
+                        <span>点击上方表单添加您的第一条记录</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计分析 -->
+            <div id="statistics" class="tab-content">
+                <div class="page-header">
+                    <h2 class="page-title">
+                        <i class="fas fa-chart-pie"></i>
+                        统计分析
+                    </h2>
+                    <p class="page-desc">深度分析您的考勤数据</p>
+                </div>
+
+                <!-- 月份选择 -->
+                <div class="filter-bar glass">
+                    <div class="filter-group">
+                        <label><i class="fas fa-calendar-alt"></i> 统计月份</label>
+                        <input type="month" id="statMonth">
+                    </div>
+                    <button class="btn-primary" onclick="generateFullStats()">
+                        <i class="fas fa-calculator"></i> 生成统计
+                    </button>
+                </div>
+
+                <!-- 统计结果 -->
+                <div id="statsResult" class="stats-container">
+                    <div class="stats-summary">
+                        <div class="summary-card glass">
+                            <div class="summary-icon gradient-blue">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="summary-info">
+                                <span class="summary-label">总记录数</span>
+                                <span class="summary-value" id="statTotalRecords">0</span>
+                            </div>
+                        </div>
+                        <div class="summary-card glass">
+                            <div class="summary-icon gradient-purple">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="summary-info">
+                                <span class="summary-label">总人次</span>
+                                <span class="summary-value" id="statTotalPeople">0</span>
+                            </div>
+                        </div>
+                        <div class="summary-card glass">
+                            <div class="summary-icon gradient-green">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="summary-info">
+                                <span class="summary-label">费用总计</span>
+                                <span class="summary-value" id="statTotalAmount">¥0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-charts">
+                        <div class="stat-chart-card glass">
+                            <h4><i class="fas fa-user"></i> 按人员统计</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="personChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="stat-chart-card glass">
+                            <h4><i class="fas fa-building"></i> 按现场统计</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="siteChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-tables">
+                        <div class="stat-table-card glass">
+                            <h4><i class="fas fa-user"></i> 人员明细</h4>
+                            <div class="table-responsive">
+                                <table class="data-table" id="personTable">
+                                    <thead>
+                                        <tr>
+                                            <th>姓名</th>
+                                            <th>记录数</th>
+                                            <th>人次</th>
+                                            <th>停车费</th>
+                                            <th>高速费</th>
+                                            <th>小计</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="personTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="stat-table-card glass">
+                            <h4><i class="fas fa-building"></i> 现场明细</h4>
+                            <div class="table-responsive">
+                                <table class="data-table" id="siteTable">
+                                    <thead>
+                                        <tr>
+                                            <th>现场名称</th>
+                                            <th>记录数</th>
+                                            <th>人次</th>
+                                            <th>停车费</th>
+                                            <th>高速费</th>
+                                            <th>小计</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="siteTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-empty" id="statsEmpty">
+                    <i class="fas fa-chart-area"></i>
+                    <p>选择月份开始分析</p>
+                    <span>选择月份并点击"生成统计"按钮查看详细数据</span>
+                </div>
+            </div>
+
+            <!-- 数据导出 -->
+            <div id="export" class="tab-content">
+                <div class="page-header">
+                    <h2 class="page-title">
+                        <i class="fas fa-file-export"></i>
+                        数据导出
+                    </h2>
+                    <p class="page-desc">导出您的考勤数据到各种格式</p>
+                </div>
+
+                <div class="export-grid">
+                    <div class="export-card glass" onclick="exportToPDF()">
+                        <div class="export-icon pdf">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <h3>导出为 PDF</h3>
+                        <p>生成精美的PDF报表，支持中文和日文显示</p>
+                        <button class="btn-primary">
+                            <i class="fas fa-download"></i> 导出PDF
+                        </button>
+                    </div>
+                    
+                    <div class="export-card glass" onclick="exportToCSV()">
+                        <div class="export-icon csv">
+                            <i class="fas fa-file-csv"></i>
+                        </div>
+                        <h3>导出为 CSV</h3>
+                        <p>导出为Excel可打开的CSV格式文件</p>
+                        <button class="btn-secondary">
+                            <i class="fas fa-download"></i> 导出CSV
+                        </button>
+                    </div>
+                    
+                    <div class="export-card glass" onclick="exportToJSON()">
+                        <div class="export-icon json">
+                            <i class="fas fa-file-code"></i>
+                        </div>
+                        <h3>导出为 JSON</h3>
+                        <p>导出原始JSON数据用于备份或迁移</p>
+                        <button class="btn-secondary">
+                            <i class="fas fa-download"></i> 导出JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-icon warning">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>确认删除</h3>
+            <p>确定要删除这条考勤记录吗？<br>此操作不可撤销。</p>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('deleteModal')">取消</button>
+                <button class="btn-danger" id="confirmDeleteBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

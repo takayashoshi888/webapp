@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<skill>
+    <name>Theme Factory</name>
+    <description>Create beautiful, customizable theme systems with color palettes, dark/light modes, and smooth transitions</description>
+    <version>1.0.0</version>
+    <author>OpenCode</author>
+    <tags>theming,css,design,ui,color</tags>
+    <capabilities>
+        <capability name="create-theme-system">Create comprehensive color theme systems with CSS variables</capability>
+        <capability name="implement-theme-switching">Add light/dark mode and color theme switching</capability>
+        <capability name="manage-css-variables">Manage CSS custom properties for theming</capability>
+        <capability name="build-theme-ui">Create theme-aware UI components</capability>
+    </capabilities>
+    <examples>
+        <example>
+            <description>Add multi-color theme support</description>
+            <code>setColorTheme('orange-red');</code>
+        </example>
+        <example>
+            <description>Toggle dark mode</description>
+            <code>toggleTheme();</code>
+        </example>
+        <example>
+            <description>Initialize theme system</description>
+            <code>initializeTheme();</code>
+        </example>
+    </examples>
+</skill>
