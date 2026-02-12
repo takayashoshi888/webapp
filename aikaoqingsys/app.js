@@ -5,6 +5,7 @@ let currentUser = null;
 let users = [];
 let records = [];
 let chartInstances = {};
+let currentEditRecordId = null; // 当前正在编辑的记录ID
 
 // ==================== 
 // Initialization
@@ -431,6 +432,12 @@ function resetPasswordStrength() {
 function handleAddRecord(e) {
   e.preventDefault();
   
+  // 如果是编辑模式，则调用更新函数
+  if (currentEditRecordId) {
+    updateRecord();
+    return;
+  }
+  
   const record = {
     id: generateId(),
     date: document.getElementById('recDate').value,
@@ -462,6 +469,21 @@ function handleAddRecord(e) {
 function resetRecordForm() {
   document.getElementById('addRecordForm').reset();
   initializeDates();
+  
+  // 重置编辑状态
+  currentEditRecordId = null;
+  
+  // 恢复表单标题和按钮文本
+  const formHeader = document.querySelector('#records .form-header h3');
+  const submitButton = document.querySelector('#addRecordForm .btn-primary');
+  
+  if (formHeader) {
+    formHeader.innerHTML = '<i class="fas fa-plus-circle"></i> 新增考勤记录';
+  }
+  
+  if (submitButton) {
+    submitButton.innerHTML = '<i class="fas fa-plus"></i> 添加记录';
+  }
 }
 
 function refreshRecordList() {
@@ -492,6 +514,9 @@ function refreshRecordList() {
       <td>¥${formatNumber(record.highwayFee)}</td>
       <td><strong>¥${formatNumber(record.parkingFee + record.highwayFee)}</strong></td>
       <td>
+        <button class="btn-icon" onclick="editRecord('${record.id}')" title="编辑">
+          <i class="fas fa-edit" style="color: var(--brand-primary);"></i>
+        </button>
         <button class="btn-icon" onclick="confirmDelete('${record.id}')" title="删除">
           <i class="fas fa-trash-alt" style="color: var(--error);"></i>
         </button>
@@ -539,9 +564,51 @@ function filterRecordList() {
   }
 }
 
+function editRecord(recordId) {
+  // 查找要编辑的记录
+  const record = records.find(r => r.id === recordId);
+  
+  if (!record) {
+    showToast('未找到该记录', 'error');
+    return;
+  }
+  
+  // 设置编辑状态
+  currentEditRecordId = recordId;
+  
+  // 填充表单字段
+  document.getElementById('recDate').value = record.date;
+  document.getElementById('recName').value = record.name;
+  document.getElementById('recCount').value = record.count;
+  document.getElementById('recSite').value = record.site;
+  document.getElementById('recParking').value = record.parkingFee;
+  document.getElementById('recHighway').value = record.highwayFee;
+  
+  // 更新表单标题和按钮文本
+  const formHeader = document.querySelector('#records .form-header h3');
+  const submitButton = document.querySelector('#addRecordForm .btn-primary');
+  
+  if (formHeader) {
+    formHeader.innerHTML = '<i class="fas fa-edit"></i> 编辑考勤记录';
+  }
+  
+  if (submitButton) {
+    submitButton.innerHTML = '<i class="fas fa-save"></i> 更新记录';
+  }
+  
+  // 滚动到表单位置
+  document.querySelector('#records .form-card').scrollIntoView({ 
+    behavior: 'smooth', 
+    block: 'center' 
+  });
+  
+  // 聚焦到输入框
+  document.getElementById('recName').focus();
+  
+  showToast('已进入编辑模式，请修改记录信息', 'info');
+}
+
 function confirmDelete(recordId) {
-  const modal = document.getElementById('deleteModal');
-  const confirmBtn = document.getElementById('confirmDeleteBtn');
   
   modal.classList.add('show');
   
@@ -560,6 +627,48 @@ function deleteRecord(recordId) {
     updateDashboard();
     showToast('记录已删除', 'success');
   }
+}
+
+function updateRecord() {
+  if (!currentEditRecordId) {
+    showToast('没有正在编辑的记录', 'error');
+    return;
+  }
+  
+  // 查找要更新的记录
+  const recordIndex = records.findIndex(r => r.id === currentEditRecordId);
+  
+  if (recordIndex === -1) {
+    showToast('未找到要更新的记录', 'error');
+    return;
+  }
+  
+  // 构造更新后的记录对象
+  const updatedRecord = {
+    ...records[recordIndex],
+    date: document.getElementById('recDate').value,
+    name: document.getElementById('recName').value.trim(),
+    count: parseInt(document.getElementById('recCount').value),
+    site: document.getElementById('recSite').value.trim(),
+    parkingFee: parseFloat(document.getElementById('recParking').value) || 0,
+    highwayFee: parseFloat(document.getElementById('recHighway').value) || 0,
+    updatedAt: new Date().toISOString()
+  };
+  
+  // 更新记录
+  records[recordIndex] = updatedRecord;
+  
+  // 保存到本地存储
+  saveToStorage();
+  
+  // 刷新界面
+  refreshRecordList();
+  updateDashboard();
+  
+  // 重置表单和编辑状态
+  resetRecordForm();
+  
+  showToast('考勤记录更新成功！', 'success');
 }
 
 // ==================== 
@@ -1192,6 +1301,11 @@ function switchTab(tabId) {
     content.classList.remove('active');
   });
   document.getElementById(tabId).classList.add('active');
+  
+  // 切换标签页时重置编辑状态
+  if (tabId !== 'records' && currentEditRecordId) {
+    resetRecordForm();
+  }
   
   // Refresh data if needed
   if (tabId === 'records') {
