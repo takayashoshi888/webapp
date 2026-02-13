@@ -485,7 +485,6 @@ function resetRecordForm() {
     submitButton.innerHTML = '<i class="fas fa-plus"></i> 添加记录';
   }
 }
-
 function refreshRecordList() {
   const tbody = document.getElementById('recordTableBody');
   const emptyState = document.getElementById('recordEmpty');
@@ -609,6 +608,8 @@ function editRecord(recordId) {
 }
 
 function confirmDelete(recordId) {
+  const modal = document.getElementById('deleteModal');
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
   
   modal.classList.add('show');
   
